@@ -26,3 +26,57 @@ jobs:
       - name: lighthouse
         run: npx --yes @lhci/cli@0.14.0 autorun
 
+  e2e:
+    # Browser run of scripts/e2e.mjs against a real API + SSR site: sign-in, every admin tab,
+    # share dialog, member restrictions, planner, settings, no sideways scroll, no page errors.
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: playwright (chromium only; kept out of package.json so the app install stays small)
+        run: |
+          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null
+          npm i playwright@1.49.1 --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: build site
+        working-directory: frontend
+        run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=2048
+      - name: start api + site + edge
+        run: |
+          # Embedded PGlite accounts store, no Redis, pinned setup code; no secrets needed.
+          mkdir -p backend/data
+          (cd backend && SETUP_CODE=CIE2E0001 WARM_CACHE=0 JOB_MIN_FREE_GB=0 LOG_LEVEL=warn \
+            node --experimental-strip-types --import ./register.mjs src/server.ts > /tmp/api.log 2>&1 &)
+          (cd frontend && HOST=127.0.0.1 PORT=3100 node .output/server/index.mjs > /tmp/web.log 2>&1 &)
+          (EDGE_HOST=127.0.0.1 EDGE_PORT=3000 node scripts/serve.mjs > /tmp/edge.log 2>&1 &)
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:3000/readyz >/dev/null && break; sleep 1; done
+          curl -sf http://127.0.0.1:3000/readyz
+      - name: seed super admin + one member
+        run: |
+          H='content-type: application/json'
+          curl -sf -c /tmp/a.jar -H "$H" -H 'sec-fetch-site: same-origin' -d '{"code":"CIE2E0001","email":"owner@ci.local","name":"Owner","password":"ci-owner-pass-1"}' http://127.0.0.1:3000/api/auth/setup >/dev/null
+          curl -sf -b /tmp/a.jar -H "$H" -H 'sec-fetch-site: same-origin' -d '{"email":"member@ci.local","name":"Member","password":"ci-member-pass-1"}' http://127.0.0.1:3000/api/admin/members >/dev/null
+      - name: e2e
+        run: node scripts/e2e.mjs --shots e2e-shots
+        env:
+          PLAYWRIGHT_DIR: /tmp/pw
+          E2E_BASE: http://127.0.0.1:3000
+          E2E_ADMIN: owner@ci.local:ci-owner-pass-1
+          E2E_MEMBER: member@ci.local:ci-member-pass-1
+      - name: logs on failure
+        if: failure()
+        run: tail -n 80 /tmp/api.log /tmp/web.log /tmp/edge.log || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-shots
+          path: e2e-shots
+          if-no-files-found: ignore
+
