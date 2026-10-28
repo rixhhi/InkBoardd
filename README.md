@@ -13,7 +13,7 @@ A study desk for Unacademy replays: exam hubs, teacher and course shelves, a whi
 ## Status
 
 - **Typecheck**: clean in all three packages. **Lint**: `npm run lint` (Biome) — 0 errors; style warnings are reported, not fatal.
-- **Tests**: 1,057 passing (45 shared, 716 backend, 296 frontend), 0 failing; plus `scripts/e2e.mjs`, a browser run of 23 checks on desktop and phone (sign-in, every admin tab, share dialog, member restrictions, planner and settings pages, no sideways scroll, no page errors).
+- **Tests**: 1,055 passing (45 shared, 714 backend, 296 frontend), 0 failing; plus `scripts/e2e.mjs`, a browser run of 23 checks on desktop and phone (sign-in, every admin tab, share dialog, member restrictions, planner and settings pages, no sideways scroll, no page errors). CI runs it too (`e2e` job) against a real API + SSR build and uploads the screenshots.
 - **Build**: `vite build` passes the bundle budget (first load 736 KB / 1,563 KB cap; total 2,458 KB / 4,395 KB cap).
 - **Stores**: `backend/.env` (gitignored) points at Neon Postgres and Upstash Redis. Accounts moved from the SQLite file into Neon on first boot (`[accounts] imported 3 account(s) and 2 share(s)`).
 
@@ -36,6 +36,14 @@ A study desk for Unacademy replays: exam hubs, teacher and course shelves, a whi
 - **Analytics**: figure cards with rings (struck, goal hit, sessions, late finishes), delta % vs previous period, weekday pattern and session-length bar charts, and a watched/focus/manual split of how the time was earned.
 - **Badges, Settings, Dashboard, History**: kit headers and buttons; badges show a progress ring and "closest to earning"; settings shows a live "Saved" pill.
 - **Modals**: `LogStudyDialog`, `AddTaskForm` and the planner `ConfirmDialog` are on the kit `Dialog`/`AlertDialog`.
+
+### Review pass (2026-10-28)
+
+- **Saved-lecture jobs were readable by any member.** `GET /api/jobs/*` was open to every signed-in account and job ids were `sha256(lesson id + options)`, so a member who knew a lesson id could recompute the job id and pull `bundle.zip` (ink, slides, media) for a class that was never shared with them, with Downloads switched off. The guard now resolves the job's lesson and requires the same share access as `/api/lessons/:id`; artifacts and the bundle also need the Downloads switch; unknown jobs stay a plain 404. Job ids are HMAC-keyed by `JOB_DIR/.job-secret` (or `JOB_ID_SECRET`). Regression test: "a saved-lecture job is only reachable for a class shared with the member" in `backend/tests/auth/auth.test.ts`.
+- **Responses are compressed** (`@fastify/compress`, brotli/gzip). The ink timeline for a 57-minute board class goes from 4.5 MB to ~1.0 MB on the wire. Zip bundles and range-served media carry `no-transform`; SSE is untouched.
+- **Login lockout survives restarts.** The five-misses-per-account+IP / thirty-per-IP counters live in Redis when `REDIS_URL` is set (email hashed in the key, 15-minute expiry), with the in-memory map as fallback. Previously a `pm2 restart` cleared every lock.
+- **Schema migrations.** `SCHEMA` stays the idempotent baseline; anything that changes an existing table is an entry in `MIGRATIONS` (`backend/src/auth/store/connection.ts`) that runs once, in order, in a transaction and is recorded in `ib_migrations`. First entry: an `(user_id, id desc)` index on `ib_activity`.
+- **Course header says when there is nothing to play**: "No replays yet" / "3 without replay" next to the class count, instead of only a per-row badge after scrolling.
 
 ### Fixed in this pass
 
@@ -151,6 +159,7 @@ All variables are optional. The `.env.example` files list them with comments. Th
 | `AUTH_DB` | unset | `local` forces PGlite even with a database URL; `:memory:` is for tests. |
 | `STATS_TZ` | `Asia/Kolkata` | Time zone for "per day" charts and rollups. |
 | `SETUP_CODE` | random | Pins the one-time admin setup code (handy in Docker). Otherwise it is printed in the API log and written to `backend/data/setup-code.txt`. |
+| `JOB_ID_SECRET` | random, kept in `JOB_DIR/.job-secret` | Keys job ids. Pin it when `JOB_DIR` is not persistent or several API boxes share one `JOB_DIR`; otherwise a rebuilt disk means existing jobs get new ids (a re-save, nothing worse). |
 | `JOB_MIN_FREE_GB` / `JOB_DIR_MAX_GB` | `2` / `20` | Refuse new downloads below this free space; prune the oldest finished job folders above this total. |
 | `WARM_CACHE` / `WARM_EXAMS` | on / 5 big exams | Pre-loads exam hubs and the live feed after boot so the first visitor doesn't wait. |
 
@@ -165,7 +174,7 @@ All variables are optional. The `.env.example` files list them with comments. Th
 | `GET /api/lessons/:replayId/timeline`, `/notes`, `POST /api/lessons/probe` | Ink timeline, notes, media probe. |
 | `GET /api/slide`, `/api/notes`, `/api/live-slide` | Media proxy (allow-listed Unacademy hosts). |
 | `GET /api/live/feed`, `/api/live/sessions/:uid[...]`, `GET /api/live-board` (SSE) | Live classes. |
-| `POST /api/jobs/lectures` → `GET /api/jobs/:id` → `GET /api/jobs/:id/artifacts/*` → `GET /api/jobs/:id/bundle.zip` | Save + enhance a replay; `bundle.zip` streams the whole saved folder (STORE, zip32, 409 until `done`). Body `{ id, title?, enhance?, remux?, noMedia?, noNotes? }`. The create response carries a one-time `token` needed for `DELETE /api/jobs/:id` and `POST /api/jobs/:id/clips`. |
+| `POST /api/jobs/lectures` → `GET /api/jobs/:id` → `GET /api/jobs/:id/artifacts/*` → `GET /api/jobs/:id/bundle.zip` | Save + enhance a replay; `bundle.zip` streams the whole saved folder (STORE, zip32, 409 until `done`). Body `{ id, title?, enhance?, remux?, noMedia?, noNotes? }`. The create response carries a one-time `token` needed for `DELETE /api/jobs/:id` and `POST /api/jobs/:id/clips`. Members: every job route needs the job's class shared with them; `artifacts/*` and `bundle.zip` also need the Downloads switch. |
 | `POST /api/study/summary` | Revision bullets (6/min per visitor). |
 
 Rate buckets per visitor per `RATE_WINDOW_MS` (60 s): catalog `RATE_LIMIT` (120), media ≥600, generous ≥300, expensive (job create/clip/delete) ≤30.

@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-10-28 — review pass
+
+### Security
+- Members could read any saved-lecture job (`GET /api/jobs/:id`, `/artifacts/*`, `/bundle.zip`) regardless of sharing or the Downloads switch, and job ids were recomputable from a lesson id. Jobs now require the lesson to be shared (same rule as `/api/lessons/:id`); artifacts and the bundle also need Downloads; ids are HMAC-keyed by a per-install secret (`JOB_DIR/.job-secret` or `JOB_ID_SECRET`).
+- Login lockout counters move to Redis when configured, so they survive restarts and are shared across processes. Memory fallback kept.
+
+### Performance
+- brotli/gzip on API responses (`@fastify/compress`). Timeline JSON ~4.5 MB → ~1.0 MB. Zip and range-served media opt out with `no-transform`.
+
+### Data
+- `ib_migrations` + ordered transactional runner for changes to existing tables. First migration: `(user_id, id desc)` index on `ib_activity`.
+
+### UX
+- Course header shows "No replays yet" / "N without replay".
+
+### CI
+- New `e2e` job runs `scripts/e2e.mjs` in Chromium against a real API + SSR build and uploads screenshots.
+
+
 ## 2026-10-28 (later) — sync merge, workspaces, page splits
 
 - **Sync conflicts:** when two devices change the planner between syncs, plans, tasks and day logs are merged record by record (newer `updatedAt` wins, deletes are kept, ties keep this device). `PUT /api/me/state` accepts a `base` hash per entry and refuses stale writes, returning `conflicts` so the device merges and retries. Older clients without `base` behave as before.
