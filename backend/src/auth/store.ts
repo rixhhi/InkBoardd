@@ -19,7 +19,7 @@
  * no latency to normal page loads.
  */
 export * from "./store/types.ts";
-export { store, openAuthStore, closeAuthStore, storeKind } from "./store/connection.ts";
+export { store, openAuthStore, closeAuthStore, storeKind, runMigrations, appliedMigrations, MIGRATIONS, type Migration } from "./store/connection.ts";
 export { bumpShares } from "./store/cache.ts";
 export * from "./store/passwords.ts";
 export * from "./store/accounts.ts";

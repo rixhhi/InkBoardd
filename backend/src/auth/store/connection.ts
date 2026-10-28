@@ -114,11 +114,64 @@ create table if not exists ib_user_state (
 );
 `;
 
+/* ---------------- migrations ----------------
+ *
+ * SCHEMA above is the idempotent baseline (create ... if not exists). Anything
+ * that changes an existing table goes here instead: each entry runs once, in
+ * order, inside a transaction, and is recorded in ib_migrations. Never edit an
+ * entry after it has shipped; add a new one.
+ */
+export type Migration = { id: string; sql: string };
+
+export const MIGRATIONS: readonly Migration[] = [
+  {
+    id: "0001_activity_user_id_desc",
+    // onlineNow() and listActivity({ userId }) read the newest rows per member; the
+    // existing (user_id, at) index does not serve "order by id desc".
+    sql: "create index if not exists ib_activity_user_id_desc on ib_activity (user_id, id desc)",
+  },
+];
+
+export async function appliedMigrations(db: Db): Promise<Set<string>> {
+  await db.exec("create table if not exists ib_migrations (id text primary key, applied_at timestamptz not null default now())");
+  const rows = await db.query<{ id: string }>("select id from ib_migrations");
+  return new Set(rows.map((r) => r.id));
+}
+
+/** Apply pending migrations. Returns the ids that ran this time. */
+export async function runMigrations(db: Db, list: readonly Migration[] = MIGRATIONS): Promise<string[]> {
+  const seen = new Set<string>();
+  for (const m of list) {
+    if (!/^\d{4}_[a-z0-9_]+$/.test(m.id)) throw new Error(`migration id must look like 0001_name: ${m.id}`);
+    if (seen.has(m.id)) throw new Error(`duplicate migration id: ${m.id}`);
+    seen.add(m.id);
+  }
+  const done = await appliedMigrations(db);
+  const ran: string[] = [];
+  for (const m of list) {
+    if (done.has(m.id)) continue;
+    await db.tx(async (t) => {
+      // Two API processes booting together: the insert fails for the loser, the whole step rolls back.
+      await t("insert into ib_migrations (id) values ($1)", [m.id]);
+      for (const stmt of m.sql.split(/;\s*\n/).map((x) => x.trim()).filter(Boolean)) await t(stmt);
+    });
+    ran.push(m.id);
+  }
+  return ran;
+}
+
 export function store(): Promise<Db> {
   if (!dbp) {
     dbp = (async () => {
       const db = await openDb();
       await db.exec(SCHEMA);
+      try {
+        const ran = await runMigrations(db);
+        if (ran.length) console.log(`[accounts] applied migration(s): ${ran.join(", ")}`);
+      } catch (err) {
+        // A failed migration must not take the API down; the next boot retries it.
+        console.error("[accounts] migration failed:", err instanceof Error ? err.message : err);
+      }
       await importLegacySqlite(db).catch((err) => console.warn("[accounts] legacy import skipped:", err instanceof Error ? err.message : err));
       return db;
     })();
