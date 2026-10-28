@@ -1,7 +1,9 @@
 import { timingSafeEqual } from "node:crypto";
+import { constants as zlibConstants } from "node:zlib";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import compress from "@fastify/compress";
 import { registerHealth } from "./routes/health.ts";
 import { registerCatalog } from "./routes/catalog.ts";
 import { registerLessons } from "./routes/lessons.ts";
@@ -187,6 +189,17 @@ export async function buildApp(): Promise<FastifyInstance> {
     },
     crossOriginEmbedderPolicy: false,
     referrerPolicy: { policy: "no-referrer" },
+  });
+
+  // Timeline JSON for a 1-hour board class is ~4.5 MB raw and ~0.5 MB gzipped; first play on a
+  // phone was waiting on that. Streams the edge passes through untouched (SSE live board, zip
+  // bundles, range-served media artifacts) are not compressible and are left alone.
+  await app.register(compress, {
+    global: true,
+    encodings: ["br", "gzip", "deflate"],
+    threshold: 1024,
+    brotliOptions: { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 4 } },
+    zlibOptions: { level: 6 },
   });
 
   app.addHook("onRequest", async (req, reply) => {

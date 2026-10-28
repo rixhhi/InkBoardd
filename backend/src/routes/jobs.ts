@@ -693,7 +693,8 @@ export async function registerJobs(app: FastifyInstance) {
     const range = Array.isArray(rangeHeader) ? rangeHeader.join(",") : rangeHeader;
     reply.header("accept-ranges", "bytes");
     reply.header("content-type", artifactType(rel));
-    reply.header("cache-control", "private, max-age=3600");
+    // no-transform: range-served media must not be re-encoded by the compress plugin.
+    reply.header("cache-control", "private, max-age=3600, no-transform");
     if (typeof range === "string" && range.length > 0) {
       const size = statSync(abs).size;
       const parsed = singleByteRange(range, size);
@@ -735,7 +736,7 @@ export async function registerJobs(app: FastifyInstance) {
     reply.header("content-type", "application/zip");
     reply.header("content-length", String(total));
     reply.header("content-disposition", `attachment; filename="${name}"; filename*=UTF-8''${encodeURIComponent(name)}`);
-    reply.header("cache-control", "private, no-store");
+    reply.header("cache-control", "private, no-store, no-transform");
     return reply.send(zipStoreStream(entries, ac.signal));
   });
 
