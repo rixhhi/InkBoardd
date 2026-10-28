@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { createReadStream, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, statfsSync, writeFileSync } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { JOB_DIR } from "../config/env.ts";
 import { jsonError } from "../http.ts";
 import { artifactType, safeArtifactPath } from "../integrations/ffmpeg/artifacts.ts";
@@ -213,6 +213,18 @@ export function jobView(id: string) {
   return { id: job.id, state: job.state, error: job.error, mediaDir: job.mediaDir };
 }
 
+/**
+ * The lesson a job belongs to, from memory or the stored job.json. The access
+ * guard uses it so a member can only poll, stream or download jobs for classes
+ * that are shared with them (auth/guard.ts). Null when the job is unknown.
+ */
+export async function jobLessonId(id: string): Promise<string | null> {
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(id)) return null;
+  const job = jobs.get(id) ?? (await rehydrateJob(id));
+  const lesson = job?.payload?.id;
+  return typeof lesson === "string" && lesson ? lesson : null;
+}
+
 function persistJob(job: Job) {
   try {
     mkdirSync(job.outDir, { recursive: true });
@@ -373,8 +385,49 @@ async function liveJob(id: string): Promise<Job | null> {
   return jobs.get(id) ?? (await rehydrateJob(id));
 }
 
-function jobId(kind: string, payload: unknown) {
-  return createHash("sha256").update(JSON.stringify({ kind, payload })).digest("hex").slice(0, 24);
+let jobSecret: Buffer | null = null;
+
+/**
+ * Per-install secret that keys job ids. Lives in JOB_DIR/.job-secret so ids stay
+ * stable across restarts; JOB_ID_SECRET pins it (Docker, several boxes). Without
+ * it, a job id was sha256(lesson id + options), which anyone who knew a lesson id
+ * could recompute and use to pull the saved media past the share wall.
+ */
+export function jobIdSecret(dir = JOB_DIR): Buffer {
+  if (jobSecret) return jobSecret;
+  const pinned = process.env.JOB_ID_SECRET?.trim();
+  if (pinned) {
+    jobSecret = Buffer.from(pinned, "utf8");
+    return jobSecret;
+  }
+  const file = join(dir, ".job-secret");
+  try {
+    const raw = readFileSync(file, "utf8").trim();
+    if (/^[0-9a-f]{64}$/.test(raw)) {
+      jobSecret = Buffer.from(raw, "hex");
+      return jobSecret;
+    }
+  } catch {
+    /* first run */
+  }
+  const fresh = randomBytes(32);
+  try {
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(file, `${fresh.toString("hex")}\n`, { mode: 0o600 });
+  } catch {
+    /* read-only disk: ids change on restart, which only means a re-save */
+  }
+  jobSecret = fresh;
+  return jobSecret;
+}
+
+/** Tests swap the secret so ids are predictable. */
+export function resetJobIdSecret(next: Buffer | null = null) {
+  jobSecret = next;
+}
+
+export function jobId(kind: string, payload: unknown) {
+  return createHmac("sha256", jobIdSecret()).update(JSON.stringify({ kind, payload })).digest("hex").slice(0, 24);
 }
 
 export function lectureJobPayload(body: {

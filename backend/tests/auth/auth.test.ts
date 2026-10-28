@@ -186,6 +186,54 @@ describe("accounts and access", () => {
     assert.equal(settings.json().permissions.browse, true);
   });
 
+  it("a saved-lecture job is only reachable for a class shared with the member", async () => {
+    // Regression: GET /api/jobs/* used to be open to every member, and job ids were a plain
+    // sha256 of the lesson id, so a member could pull bundle.zip for any class they knew the id of.
+    const J = await import("../../src/routes/jobs.ts");
+    const { mkdtempSync, writeFileSync, mkdirSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const { tmpdir } = await import("node:os");
+    const dir = mkdtempSync(join(tmpdir(), "ink-job-acl-"));
+    const lesson = "LESSONACL1";
+    const jid = "acljob000000000000000001";
+    mkdirSync(join(dir, "lecture"), { recursive: true });
+    writeFileSync(join(dir, "lecture", "manifest.json"), "{}");
+    writeFileSync(join(dir, "lecture", "poster.jpg"), "x");
+    J.rememberJob({ id: jid, kind: "lecture", state: "done", pct: 100, step: "done", outDir: dir, mediaDir: join(dir, "lecture"), payload: { id: lesson }, abort: new AbortController() });
+
+    // Not shared: poll, bundle and artifacts all refuse.
+    assert.equal((await app.inject({ url: `/api/jobs/${jid}`, headers: { cookie: member } })).statusCode, 403);
+    const bundle = await app.inject({ url: `/api/jobs/${jid}/bundle.zip`, headers: { cookie: member } });
+    assert.equal(bundle.statusCode, 403);
+    assert.equal(bundle.json().code, "FEATURE_OFF", "downloads are off for members by default");
+    assert.equal((await app.inject({ url: `/api/jobs/${jid}/artifacts/poster.jpg`, headers: { cookie: member } })).statusCode, 403);
+    // Unknown jobs stay a plain 404 (no oracle for "exists but not yours").
+    assert.equal((await app.inject({ url: "/api/jobs/nope00000000000000000000", headers: { cookie: member } })).statusCode, 404);
+
+    // Share the class: polling works, media still needs the Downloads switch.
+    const share = await app.inject({ method: "POST", url: "/api/admin/shares", headers: { cookie: admin }, payload: { kind: "lesson", ref: lesson, audience: "user", userIds: [memberId] } });
+    assert.equal(share.statusCode, 201);
+    assert.equal((await app.inject({ url: `/api/jobs/${jid}`, headers: { cookie: member } })).statusCode, 200);
+    assert.equal((await app.inject({ url: `/api/jobs/${jid}/artifacts/poster.jpg`, headers: { cookie: member } })).statusCode, 403);
+    await app.inject({ method: "PUT", url: "/api/admin/settings", headers: { cookie: admin }, payload: { permissions: { downloads: true } } });
+    assert.equal((await app.inject({ url: `/api/jobs/${jid}/artifacts/poster.jpg`, headers: { cookie: member } })).statusCode, 200);
+    assert.equal((await app.inject({ url: `/api/jobs/${jid}/bundle.zip`, headers: { cookie: member } })).statusCode, 200);
+
+    // Staff are never gated; admins see every job.
+    assert.equal((await app.inject({ url: `/api/jobs/${jid}`, headers: { cookie: admin } })).statusCode, 200);
+
+    // Job ids are keyed by a per-install secret, not a recomputable hash of the lesson id.
+    const { createHash } = await import("node:crypto");
+    const payload = J.lectureJobPayload({ id: lesson });
+    const plain = createHash("sha256").update(JSON.stringify({ kind: "lecture", payload })).digest("hex").slice(0, 24);
+    assert.notEqual(J.jobId("lecture", payload), plain);
+    assert.equal(J.jobId("lecture", payload), J.jobId("lecture", payload), "stable within a process");
+
+    await app.inject({ method: "PUT", url: "/api/admin/settings", headers: { cookie: admin }, payload: { permissions: { downloads: false } } });
+    for (const sh of share.json().shares as { id: number }[]) await app.inject({ method: "DELETE", url: `/api/admin/shares/${sh.id}`, headers: { cookie: admin } });
+    J.forgetJob(jid);
+  });
+
   it("live needs at least one shared exam", async () => {
     const all = await S.listShares();
     for (const s of all.filter((x) => x.kind === "exam")) await app.inject({ method: "DELETE", url: `/api/admin/shares/${s.id}`, headers: { cookie: admin } });
@@ -346,6 +394,11 @@ describe("access rules (units)", () => {
     assert.ok("admin" in memberRule("GET", "/api/admin/members"));
     assert.ok("deny" in memberRule("GET", "/api/unknown-thing"));
     assert.deepEqual(memberRule("DELETE", "/api/jobs/x"), { allow: true, perm: "downloads" });
+    assert.deepEqual(memberRule("POST", "/api/jobs/lectures"), { allow: true, perm: "downloads" });
+    assert.deepEqual(memberRule("GET", "/api/jobs/abc"), { job: "abc" });
+    assert.deepEqual(memberRule("GET", "/api/jobs/abc/bundle.zip"), { job: "abc", perm: "downloads" });
+    assert.deepEqual(memberRule("GET", "/api/jobs/abc/artifacts/slides/001.jpg"), { job: "abc", perm: "downloads" });
+    assert.ok("deny" in memberRule("GET", "/api/jobs"));
     assert.deepEqual(memberRule("GET", "/api/live/feed"), { allow: true, perm: "live", needsExam: true, filter: "live" });
   });
 

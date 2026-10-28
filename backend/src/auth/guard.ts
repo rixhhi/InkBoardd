@@ -159,6 +159,8 @@ export function resetLoginThrottle() {
 export type Rule =
   | { allow: true; perm?: keyof S.MemberPermissions; filter?: "exams" | "teachers" | "live"; activity?: Activity; needsExam?: boolean }
   | { share: S.ShareKind; ref: string; direct?: boolean; activity?: Activity; orLive?: boolean }
+  /** A saved-lecture job: the member needs the job's lesson shared with them; `perm` on top for media/bundle reads. */
+  | { job: string; perm?: keyof S.MemberPermissions }
   | { admin: true; superOnly?: boolean }
   | { deny: true };
 
@@ -198,8 +200,15 @@ export function memberRule(method: string, path: string): Rule {
     case "notes":
       return { allow: true };
     case "jobs":
-      if (verb === "GET") return { allow: true };
-      return { allow: true, perm: "downloads" };
+      // POST /api/jobs/lectures (create) and every write need the Downloads switch.
+      if (verb !== "GET") return { allow: true, perm: "downloads" };
+      // GET /api/jobs/:id (poll) needs the job's class shared; artifacts and the
+      // bundle also need Downloads, since they hand out the saved media itself.
+      if (p.length >= 3 && p[2]) {
+        const media = p.length >= 4 && (p[3] === "artifacts" || p[3] === "bundle.zip");
+        return media ? { job: p[2], perm: "downloads" } : { job: p[2] };
+      }
+      return { deny: true };
     case "exams":
       if (p.length === 2) return { allow: true, filter: "exams" };
       return { share: "exam", ref: (p[2] ?? "").toUpperCase(), direct: true, activity: p[3] === "hub" ? { kind: "exam", ref: (p[2] ?? "").toUpperCase() } : undefined };
@@ -401,6 +410,24 @@ export function installAuth(app: FastifyInstance) {
     if ("deny" in rule) return deny(reply, req, 403, "FORBIDDEN", "Not available on this account.");
     const [perms, mode] = await Promise.all([S.memberPermissions(), S.accessMode()]);
     const open = mode === "open";
+    if ("job" in rule) {
+      if (rule.perm && !perms[rule.perm]) return deny(reply, req, 403, "FEATURE_OFF", "Your admin has turned this off.");
+      const { jobLessonId } = await import("../routes/jobs.ts");
+      const lesson = await jobLessonId(rule.job);
+      // An unknown job answers 404 downstream; a member must not learn more than that.
+      if (!lesson) return;
+      if (open) return;
+      let via = await S.accessVia(user.id, "lesson", lesson);
+      if (via == null) {
+        try {
+          via = await resolveReach(user.id, "lesson", lesson);
+        } catch (err) {
+          req.log.warn({ err }, "reach-through lookup failed");
+        }
+      }
+      if (via == null) return deny(reply, req, 403, "NOT_SHARED", "This class hasn't been shared with you yet.");
+      return;
+    }
     if ("allow" in rule) {
       if (rule.perm && !(rule.perm === "search" && open) && !perms[rule.perm]) return deny(reply, req, 403, "FEATURE_OFF", "Your admin has turned this off.");
       if (!open && rule.needsExam) {

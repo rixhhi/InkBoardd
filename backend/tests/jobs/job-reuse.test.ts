@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import type { FastifyInstance } from "fastify";
 import { JOB_DIR } from "../../src/config/env.ts";
-import { forgetJob, lectureJobPayload, lectureRunCount, rehydrateJob } from "../../src/routes/jobs.ts";
+import { forgetJob, jobId, lectureJobPayload, lectureRunCount, rehydrateJob } from "../../src/routes/jobs.ts";
 import { testApp } from "../helpers/app.ts";
 
 describe("an evicted done lecture is reused", () => {
@@ -18,7 +17,7 @@ describe("an evicted done lecture is reused", () => {
   it("does not start a new directory when the done job is only on disk", async () => {
     const payload = lectureJobPayload({ id: "lessonreuse1", title: "Reuse", remux: true, enhance: false });
     assert.ok(payload);
-    const jid = createHash("sha256").update(JSON.stringify({ kind: "lecture", payload })).digest("hex").slice(0, 24);
+    const jid = jobId("lecture", payload);
     const dir = join(JOB_DIR, jid);
     mkdirSync(dir, { recursive: true });
     writeFileSync(
@@ -58,7 +57,7 @@ describe("an evicted done lecture is reused", () => {
     const lessonId = "lessonrace1";
     const payload = lectureJobPayload({ id: lessonId, title: "Race", remux: true, enhance: false });
     assert.ok(payload);
-    const jid = createHash("sha256").update(JSON.stringify({ kind: "lecture", payload })).digest("hex").slice(0, 24);
+    const jid = jobId("lecture", payload);
     forgetJob(jid);
     if (existsSync(JOB_DIR)) {
       for (const name of readdirSync(JOB_DIR)) {
