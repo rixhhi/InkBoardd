@@ -66,6 +66,7 @@ export function LiveShelf({
   total,
   liveCount,
   upcomingCount,
+  unavailableCount = 0,
   footnote,
   description,
   stillLoading,
@@ -92,6 +93,8 @@ export function LiveShelf({
   total: number;
   liveCount: number;
   upcomingCount: number;
+  /** Ended classes with no replay. */
+  unavailableCount?: number;
   footnote: string;
   description?: string;
   stillLoading: boolean;
@@ -171,6 +174,14 @@ export function LiveShelf({
                 <>
                   <Dot />
                   <span>{upcomingCount} upcoming</span>
+                </>
+              ) : null}
+              {unavailableCount ? (
+                <>
+                  <Dot />
+                  <span className="text-warn" title="These classes ended without a replay being published.">
+                    {unavailableCount === total ? "No replays yet" : `${unavailableCount} without replay`}
+                  </span>
                 </>
               ) : null}
             </p>

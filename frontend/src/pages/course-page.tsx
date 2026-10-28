@@ -213,6 +213,9 @@ export default function CoursePage() {
   const liveCount = lessons.filter((l) => l.status === "live").length;
   const upcomingCount = lessons.filter((l) => l.status === "upcoming").length;
   const archivedCount = lessons.filter((l) => l.status === "archived").length;
+  // Ended classes with no replay to play. Unacademy marks these "unavailable"; the row shows a
+  // badge, but a whole course of them looked like 6 playable classes until you scrolled.
+  const unavailableCount = lessons.filter((l) => !l.replayId && l.status !== "live" && l.status !== "upcoming").length;
   const needle = q.trim().toLowerCase();
   const filtered = lessons.filter((lesson) => {
     if (needle && !lesson.title.toLowerCase().includes(needle)) return false;
@@ -253,6 +256,7 @@ export default function CoursePage() {
       total={live.data.total || lessons.length}
       liveCount={liveCount}
       upcomingCount={upcomingCount}
+      unavailableCount={unavailableCount}
       footnote={footnote}
       description={course.description}
       stillLoading={stillLoading}
