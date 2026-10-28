@@ -11,7 +11,7 @@
  * their courses and batches; a course opens its lessons. Those reach-through ids
  * are recorded as grants (tied to the share, so they vanish with it).
  */
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
@@ -19,6 +19,7 @@ import { EXAMS, examGoalIds, getExam } from "@inkboard/shared/exams";
 import { jsonError } from "../http.ts";
 import { env } from "../config/env.ts";
 import * as S from "./store.ts";
+import { getRedis } from "../repositories/redis/client.ts";
 
 export const SESSION_COOKIE = "ib_session";
 
@@ -152,6 +153,76 @@ export function clearLoginFailures(ip: string, email: string) {
 
 export function resetLoginThrottle() {
   failures.clear();
+}
+
+/* ---- shared counters (Redis) with the memory map as fallback ---- */
+
+const LOGIN_MAX_PAIR = 5;
+const LOGIN_MAX_IP = 30;
+const REDIS_WAIT_MS = 400;
+
+function throttleKeys(ip: string, email: string): [string, string] {
+  // The email never goes into Redis in clear text.
+  const who = createHash("sha256").update(email).digest("hex").slice(0, 24);
+  return [`login:p:${ip}|${who}`, `login:i:${ip}`];
+}
+
+const NOTE_LUA = `
+local a = redis.call('INCR', KEYS[1]); if a == 1 then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end
+local b = redis.call('INCR', KEYS[2]); if b == 1 then redis.call('PEXPIRE', KEYS[2], ARGV[1]) end
+return {a, b}`;
+const CHECK_LUA = `
+local a = tonumber(redis.call('GET', KEYS[1]) or '0'); local b = tonumber(redis.call('GET', KEYS[2]) or '0')
+return {a, b, redis.call('PTTL', KEYS[1]), redis.call('PTTL', KEYS[2])}`;
+const CLEAR_LUA = `redis.call('DEL', KEYS[1]); return 1`;
+
+async function withRedis<T>(run: (r: NonNullable<Awaited<ReturnType<typeof getRedis>>>) => Promise<T>): Promise<T | null> {
+  try {
+    const wait = <V,>(p: Promise<V>) =>
+      Promise.race([
+        p,
+        new Promise<null>((resolve) => {
+          const t = setTimeout(() => resolve(null), REDIS_WAIT_MS);
+          if (typeof t === "object" && "unref" in t) t.unref();
+        }),
+      ]);
+    const redis = await wait(getRedis());
+    if (!redis || typeof redis.eval !== "function") return null;
+    return await wait(run(redis));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Seconds a sign-in is locked for, or 0. Counters live in Redis when it is
+ * configured, so a restart or a second API process does not reset them; the
+ * in-memory map answers when Redis is absent or slow.
+ */
+export async function loginLockedForShared(ip: string, email: string): Promise<number> {
+  const [pair, wide] = throttleKeys(ip, email);
+  const got = await withRedis((r) => r.eval(CHECK_LUA, 2, pair, wide) as Promise<[number, number, number, number]>);
+  if (Array.isArray(got) && got.length === 4) {
+    const [a, b, ta, tb] = got.map(Number) as [number, number, number, number];
+    if (a >= LOGIN_MAX_PAIR && ta > 0) return Math.max(1, Math.ceil(ta / 1000));
+    if (b >= LOGIN_MAX_IP && tb > 0) return Math.max(1, Math.ceil(tb / 1000));
+    // Redis answered and says "not locked": that is authoritative across processes.
+    return 0;
+  }
+  return loginLockedFor(ip, email);
+}
+
+export async function noteLoginFailureShared(ip: string, email: string): Promise<void> {
+  const [pair, wide] = throttleKeys(ip, email);
+  await withRedis((r) => r.eval(NOTE_LUA, 2, pair, wide, String(WINDOW)));
+  // Memory stays in step as the fallback for the moment Redis goes away.
+  noteLoginFailure(ip, email);
+}
+
+export async function clearLoginFailuresShared(ip: string, email: string): Promise<void> {
+  const [pair] = throttleKeys(ip, email);
+  await withRedis((r) => r.eval(CLEAR_LUA, 1, pair));
+  clearLoginFailures(ip, email);
 }
 
 /* ---------------- policy ---------------- */

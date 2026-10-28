@@ -11,11 +11,11 @@ import { jsonError } from "../http.ts";
 import * as S from "../auth/store.ts";
 import {
   SESSION_COOKIE,
-  clearLoginFailures,
+  clearLoginFailuresShared,
   clearSetupCode,
   ensureSetupCode,
-  loginLockedFor,
-  noteLoginFailure,
+  loginLockedForShared,
+  noteLoginFailureShared,
   readCookie,
   sessionCookie,
   setupCodeMatches,
@@ -62,10 +62,10 @@ export async function registerAuth(app: FastifyInstance) {
     if (await S.superadminExists()) return fail(reply, req, 409, "ALREADY_SET_UP", "An admin already exists. Sign in instead.");
     const b = body(req);
     const ip = req.ip || "local";
-    const locked = loginLockedFor(ip, "setup");
+    const locked = await loginLockedForShared(ip, "setup");
     if (locked) return reply.header("retry-after", String(locked)).status(429).send(jsonError(429, "Too many tries. Wait a few minutes.", "RATE_LIMIT", req.id));
     if (!(await setupCodeMatches(b.code))) {
-      noteLoginFailure(ip, "setup");
+      await noteLoginFailureShared(ip, "setup");
       return fail(reply, req, 403, "BAD_SETUP_CODE", "That setup code is wrong. It is printed in the server log.");
     }
     const email = S.normalEmail(b.email);
@@ -85,7 +85,7 @@ export async function registerAuth(app: FastifyInstance) {
     const email = S.normalEmail(b.email) ?? "";
     const password = typeof b.password === "string" ? b.password : "";
     const ip = req.ip || "local";
-    const locked = loginLockedFor(ip, email);
+    const locked = await loginLockedForShared(ip, email);
     if (locked) {
       return reply
         .header("retry-after", String(locked))
@@ -96,11 +96,11 @@ export async function registerAuth(app: FastifyInstance) {
     if (!found) S.burnPasswordCheck(password);
     const ok = Boolean(found && password && S.verifyPassword(password, found.passwordHash));
     if (!found || !ok) {
-      noteLoginFailure(ip, email);
+      await noteLoginFailureShared(ip, email);
       return fail(reply, req, 401, "BAD_LOGIN", "Email or password is wrong.");
     }
     if (found.status !== "active") return fail(reply, req, 403, "DISABLED", "This account is paused. Ask your admin.");
-    clearLoginFailures(ip, email);
+    await clearLoginFailuresShared(ip, email);
     const { passwordHash: _hash, ...user } = found;
     if (user.role === "member") void S.logActivity(user.id, { kind: "login", label: String(req.headers["user-agent"] ?? "").slice(0, 120) }).catch(() => {});
     await startSession(req, reply, user);
