@@ -1,0 +1,221 @@
+# InkBoard
+
+A study desk for Unacademy replays: exam hubs, teacher and course shelves, a whiteboard player with ink timelines and notes, live classes, favourites, an offline library, and a planner. Three packages in one repo:
+
+| Package | What it is | Port |
+| --- | --- | --- |
+| `backend/` | Fastify 5 API on Node 22 (TypeScript run natively, no build). Catalog proxy for Unacademy, slide/notes media proxy, SSE live board, lecture enhance jobs (ffmpeg), study summaries. | 8787 |
+| `frontend/` | TanStack Start + Nitro SSR site. React 19, Tailwind 4, hls.js, pdf.js. Planner and library data sync to the signed-in account. | 3100 (built) / 5173 (dev) |
+| `shared/` | Pure TypeScript both apps import: ink decoding, planner domain, catalog ranking, bundle format. | — |
+
+`scripts/serve.mjs` is a small edge that fronts both on **one public port (3000)**: `/api/*`, `/healthz`, `/readyz` go to the API; everything else to the SSR site. It plays the role `frontend/middleware.ts` plays on Vercel.
+
+## Status
+
+- **Typecheck**: clean in all three packages. **Lint**: `npm run lint` (Biome) — 0 errors; style warnings are reported, not fatal.
+- **Tests**: 1,057 passing (45 shared, 716 backend, 296 frontend), 0 failing; plus `scripts/e2e.mjs`, a browser run of 23 checks on desktop and phone (sign-in, every admin tab, share dialog, member restrictions, planner and settings pages, no sideways scroll, no page errors).
+- **Build**: `vite build` passes the bundle budget (first load 736 KB / 1,563 KB cap; total 2,458 KB / 4,395 KB cap).
+- **Stores**: `backend/.env` (gitignored) points at Neon Postgres and Upstash Redis. Accounts moved from the SQLite file into Neon on first boot (`[accounts] imported 3 account(s) and 2 share(s)`).
+
+### UI rebuild (Phases A–G of `docs/ui-rebuild-plan.md`) — done
+
+- **Design system**: semantic tokens in `frontend/src/styles/tokens.css` (bg/surface/fg/accent/ok/warn/danger/live/subject-*, spacing, radii, z-index, motion) with light + dark palettes; a 25-component kit in `frontend/src/components/ui/` (`Button`, `IconButton`, `ListRow`, `PageHeader`, `Toolbar`, `Section`, `Tabs`, `Chip`, `Badge`, `Avatar`, `Menu`, `Dialog`/`ConfirmDialog`/`Sheet`, `SearchInput`, `Skeleton`/`EmptyState`/`ErrorState`, `Progress`/`Ring`, …) built on Radix primitives + Tailwind only.
+- **Shell**: one `AppShell` (sidebar ≥ md, phone tab bar, context bar with breadcrumbs, library panel on Ctrl/Cmd+B) driven by `lib/nav.ts`. New routes `/browse`, `/library` (saved · watch later · downloads · history), `/live`, `/settings`; `/favourites*` redirect to `/library`.
+- **Player**: transport, header, focus bar and stage overlays on the kit; overflow menu is the kit `Menu`; idle-hide chrome; 44 px touch rows.
+- **Pages on the kit**: Home dashboard (Continue ×3, Live now, Watch later, Your exam, All exams), Browse, Exam hub, Teacher, Course, Search (recent-search chips when blank), Library, Live feed, Settings, Planner shell; command palette regrouped with icons and key hints.
+- **Cleanup**: old `ui/kit.tsx`, `folio/shell.tsx`, `folio/margin.tsx`, `player-more.tsx`, `player-glyph.tsx`, `player/player-view.tsx` deleted; 200+ dead CSS rules (`.desk-*`, `.folio-*`, `.plate-*`, `.stamp-*`, `.hatch-chip`, `.ui-*`, `.player-more*`, `.write-line-*` input/rule) and 7 orphan keyframes removed (−1.3k lines). Every pinned source test now asserts roles, labels or behaviour instead of class names.
+- **Follow-up pass (player, loaders, dropdowns, batch, live)**: player header + transport are overlays again (the stage had been pushed down and clipped); every loader is the kit spinner/skeleton; every notice is kit `ErrorState`/`EmptyState`; every `<select>` is the kit `Select`; batch page rebuilt on the kit (toolbar with view/when/teacher chips, week grid, `ListRow` sessions); live stage header/rail on the kit, and `/live/$classId` is a real page again — it previously `redirect`ed to `/`, so every “Live now” link bounced home.
+
+### Phase H — planner on the kit — done
+
+- **Tasks** (was Today): `/planner/today?day=YYYY-MM-DD` pages any day — prev/next, a 7-day strip with per-day tallies, `[` `]` keys and `T` for today. Non-today days get tense-correct copy ("2 planned · 75 min", "1 of 2 done"), bulk "Move to today" / "Push a day", and the calendar's day panel deep-links in. Logic in `shared/planner/day-nav.ts`.
+- **Pomodoro that knows what you study** (`shared/planner/pomodoro.ts`): a block is bound to a plan task (lecture / revision / DPP / custom) or just a subject; presets 25·5, 50·10, 15·3 or custom; work → short break → long break every N rounds; pause/resume survives reloads. Every finished work phase is written to the study log as `source: "focus"` under that subject/course/lesson, so analytics, streaks and badges count it without a manual "Log study". Card on Tasks, tab title shows the clock, "Switch what you're on" mid-block.
+- **Journal retired**: page, route, nav, palette entry and folio mode removed; the "Journal 7 days" badge became "7 focus blocks". `shared/planner/journal.ts` stays only as a data-retention module so old backups/recovery points still import.
+- **Calendar**: kit header, month/week paging, kit Tabs for Month/Week/Agenda, reschedule dialog with per-strategy explanations; mini-board grid, drag-and-drop and legend unchanged.
+- **Plan wizard**: 4-step rail (done steps clickable), kit Back/Next/Create.
+- **Analytics**: figure cards with rings (struck, goal hit, sessions, late finishes), delta % vs previous period, weekday pattern and session-length bar charts, and a watched/focus/manual split of how the time was earned.
+- **Badges, Settings, Dashboard, History**: kit headers and buttons; badges show a progress ring and "closest to earning"; settings shows a live "Saved" pill.
+- **Modals**: `LogStudyDialog`, `AddTaskForm` and the planner `ConfirmDialog` are on the kit `Dialog`/`AlertDialog`.
+
+### Fixed in this pass
+
+- **Teacher pages 404'd on a capital letter** (`/teacher/Surendramish-5026`): not case-sensitivity — a flaky profile fetch threw NOT_FOUND for a teacher with 317 courses. The backend now synthesises a fallback educator when courses exist, teacher URLs canonicalise to lowercase, and a failed background refetch no longer blanks a loaded page.
+- **Seek bar**: a global `button[aria-label] { position: relative }` was beating `.seek-chapter { position: absolute }`, dropping the chapter ticks under the line; the bar also started 1.4 rem in. Ticks sit on the line, the playhead is visible, the bar runs edge to edge.
+- **Search bar double icons**: native `type=search` decorations hidden under the kit's own.
+- **Teacher camera ("lantern") resize**: visible grip on hover/focus/touch, drag to resize, click to cycle sizes, "Camera size" in the ⋯ menu.
+- **Course header actions** (Favourite / Save the course / Download all notes) are kit buttons.
+- **Download all notes** can now *save into a folder* (File System Access API): each PDF is written the moment it arrives — nothing waits for a giant zip. Zip stays as the fallback. `fetchNotesZip` gained an `onSaved` streaming sink.
+- **Download for offline play** is a real button: the server prepares the bundle, then `GET /api/jobs/:id/bundle.zip` streams the saved folder as a STORE zip (`backend/src/lib/zip-store.ts`, verified with `unzip -t`). Drop it on `/offline` to play with no internet.
+
+- **Every lecture job failed instantly** with `logger.info is not a function`: `runLecture` handed `saveLecture` a bare function where it expects `{ info, warn, error, progress, newline }`. Now `jobStepLogger` mirrors each line into the job's `step` and lifts download percentages into `pct`. Regression test in `backend/tests/jobs/job-step-logger.test.ts`.
+- The `jobs/` rule in `.gitignore` matched `backend/tests/jobs/` too, so new tests there were silently untracked. Anchored to `/jobs/`.
+- Added the `backend/.env.example` and `frontend/.env.example` the old README pointed at.
+- Added a single-box runtime: `ecosystem.config.cjs` (PM2), `scripts/serve.mjs` (edge), `Dockerfile`, `docker-compose.yml`.
+
+## Accounts, sharing and activity
+
+Every `/api` route needs a signed-in account (only `/healthz`, `/readyz` and `/api/auth/status|setup|login|logout` are public).
+
+**Roles**
+
+| Role | Created by | Can |
+| --- | --- | --- |
+| Super admin | `/setup`, exactly once | Everything below, plus add, promote, pause, demote and remove admins (Admin → Admins). |
+| Admin | the super admin | Members, groups, sharing, settings, activity, audit log. Sees every page. |
+| Member | any admin | Their dashboard and what is shared with them. No self sign-up. |
+
+1. **First run:** open the site. It sends you to `/setup`. Enter the setup code from the API log (or `backend/data/setup-code.txt`), your name, email and a password. That account is the super admin. Setup answers 409 afterwards.
+2. **Members:** Admin → Members → *Add member*. A readable password is suggested; *Ask for a new password on first sign-in* is on by default, so you never know the member's real password. Members can be put in groups when they're created.
+3. **Groups:** Admin → Groups. Cohorts such as "NEET 2027 · Morning". Moving a member in or out changes what they see at once.
+4. **Sharing:** Admin → Sharing, or the **Share** button on any exam, teacher, course or batch page.
+   - Audience: every member, one or more groups, or chosen members.
+   - Optional note, *visible from* / *visible until* dates (scheduled and expired shares are hidden from members automatically), and *pin to the top*. Shares can be edited later without re-sharing; filter the list by kind and by live / scheduled / ended.
+   - Exam → its hub, teachers and courses, **and Live for that exam**. Teacher → courses and batches. Course → all classes. Batch → schedule. Class → that class.
+   - Unsharing removes access straight away, including classes reached through it.
+5. **What members see:** Home, Library and Planner. **Browse** and **Search** appear only if you switch them on (or use Open mode). **Live** appears only when Live is on *and* at least one exam is shared with them; the feed lists only that exam's classes. Settings: *Curated* / *Open*, and switches for Browse, Search, Live, Planner, Downloads.
+6. **Activity:** the raw log keeps **one hour** (older events are deleted every 5 minutes). Watch time and classes opened roll up into daily totals kept for a year, so charts, "most watched" and each member's 30-day class list survive. The Activity tab shows the last hour plus *online now* (active in the last 5 minutes). The audit log records every admin change for 90 days.
+7. **Member page:** stats, 30-day chart, their study plan (name, progress, today, minutes this week — read from their synced planner), classes in the last 30 days, groups, personal shares, what they also see through groups/everyone, pause, reset password (forces a new one), sign out everywhere, remove.
+
+**Data lives in the database.** Accounts, sessions, groups, shares, activity, audit and each person's app data (plans, watch history, saved courses, watch later, favourites, player and theme preferences) are stored in Postgres (`DATABASE_URL`, e.g. Neon) or, with no URL, in embedded PGlite under `backend/data/pg`. The browser keeps a working copy and syncs it every 15 s and when the tab is hidden; signing in on another device restores it, and signing in as a different person on the same browser clears the previous person's data first. Device caches (catalog cache, offline media) stay on the device.
+
+Security: salted scrypt passwords; HttpOnly SameSite cookies (30 days; revoked on logout, pause, role change or password reset); *Signed-in devices* in the account menu lists sessions with per-device and "sign out other devices"; 5 wrong passwords per account+IP lock for 15 minutes; cross-site writes refused; a forced password change blocks every other route until done. Tests: `backend/tests/auth/auth.test.ts` (30 cases) and `scripts/e2e.mjs` (browser).
+
+| Route | Who | Purpose |
+| --- | --- | --- |
+| `GET /api/auth/status`, `POST /api/auth/setup|login|logout` | anyone | Session state, one-time super admin, sign in/out |
+| `GET /api/me`, `GET /api/me/summary`, `POST /api/me/password`, `POST /api/activity` | signed in | Profile, active shares, own stats, password, watch beacons |
+| `GET /api/me/sessions`, `DELETE /api/me/sessions/:id`, `POST /api/me/sessions/revoke-others` | signed in | Signed-in devices |
+| `GET|PUT /api/me/state` | signed in | Synced app data (`inkboard.*` keys, 4 MB per person) |
+| `GET|POST /api/admin/members`, `GET|PATCH|DELETE /api/admin/members/:id`, `POST …/:id/signout` | admin | Members |
+| `GET|POST /api/admin/groups`, `PATCH|DELETE /api/admin/groups/:id` | admin | Groups |
+| `GET|POST /api/admin/shares`, `PATCH|DELETE /api/admin/shares/:id` | admin | Sharing |
+| `GET|PUT /api/admin/settings`, `GET /api/admin/overview`, `GET /api/admin/activity`, `GET /api/admin/audit` | admin | Settings, dashboard, last-hour log, audit |
+| `GET|POST /api/admin/admins`, `PATCH|DELETE /api/admin/admins/:id` | super admin | Admins |
+
+## Run it
+
+You need **Node 22** and **ffmpeg**. Postgres and Redis are optional: without them caches and rate limits live in process memory and finished jobs are rebuilt from `JOB_DIR` on restart. For 2–3 people that is fine.
+
+### Option A — Docker (recommended for a VM)
+
+```bash
+cp backend/.env.example backend/.env       # optional; everything has a default
+docker compose up -d --build               # builds the site (needs ~2 GB RAM once), starts API + site + edge
+open http://localhost:3000
+```
+
+Job artifacts persist in the `jobs` volume. To add Postgres/Redis, uncomment the two services and the `DATABASE_URL` / `REDIS_URL` lines in `docker-compose.yml`.
+
+### Option B — PM2 on a box you already have
+
+```bash
+npm ci                     # one install for shared, backend and frontend (npm workspaces)
+NODE_OPTIONS=--max-old-space-size=2048 npm run build -w frontend
+pm2 start ecosystem.config.cjs && pm2 save
+curl http://127.0.0.1:3000/healthz
+```
+
+Three PM2 apps come up: `inkboard-api`, `inkboard-web`, `inkboard-edge`. Only 3000 needs to be reachable. Rebuild the site and `pm2 restart inkboard-web` after frontend changes; the API picks up code on `pm2 restart inkboard-api`.
+
+### Option C — local development
+
+```bash
+cd backend  && npm run dev          # API on 8787, no build step
+cd frontend && npm run dev          # Vite on 5173, proxies /api to 8787
+```
+
+### Checks
+
+```bash
+npm run typecheck                                   # all three packages
+npm run lint                                        # Biome; errors fail CI
+npm test                                            # all three packages
+E2E_ADMIN=you@x:pass E2E_MEMBER=m@x:pass node scripts/e2e.mjs --shots e2e-shots   # browser check against :3000
+cd frontend && BUDGET_STRICT=1 npm run build        # production build + bundle budget
+```
+
+On a machine with under 2 GB RAM, give Node more heap for the frontend typecheck and build: `NODE_OPTIONS=--max-old-space-size=2048`. The SSR build was OOM-killed at 1 GB without swap.
+
+## Configuration
+
+All variables are optional. The `.env.example` files list them with comments. The ones that matter for an internal install:
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `JOB_DIR` | `/tmp/inkboard-jobs` | Where enhance jobs write HLS, posters, sprites. A 90-minute class is ~170 MB plus HLS rungs. Put it on real disk. |
+| `FFMPEG_CONCURRENCY` | `1` | 1–4 encodes at once. Keep 1 on two cores. |
+| `DATABASE_URL` / `REDIS_URL` | unset | Optional persistence and shared rate-limit counters. |
+| `TRUST_PROXY` | unset | `1` behind the bundled edge or any single reverse proxy. See the hop table below before using `2`. |
+| `XAI_API_KEY` | unset | Turns `POST /api/study/summary` from a board outline into revision bullets. |
+| `DATABASE_URL` / `AUTH_DATABASE_URL` | unset | Accounts and app data use `AUTH_DATABASE_URL`, else `DATABASE_URL`. Unset: embedded PGlite in `backend/data/pg`. A first-version `backend/data/inkboard.sqlite` is imported once on boot. |
+| `AUTH_DB` | unset | `local` forces PGlite even with a database URL; `:memory:` is for tests. |
+| `STATS_TZ` | `Asia/Kolkata` | Time zone for "per day" charts and rollups. |
+| `SETUP_CODE` | random | Pins the one-time admin setup code (handy in Docker). Otherwise it is printed in the API log and written to `backend/data/setup-code.txt`. |
+| `JOB_MIN_FREE_GB` / `JOB_DIR_MAX_GB` | `2` / `20` | Refuse new downloads below this free space; prune the oldest finished job folders above this total. |
+| `WARM_CACHE` / `WARM_EXAMS` | on / 5 big exams | Pre-loads exam hubs and the live feed after boot so the first visitor doesn't wait. |
+
+## API surface
+
+| Route | Purpose |
+| --- | --- |
+| `GET /healthz`, `GET /readyz` | Liveness; readiness reports `postgres`, `redis`, `ffmpeg`. |
+| `GET /api/exams`, `/api/exams/:goalId/{hub,teachers,courses,tests,practice}` | Exam hubs. |
+| `GET /api/educators/:username[/batches|/specials]`, `GET /api/search/educators` | Teacher shelves. |
+| `GET /api/courses/:uid[/lessons]`, `GET /api/batches/:uid[/schedule]`, `GET /api/classes/:uid` | Course, batch and class detail. Lesson `replayId` is the id the player uses. |
+| `GET /api/lessons/:replayId/timeline`, `/notes`, `POST /api/lessons/probe` | Ink timeline, notes, media probe. |
+| `GET /api/slide`, `/api/notes`, `/api/live-slide` | Media proxy (allow-listed Unacademy hosts). |
+| `GET /api/live/feed`, `/api/live/sessions/:uid[...]`, `GET /api/live-board` (SSE) | Live classes. |
+| `POST /api/jobs/lectures` → `GET /api/jobs/:id` → `GET /api/jobs/:id/artifacts/*` → `GET /api/jobs/:id/bundle.zip` | Save + enhance a replay; `bundle.zip` streams the whole saved folder (STORE, zip32, 409 until `done`). Body `{ id, title?, enhance?, remux?, noMedia?, noNotes? }`. The create response carries a one-time `token` needed for `DELETE /api/jobs/:id` and `POST /api/jobs/:id/clips`. |
+| `POST /api/study/summary` | Revision bullets (6/min per visitor). |
+
+Rate buckets per visitor per `RATE_WINDOW_MS` (60 s): catalog `RATE_LIMIT` (120), media ≥600, generous ≥300, expensive (job create/clip/delete) ≤30.
+
+## Known limits
+
+- The catalog is scraped from Unacademy's public pages and JSON. When they change shape, shelves go empty rather than crash; `GET /api/upstream/health` and the upstream banner in the UI say so.
+- The enhance step on a 90-minute class takes a long time on two cores (loudnorm is two full passes, then three HLS rungs). It runs in the background and the job poll shows `enhancing` until done. Raise `FFMPEG_CONCURRENCY` only with more cores.
+- There is no email-based password reset: an admin resets passwords from the member page (the member then picks a new one).
+- Planner edits made on two devices at once are merged per plan, task and day (the newer edit of each record wins; deletes are kept). Other synced keys (watch history, saved items, preferences) are still last-writer-wins per key.
+- `backend/tests/auth/auth.test.ts` runs an in-memory PGlite database that peaks around 600 MB. On a 1 GB machine that is also running the site, the kernel can kill it mid-run (it shows up as `signal: SIGKILL`, not an assertion). Stop PM2 first or run it on a larger box; CI runners are fine.
+- The offline library is a separate PWA entry (`/offline`) that stores saved classes in the browser.
+
+## Deploying behind Vercel and Render (original split)
+
+The single-box setup above replaces this for an internal install, but the split still works and the proxy-trust rules below apply to any reverse proxy.
+
+<!-- original section preserved verbatim below -->
+
+The site on Vercel proxies `/api`, `/healthz`, and `/readyz` to the API on Render through `frontend/middleware.ts`. That file is the only proxy: it adds `x-inkboard-proxy-secret`. `vercel.json` does not rewrite those paths. It only sets response headers. The Vercel app is the TanStack Start server. Deep links such as `/play/…` and `/planner/today` are rendered by that server. Do not add a rewrite to `/index.html` — that rewrite served the shell for every path and is gone on purpose.
+
+Set `INKBOARD_API_ORIGIN` on Vercel to the Render origin, including the scheme and no path (for example `https://your-service.onrender.com`). The middleware reads that variable only. If it is unset in production, `/api`, `/healthz`, and `/readyz` return 500 JSON. There is no hardcoded host. A path the middleware does not proxy is left alone so the TanStack server can render it.
+
+Set these on the Render service:
+
+- `TRUST_PROXY` is how many proxies to trust, counted from the right. It is not a boolean. `1` trusts one proxy: `req.ip` is the last `X-Forwarded-For` entry, and a forged entry to its left does not open a new rate-limit bucket. Leave it unset and the header is ignored, so `req.ip` stays the socket address.
+
+  The Render origin is public. `TRUST_PROXY=2` by itself would let a direct caller forge `req.ip`. The API trusts a second hop only when the request has `x-inkboard-proxy-secret` and `crypto.timingSafeEqual` says it matches `INKBOARD_PROXY_SECRET`. When the hop count is above 1 and the secret is missing or wrong, the API deletes `X-Forwarded-For`. `req.ip` is the socket address. A forged entry is not used.
+
+  Set the same `INKBOARD_PROXY_SECRET` on Vercel and on Render. `frontend/middleware.ts` proxies `/api`, `/healthz`, and `/readyz` and sets that header from the env var. A secret sent by the browser is replaced. When `INKBOARD_PROXY_SECRET` is set on Render, the API logs a one-time warning if an `/api` request arrives without the secret from a socket address that is not private.
+
+  This table is the hop rule, not a capture from production:
+
+  | Trust | `X-Forwarded-For` | Secret | `req.ip` |
+  | --- | --- | --- | --- |
+  | 1 | `203.0.113.10, 76.76.21.21` | either | `76.76.21.21` (the last entry) |
+  | 2, secret matches | `203.0.113.10, 76.76.21.21` | matches | `203.0.113.10` |
+  | 2, secret matches | `198.51.100.50, 203.0.113.10, 76.76.21.21` | matches | `203.0.113.10`. The forged left entry is ignored. |
+  | 2 configured, secret missing or wrong | `198.51.100.50` | no | the socket address. The header is deleted. |
+  | 2 configured, secret missing or wrong | `198.51.100.50, 203.0.113.10` | no | the socket address. Neither entry is used. |
+  | unset | anything | either | the socket address |
+
+  To see the chain this deploy actually produces, set `LOG_TRUST=1` on Render for one request. The API logs `req.ip` and `req.ips` once. Hit the site, then hit the Render URL directly, and compare those values with the table. `req.ips` runs from the socket toward the client. The last entry is `req.ip`. Turn `LOG_TRUST` off after that. Run that `LOG_TRUST` check once on the real deploy to confirm `frontend/middleware.ts` runs under the Nitro build. This repository does not verify that. Use `TRUST_PROXY=2` with the secret when Vercel sits in front of Render. Use `TRUST_PROXY=1` when the browser connects to Render directly. Do not set `true`: that trusts every entry, including a forged one. Fastify 5.12 fail-closes a numeric `trustProxy`, so the process applies the hop count itself.
+- `RATE_LIMIT` and `RATE_WINDOW_MS`. The default window is 60 seconds. Each visitor has separate buckets. The bucket is chosen from the method and the path:
+  - **catalog** — other `/api/*` routes. Cap is `RATE_LIMIT` (default 120) per window.
+  - **media** — `/api/slide`, `/api/notes`, `/api/live-slide`, and `GET /api/jobs/:id/artifacts/*`. At least 600 per window.
+  - **generous** — `/api/live-board`, `/api/study`, and `GET /api/jobs/:id` (the poll). At least 300 per window. `GET /api/live-board` then applies its own cap of 8 requests a minute. That inner cap is fixed.
+  - **expensive** — `POST /api/jobs/lectures`, `POST /api/jobs/:id/clips`, and `DELETE /api/jobs/:id`. Capped at 30 per window, even when `RATE_LIMIT` is higher. A `GET` of the job or its artifacts is not in this bucket.
+- `POST /api/study/summary` allows 6 requests per minute per visitor. That cap is fixed; it does not grow with `RATE_LIMIT`. It sits on top of the generous study bucket.
+- `XAI_API_KEY` asks xAI for revision bullets. Without it, the summary is the board outline. `XAI_MODEL` selects the model. Leave it empty to use `grok-4.20-non-reasoning`. The current xAI model list documents that name as an alias of `grok-4.20-0309-non-reasoning` (non-reasoning chat). `grok-3-mini` is not in the API anymore.
+- Catalog routes stop at 25 seconds and answer `UPSTREAM_TIMEOUT` instead of holding the socket open.
+
+Ping `GET /healthz` every 5 to 10 minutes so a free Render instance does not sleep. The first class after a sleep can take a minute.

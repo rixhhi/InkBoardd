@@ -1,0 +1,168 @@
+/*
+  Player chrome that Tailwind can't express: the seek bar (range input), the
+  volume slider, and the chrome fade. Stage geometry (board/camera/film) still
+  lives in layout.css + pages.css because layoutSlate() depends on it.
+*/
+
+/* ---- chrome fade when idle during playback ---- */
+.player-chrome {
+  transition: opacity var(--dur-slow) var(--ease-out);
+}
+.player-chrome[data-idle="true"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---- seek bar ---- */
+.seek-hit {
+  position: relative;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+.seek-track {
+  appearance: none;
+  width: 100%;
+  height: 3px;
+  margin: 0;
+  display: block;
+  cursor: pointer;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--color-accent) var(--seek, 0%),
+    color-mix(in oklab, var(--color-fg) 28%, transparent) var(--seek, 0%) var(--buf, var(--seek, 0%)),
+    var(--color-line-strong) var(--buf, var(--seek, 0%))
+  );
+  transition: height var(--dur-fast) var(--ease-out);
+}
+.seek-hit:hover .seek-track,
+.seek-hit[data-hot="true"] .seek-track {
+  height: 5px;
+}
+.seek-track::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 100%;
+}
+.seek-track::-moz-range-track {
+  background: transparent;
+  border: 0;
+  height: 100%;
+}
+.seek-track::-webkit-slider-thumb {
+  appearance: none;
+  width: 0;
+  height: 0;
+  border: 0;
+}
+.seek-track::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  border: 0;
+  background: transparent;
+}
+.seek-head {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-bg);
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform var(--dur-fast) var(--ease-out);
+  pointer-events: none;
+}
+.seek-hit:hover .seek-head,
+.seek-hit[data-hot="true"] .seek-head {
+  transform: translate(-50%, -50%) scale(1);
+}
+.seek-ghost {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 1px;
+  height: 12px;
+  background: var(--color-fg);
+  opacity: 0.5;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.seek-wave {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  opacity: 0.32;
+  pointer-events: none;
+  z-index: 0;
+}
+.seek-chapter {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  width: 3px;
+  height: 9px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: var(--color-fg);
+  opacity: 0.7;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+.seek-chapter:hover,
+.seek-chapter:focus-visible {
+  opacity: 1;
+  background: var(--color-accent);
+  outline: none;
+  height: 13px;
+}
+/* Keep the tick centred on the line even while the global button :active scale runs. */
+.seek-chapter:not(:disabled):active {
+  transform: translate(-50%, -50%);
+}
+
+/* ---- volume ---- */
+.volume-track {
+  appearance: none;
+  width: 5rem;
+  height: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, var(--color-fg) var(--vol, 100%), var(--color-line-strong) var(--vol, 100%));
+  cursor: pointer;
+}
+.volume-track::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  border: 0;
+  background: var(--color-fg);
+}
+.volume-track::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  border: 0;
+  background: var(--color-fg);
+}
+.volume-track:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 4px;
+}
+
+/* ---- legacy hooks still read by tests until Phase G ---- */
+.rail-keys {
+  display: none;
+}
+@media (min-width: 900px) {
+  .rail-keys {
+    display: inline;
+  }
+}

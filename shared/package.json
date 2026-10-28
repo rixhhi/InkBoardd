@@ -1,0 +1,25 @@
+{
+  "name": "@inkboard/shared",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./auth/provider": "./src/lib/auth/provider.tsx",
+    "./*": "./src/lib/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --experimental-strip-types --test --test-force-exit 'src/**/*.test.ts'"
+  },
+  "dependencies": {
+    "date-fns": "^4.0.0",
+    "react": "^19.2.0",
+    "zod": "^4.4.0"
+  },
+  "devDependencies": {
+    "@tanstack/react-start": "^1.169.4",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "fast-check": "^3.23.2",
+    "typescript": "^5.7.0"
+  }
+}

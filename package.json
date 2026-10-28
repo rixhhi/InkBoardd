@@ -1,0 +1,22 @@
+{
+  "name": "inkboard-monorepo",
+  "private": true,
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "scripts": {
+    "build": "npm run build -w backend --if-present && npm run build -w frontend",
+    "test": "npm test -w shared && npm test -w backend && npm test -w frontend",
+    "typecheck": "npm run typecheck -w shared && npm run typecheck -w backend && npm run typecheck -w frontend",
+    "lint": "biome lint --diagnostic-level=error",
+    "lint:all": "biome lint"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.3"
+  },
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ]
+}

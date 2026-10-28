@@ -1,0 +1,28 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: install (one npm workspaces install for shared, backend, frontend)
+        run: npm ci
+      - name: lint (errors fail the build; warnings are reported)
+        run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: frontend build and bundle budget
+        working-directory: frontend
+        run: npm run build
+        env:
+          BUDGET_STRICT: "1"
+      - name: lighthouse
+        run: npx --yes @lhci/cli@0.14.0 autorun
+

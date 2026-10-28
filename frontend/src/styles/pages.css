@@ -1,0 +1,350 @@
+.hatch-other-1 {
+  background-image: repeating-linear-gradient(-30deg, var(--hatch-ink) 0 1px, transparent 1px 7px);
+}
+.hatch-other-2 {
+  background-image: repeating-linear-gradient(0deg, var(--hatch-ink) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, var(--hatch-ink) 0 1px, transparent 1px 8px);
+}
+.hatch-other-3 {
+  background-image: radial-gradient(circle at 50% 50%, var(--hatch-ink) 1px, transparent 1.2px);
+  background-size: 7px 7px;
+}
+
+/* Full-bleed stage: board fills the viewport; header, film, and rail overlay. */
+.slate {
+  display: block;
+  overflow: hidden;
+}
+.slate-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.slate-inscribe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: color-mix(in oklab, var(--color-bg) 72%, transparent);
+  border-bottom: 0;
+}
+.planner-chip {
+  position: absolute;
+  top: 2.6rem;
+  left: 0;
+  right: 0;
+  z-index: 39;
+  background: color-mix(in oklab, var(--color-bg) 70%, transparent);
+  border-bottom: 0;
+}
+.chalk-rail-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  border-top: 0;
+  background: color-mix(in oklab, var(--color-bg) 82%, transparent);
+}
+.slate-film {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 3.6rem;
+  z-index: 36;
+  background: color-mix(in oklab, var(--color-bg) 78%, transparent);
+}
+.slate-film .film-rebate {
+  height: 3.15rem;
+}
+
+.lantern.is-off {
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+  box-shadow: none;
+  background: transparent;
+}
+.slate-film.is-side {
+  /* Sits between the 3rem header and the 4.25rem rail (seek 1.25rem + controls 3rem = layoutSlate's 68px). */
+  top: 3rem;
+  right: 0;
+  left: auto;
+  bottom: 4.25rem;
+  width: 7.25rem;
+  background: color-mix(in oklab, var(--color-bg) 72%, transparent);
+}
+.slate-film.is-side .film-rebate,
+.slate-film.is-side .film-rebate.is-vert {
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  gap: 0.35rem;
+  padding: 0.4rem 0.45rem 0.55rem;
+}
+.slate-film.is-side .film-rebate::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.slate-film.is-side .film-cell {
+  width: 6.2rem;
+  height: 3.5rem;
+}
+
+/* Pocket: dock the film above the rail so it does not cover the board. */
+@media (max-width: 639px) {
+  .slate-film.is-side {
+    top: auto;
+    left: 0;
+    right: 0;
+    width: auto;
+    height: 3.5rem;
+    bottom: 4.25rem;
+  }
+  .slate-film.is-side .film-rebate,
+  .slate-film.is-side .film-rebate.is-vert {
+    flex-direction: row;
+    height: 3.15rem;
+    width: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .slate-film.is-side .film-cell {
+    width: 5.2rem;
+    height: 2.75rem;
+    flex: none;
+  }
+}
+
+html[data-theme="light"] .stamp-mat {
+  background: #fffdf8;
+  box-shadow: inset 0 0 0 1px #1a1c1a18;
+}
+html[data-theme="light"] .stamp-mat .stamp-face,
+html[data-theme="light"] .stamp-initials {
+  background: #161816;
+}
+.folio-mark {
+  height: 2.75rem;
+}
+.folio-desk {
+  justify-content: flex-start;
+}
+.folio-desk-head {
+  padding-bottom: 0.85rem;
+}
+.folio-desk-body {
+  flex: 0 0 auto;
+  gap: 1.1rem;
+}
+.folio-desk-foot {
+  margin-top: 1.25rem;
+}
+
+.live-vol {
+  width: 4.5rem;
+  accent-color: var(--color-accent);
+}
+
+.lantern .seal-notch {
+  width: 0.7rem;
+  height: 0.7rem;
+  padding: 0;
+  border: 0;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 1.5px var(--color-board);
+  cursor: nwse-resize;
+  border-radius: 1px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  padding: 0 0.9rem;
+  color: var(--color-primary-fg);
+  font-weight: 600;
+  transition: background var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out),
+              transform var(--duration-fast) var(--ease-out),
+              opacity var(--duration-fast) var(--ease-out);
+}
+.btn:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.2);
+  filter: brightness(1.08);
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn.is-quiet,
+.btn.is-ghost {
+  background: transparent;
+  color: var(--color-fg);
+}
+.btn.is-quiet:hover:not(:disabled),
+.btn.is-ghost:hover:not(:disabled) {
+  background: var(--color-line);
+  box-shadow: none;
+  filter: none;
+}
+.btn.is-secondary {
+  background: transparent;
+  color: var(--color-fg);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+.btn.is-secondary:hover:not(:disabled) {
+  background: var(--color-elevated);
+  filter: none;
+}
+.btn.is-danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+.btn.is-sm { min-height: 2rem; padding: 0 0.7rem; font-size: 0.875rem; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn[aria-busy="true"] {
+  position: relative;
+  color: transparent;
+}
+.btn[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid currentColor;
+  border-color: var(--color-primary-fg) transparent var(--color-primary-fg) transparent;
+  border-radius: 50%;
+  animation: fetch-spin 0.7s linear infinite;
+}
+.btn.is-quiet[aria-busy="true"]::after,
+.btn.is-ghost[aria-busy="true"]::after,
+.btn.is-secondary[aria-busy="true"]::after {
+  border-color: var(--color-fg) transparent var(--color-fg) transparent;
+}
+.btn.is-danger[aria-busy="true"]::after {
+  border-color: #fff transparent #fff transparent;
+}
+.ui-card {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 1rem 1.1rem;
+  transition: border-color var(--duration-base) var(--ease-out),
+              box-shadow var(--duration-base) var(--ease-out);
+}
+.ui-card:hover {
+  border-color: var(--color-line-strong);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
+}
+.ui-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: var(--color-overlay);
+  padding: 1rem;
+}
+.ui-dialog-backdrop.is-end { place-items: end center; }
+.ui-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 28rem);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 1.25rem;
+}
+@media (width <= 719px) {
+  html {
+    scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+  [data-sonner-toaster] {
+    bottom: calc(4.5rem + env(safe-area-inset-bottom)) !important;
+  }
+}
+.chalk-rail-wrap { overflow: visible; }
+.seek-hover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.seek-hover-frame {
+  display: block;
+  border: 1px solid var(--color-line);
+  background-color: #121318;
+  background-repeat: no-repeat;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.35);
+}
+.seek-hover-time {
+  border: 1px solid var(--color-line);
+  background: var(--color-bg);
+  padding: 0.08rem 0.4rem;
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+.seek-hover-slide {
+  display: block;
+  width: 160px;
+  height: 90px;
+  object-fit: contain;
+  border: 1px solid var(--color-line);
+  background: #121318;
+}
+video.is-listen {
+  opacity: 0;
+}
+.notes-reader {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  width: min(440px, 100%);
+  height: 100%;
+  flex-direction: column;
+  border-left: 1px solid var(--color-line);
+  background: var(--color-bg);
+}
+.notes-reader-bar {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-line);
+  padding: 0 12px;
+}
+.notes-reader-stage { min-height: 0; flex: 1; overflow: auto; background: #eceae4; }
+.notes-reader-stage canvas { display: block; width: 100%; height: auto; }
+.notes-reader-frame { min-height: 0; flex: 1; width: 100%; border: 0; background: #eceae4; }
+@media (max-width: 639px) {
+  .notes-reader {
+    top: auto;
+    right: auto;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: min(70dvh, 100%);
+    border-left: 0;
+    border-top: 1px solid var(--color-line);
+  }
+}
+

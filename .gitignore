@@ -1,0 +1,31 @@
+node_modules/
+*.tsbuildinfo
+
+dist/
+.output/
+.vinxi/
+.tanstack/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+coverage/
+
+# Infrastructure
+.lighthouseci/
+/tmp/inkboard-jobs
+/jobs/
+.vscode/
+.jobs/
+
+# Core dumps (a tsc OOM once left a 600MB one in frontend/)
+/core
+**/core.[0-9]*
+
+# Accounts database and one-time setup code
+backend/data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+setup-code.txt

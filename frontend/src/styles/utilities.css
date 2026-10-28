@@ -1,0 +1,241 @@
+/* Desk catalog rows */
+.stamp-hit {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 0;
+  padding: 0.5rem 0;
+  text-align: left;
+}
+.stamp-hit {
+  border: 0;
+  border-bottom: 1px solid var(--color-line);
+  background: transparent;
+  border-radius: 0;
+}
+.desk-tick {
+  width: 3px;
+  height: 1.35rem;
+  flex: none;
+  border-radius: 2px;
+  background: var(--color-faint);
+  background-image: none;
+}
+.stamp-hit .stamp-face,
+.stamp-hit .stamp-initials {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+}
+.write-field {
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  padding: 0.5rem 0;
+}
+.desk-watch {
+  display: block;
+  height: 2px;
+  margin-top: 0.35rem;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--color-line);
+}
+.desk-watch > span {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+}
+.chalk-line {
+  min-height: 2.45rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+@media (min-width: 1024px) {
+  .ui-dialog { width: min(100%, 32rem); }
+}
+
+/* ================================================================
+   A1: Custom scrollbar styling
+   ================================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border);
+}
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+
+/* ================================================================
+   A2: Enhanced progress bar with gradient and animation
+   ================================================================ */
+
+/* ================================================================
+   A2: Enhanced switch with smooth knob slide
+   ================================================================ */
+
+/* ================================================================
+   Search field: the kit draws its own magnifier + clear button, so hide
+   the browser's native search decorations (WebKit cancel X, results icon).
+   ================================================================ */
+.ui-search-field::-webkit-search-cancel-button,
+.ui-search-field::-webkit-search-decoration,
+.ui-search-field::-webkit-search-results-button,
+.ui-search-field::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+.ui-search-field {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ================================================================
+   A2: Dialog entry animation
+   ================================================================ */
+.ui-dialog {
+  animation: dialog-enter var(--duration-base) var(--ease-out) both;
+}
+.ui-dialog-backdrop {
+  animation: fade-in var(--duration-fast) var(--ease-out) both;
+}
+
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+/* ================================================================
+   A2: Menu dropdown animation
+   ================================================================ */
+
+/* ================================================================
+   A2: Menu item hover/focus state
+   ================================================================ */
+
+/* ================================================================
+   A2: Gradient accent utilities
+   ================================================================ */
+
+/* ================================================================
+   A2: Live door card hover with subtle lift
+   ================================================================ */
+
+/* ================================================================
+   A2: Mini board (calendar) hover lift
+   ================================================================ */
+.mini-board {
+  transition: border-color var(--duration-base) var(--ease-out),
+              box-shadow var(--duration-base) var(--ease-out),
+              transform var(--duration-base) var(--ease-out);
+}
+.mini-board:hover {
+  border-color: var(--color-line-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
+}
+
+/* ================================================================
+   A2: Subject plate hover effect
+   ================================================================ */
+
+/* ================================================================
+   A2: Teacher stamp hover effect
+   ================================================================ */
+
+/* ================================================================
+   A2: Stamp hit row hover background
+   ================================================================ */
+.stamp-hit {
+  transition: background var(--duration-fast) var(--ease-out);
+}
+.stamp-hit:hover {
+  background: var(--color-line);
+}
+
+/* ================================================================
+   A3: Error boundary gradient accent
+   ================================================================ */
+[data-error-boundary="true"] {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--color-danger) 6%, var(--color-bg)),
+    var(--color-bg) 30%);
+  border-radius: var(--radius-md);
+  padding: 2.5rem 1.5rem 3rem;
+}
+[data-error-boundary="true"] .text-display {
+  background: linear-gradient(135deg, var(--color-danger), var(--color-warn));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ================================================================
+   A4: Enhanced empty state with icon and gradient
+   ================================================================ */
+.ui-card[role="status"] {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--color-accent) 5%, var(--color-surface)),
+    var(--color-surface) 50%);
+  padding: 2.5rem 1.5rem;
+}
+
+/* ================================================================
+   A4: Board state (loading/empty/error) polish
+   ================================================================ */
+.board-state.is-empty {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--color-muted) 4%, var(--color-bg)),
+    var(--color-bg) 30%);
+  border-radius: var(--radius-md);
+}
+
+/* ================================================================
+   A6: Mobile touch target enforcement
+   ================================================================ */
+@media (pointer: coarse) {
+  .btn, .btn.is-sm, .folio-mark, .rail-btn {
+    min-height: var(--hit-min);
+    min-width: var(--hit-min);
+  }
+}
+
+/* ================================================================
+   A2: Toast entry animation
+   ================================================================ */
+.board-toast {
+  animation: toast-enter 0.3s var(--ease-out) both;
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+  }
+}
+
+/* ================================================================
+   A2: Badge earned shimmer
+   ================================================================ */
+
+/* Horizontal chip rows: fade the edges so a cut-off chip reads as "scroll for more". */
+.scroll-fade-x {
+  mask-image: linear-gradient(to right, transparent 0, #000 0.75rem, #000 calc(100% - 1.5rem), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 0.75rem, #000 calc(100% - 1.5rem), transparent 100%);
+  padding-inline: 0.25rem;
+}

@@ -1,0 +1,46 @@
+# One-box InkBoard for 2–3 people.
+#
+#   cp backend/.env.example backend/.env     # fill in what you want (all optional)
+#   docker compose up -d --build
+#   open http://<host>:3000
+#
+# Postgres and Redis are optional. Uncomment the two services below and the
+# DATABASE_URL / REDIS_URL lines if you want jobs and catalog caches to survive
+# restarts and a shared rate-limit counter. Without them the API uses memory.
+services:
+  inkboard:
+    build: .
+    image: inkboard:local
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - path: backend/.env
+        required: false
+    environment:
+      TRUST_PROXY: "1"            # the edge in this container is the one hop
+      FFMPEG_CONCURRENCY: "1"     # raise to 2 on a 4-core box
+      # DATABASE_URL: postgres://inkboard:inkboard@postgres:5432/inkboard
+      # REDIS_URL: redis://redis:6379
+    volumes:
+      - jobs:/data/jobs
+    # depends_on: [postgres, redis]
+
+  # postgres:
+  #   image: postgres:16-alpine
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: inkboard
+  #     POSTGRES_PASSWORD: inkboard
+  #     POSTGRES_DB: inkboard
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+
+  # redis:
+  #   image: redis:7-alpine
+  #   restart: unless-stopped
+  #   command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+volumes:
+  jobs:
+  # pgdata:
