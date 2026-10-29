@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { FadingInk } from "@/components/planner/fading-ink";
+import { ReinkPlanner } from "@/components/planner/reink-planner";
 import { PlannerCard } from "@/components/ui/planner/kit.tsx";
 import { inkItems } from "@inkboard/shared/planner/ink";
-import { reinkLesson, undoLast } from "@inkboard/shared/planner/storage";
+import { reinkLesson, scheduleReinks, undoLast } from "@inkboard/shared/planner/storage";
 import { usePlanner } from "@inkboard/shared/planner/use-planner";
 
 /**
@@ -38,6 +39,23 @@ export default function InkPage() {
           }}
         />
       </PlannerCard>
+      {items.length ? (
+        <PlannerCard>
+          <ReinkPlanner
+            plan={plan}
+            items={items}
+            today={date}
+            onSchedule={(drafts) => {
+              const n = scheduleReinks(plan.id, drafts);
+              if (!n) {
+                toast.message("Those lessons are already on the calendar.");
+                return;
+              }
+              toast.success(`${n} re-ink ${n === 1 ? "review" : "reviews"} added to your plan`, { action: { label: "Undo", onClick: () => undoLast() } });
+            }}
+          />
+        </PlannerCard>
+      ) : null}
     </div>
   );
 }

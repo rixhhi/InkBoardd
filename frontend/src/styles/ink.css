@@ -318,3 +318,20 @@
   color: var(--color-fg-muted);
   opacity: 0.55;
 }
+
+/* ---------------- Re-ink planner (Ink -> Tasks) ---------------- */
+.reink-days {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+}
+.reink-day {
+  min-width: 0;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-md, 0.5rem);
+  background: color-mix(in srgb, var(--color-surface-raised) 70%, transparent);
+  border-left: 2px solid var(--color-line);
+}
+.reink-day-head {
+  font-size: 0.8125rem;
+}
