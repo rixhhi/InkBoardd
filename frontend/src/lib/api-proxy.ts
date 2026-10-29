@@ -32,6 +32,24 @@ export function buildProxyRequest(request: Request, origin: string, secret: stri
   return new Request(target, init);
 }
 
-export function proxyApi(request: Request, opts: { origin: string; secret?: string }): Promise<Response> {
-  return fetch(buildProxyRequest(request, opts.origin, opts.secret));
+/**
+ * Headers that describe the *wire* form of the upstream body. The runtime's
+ * fetch (undici on Node, the Vercel function runtime) already decoded any
+ * content-encoding before handing us `response.body`, so forwarding these
+ * would tell the browser "this is brotli" about plaintext — it then fails to
+ * decode and the request hangs. Strip them; the platform in front of us
+ * re-compresses for the browser.
+ */
+const WIRE_HEADERS = ["content-encoding", "content-length", "transfer-encoding"];
+
+/** Rebuild the upstream response for the browser: same status, same body stream, wire headers removed. */
+export function forwardResponse(upstream: Response): Response {
+  const headers = new Headers(upstream.headers);
+  for (const h of WIRE_HEADERS) headers.delete(h);
+  return new Response(upstream.body, { status: upstream.status, statusText: upstream.statusText, headers });
+}
+
+export async function proxyApi(request: Request, opts: { origin: string; secret?: string }): Promise<Response> {
+  const upstream = await fetch(buildProxyRequest(request, opts.origin, opts.secret));
+  return forwardResponse(upstream);
 }

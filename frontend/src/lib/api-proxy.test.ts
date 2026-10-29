@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
-import { buildProxyRequest, PROXY_SECRET_HEADER, shouldProxyApi } from "./api-proxy.ts";
+import { buildProxyRequest, forwardResponse, PROXY_SECRET_HEADER, shouldProxyApi } from "./api-proxy.ts";
 
 describe("Vercel API proxy", () => {
   it("proxies API and health paths only", () => {
@@ -35,6 +35,28 @@ describe("Vercel API proxy", () => {
     );
     assert.equal(open.headers.get(PROXY_SECRET_HEADER), null);
     assert.equal(new URL(open.url).pathname, "/healthz");
+  });
+
+  it("drops content-encoding/length from the upstream reply: fetch already decoded the body (the 'Checking your sign-in' hang)", async () => {
+    // What undici hands back after transparently decoding a brotli reply from the API.
+    const upstream = new Response('{"ok":true}', {
+      status: 401,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "content-encoding": "br",
+        "content-length": "97",
+        "set-cookie": "ib_session=abc; Path=/; HttpOnly",
+        "x-request-id": "r1",
+      },
+    });
+    const out = forwardResponse(upstream);
+    assert.equal(out.status, 401);
+    assert.equal(out.headers.get("content-encoding"), null, "browser must not be told the plaintext body is brotli");
+    assert.equal(out.headers.get("content-length"), null);
+    assert.equal(out.headers.get("content-type"), "application/json; charset=utf-8");
+    assert.equal(out.headers.get("x-request-id"), "r1");
+    assert.match(out.headers.get("set-cookie") ?? "", /ib_session=abc/, "session cookie survives the rebuild");
+    assert.equal(await out.text(), '{"ok":true}');
   });
 
   it("the server-side upstream reads INKBOARD_PROXY_SECRET and the build does not set BUDGET_STRICT", () => {
