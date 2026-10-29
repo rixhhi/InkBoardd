@@ -237,6 +237,7 @@ export function WriteLine() {
     if (to === "/planner/history") return void nav({ to: "/planner/history", search: { log: search?.log ? 1 : undefined } });
     if (to === "/planner/dashboard") return void nav({ to: "/planner/dashboard" });
     if (to === "/planner/analytics") return void nav({ to: "/planner/analytics" });
+    if (to === "/planner/ink") return void nav({ to: "/planner/ink" });
     if (to === "/planner/badges") return void nav({ to: "/planner/badges" });
     if (to === "/planner/settings") return void nav({ to: "/planner/settings" });
     if (to === "/planner/new") return void nav({ to: "/planner/new" });

@@ -105,6 +105,7 @@ export function buildPaletteRows(input: {
     { group: "Jump", value: "dashboard planner", label: "Pace", href: { kind: "path", to: "/planner/dashboard" } },
     { group: "Jump", value: "history planner", label: "History", href: { kind: "path", to: "/planner/history" } },
     { group: "Jump", value: "analytics planner", label: "Instruments", href: { kind: "path", to: "/planner/analytics" } },
+    { group: "Jump", value: "ink memory fading review re-ink forget", label: "Ink · what you're forgetting", href: { kind: "path", to: "/planner/ink" } },
     { group: "Jump", value: "badges planner", label: "Seals", href: { kind: "path", to: "/planner/badges" } },
     { group: "Jump", value: "settings planner", label: "Settings", href: { kind: "path", to: "/planner/settings" } },
     { group: "Jump", value: "new plan wizard", label: "Lay out a plan", href: { kind: "path", to: "/planner/new" } },

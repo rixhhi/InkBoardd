@@ -21,6 +21,7 @@ export function folioMode(pathname: string): FolioMode {
   if (
     pathname.startsWith("/planner/dashboard") ||
     pathname.startsWith("/planner/analytics") ||
+    pathname.startsWith("/planner/ink") ||
     pathname.startsWith("/planner/history")
   ) {
     return "instrument";
