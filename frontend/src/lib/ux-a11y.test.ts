@@ -32,7 +32,10 @@ describe("Phase 3 UX and a11y", () => {
 
   it("charts expose a data table for screen readers", () => {
     const kit = src("../components/ui/planner/kit.tsx");
-    assert.match(kit, /<table className="sr-only"/);
+    // The sr-only class sits on a wrapper div, not the table: an absolutely positioned 1px table
+    // still widens the scrollable area on phones (seen as a 556px scrollWidth at 390px).
+    assert.match(kit, /<div className="sr-only">\s*(\{\/\*[\s\S]*?\*\/\}\s*)?<table>/);
+    assert.doesNotMatch(kit, /<table className="sr-only"/);
     assert.match(kit, /<caption>/);
   });
 
