@@ -6,7 +6,9 @@
  *   E2E_ADMIN=owner@inkboard.local:pass E2E_MEMBER=riya@inkboard.local:pass \
  *   node scripts/e2e.mjs [--shots dir]
  *
- * E2E_VIEWPORTS=desktop,phone limits the run.
+ * E2E_VIEWPORTS=desktop,phone limits the run. E2E_SCHEME=dark runs it in dark mode.
+ * Every page check also asserts no sideways scroll and axe-core 0 serious/critical
+ * (E2E_AXE=0 to skip; axe is read from frontend/node_modules).
  *
  * Needs Playwright with Chromium (`npm i -D playwright && npx playwright install chromium`,
  * or point PLAYWRIGHT_DIR at a folder that has it installed). Exits 1 on any failure.
@@ -63,6 +65,56 @@ async function noOverflow(page, label) {
   expect(over <= 1, `${label}: page scrolls sideways by ${over}px`);
 }
 
+/**
+ * axe-core, serious + critical only, same bar as the review passes. Loaded from
+ * the frontend's devDependency so CI needs nothing extra; skipped (with a note)
+ * if it cannot be found. Set E2E_AXE=0 to turn off.
+ */
+let axeSource = null;
+function loadAxe() {
+  if (axeSource !== null || process.env.E2E_AXE === "0") return axeSource;
+  try {
+    const { readFileSync } = require("node:fs");
+    const candidates = [
+      process.env.AXE_PATH,
+      join(process.cwd(), "frontend/node_modules/axe-core/axe.min.js"),
+      join(process.cwd(), "node_modules/axe-core/axe.min.js"),
+    ].filter(Boolean);
+    for (const c of candidates) {
+      try {
+        axeSource = readFileSync(c, "utf8");
+        return axeSource;
+      } catch {
+        /* next */
+      }
+    }
+  } catch {
+    /* fall through */
+  }
+  axeSource = false;
+  console.log("  note: axe-core not found; accessibility checks skipped (npm i -D axe-core in frontend/)");
+  return axeSource;
+}
+
+async function noAxeSerious(page, label) {
+  const src = loadAxe();
+  if (!src) return;
+  await page.addScriptTag({ content: src });
+  const bad = await page.evaluate(async () => {
+    const r = await window.axe.run(document, { resultTypes: ["violations"] });
+    return r.violations
+      .filter((v) => v.impact === "serious" || v.impact === "critical")
+      .map((v) => `${v.id} x${v.nodes.length} (${v.nodes[0]?.target?.[0] ?? "?"})`);
+  });
+  expect(!bad.length, `${label}: axe ${bad.join("; ")}`);
+}
+
+/** Page is laid out, has no sideways scroll, and passes axe serious/critical. */
+async function pageIsSound(page, label) {
+  await noOverflow(page, label);
+  await noAxeSerious(page, label);
+}
+
 async function signIn(page, email, password) {
   const seen = [];
   const log = (r) => {
@@ -97,9 +149,11 @@ const ALL_VIEWPORTS = [
 ];
 const only = (process.env.E2E_VIEWPORTS || "").split(",").filter(Boolean);
 const viewports = only.length ? ALL_VIEWPORTS.filter((v) => only.includes(v.id)) : ALL_VIEWPORTS;
+/** E2E_SCHEME=dark runs the whole matrix in dark mode (contrast rules differ per palette). */
+const colorScheme = process.env.E2E_SCHEME === "dark" ? "dark" : "light";
 
 for (const vp of viewports) {
-  console.log(`\n${vp.id} ${vp.width}x${vp.height}`);
+  console.log(`\n${vp.id} ${vp.width}x${vp.height} ${colorScheme}`);
   // A fresh browser per viewport keeps memory low on small machines.
   const browser = await chromium.launch({ args: ["--disable-dev-shm-usage"] });
   const watch = (page, who) => {
@@ -110,7 +164,7 @@ for (const vp of viewports) {
   };
 
   /* signed out */
-  const anonCtx = await browser.newContext({ viewport: vp });
+  const anonCtx = await browser.newContext({ viewport: vp, colorScheme });
   const anon = await anonCtx.newPage();
   watch(anon, "anon");
   await check("signed-out visitors land on the sign-in page", async () => {
@@ -121,7 +175,7 @@ for (const vp of viewports) {
   await anonCtx.close();
 
   /* admin */
-  const adminCtx = await browser.newContext({ viewport: vp });
+  const adminCtx = await browser.newContext({ viewport: vp, colorScheme });
   const admin = await adminCtx.newPage();
   watch(admin, "admin");
   await check("admin signs in and lands on the dashboard", async () => {
@@ -134,10 +188,14 @@ for (const vp of viewports) {
       await open(admin, `/admin?tab=${tab}`);
       const selected = await admin.getByRole("tab", { selected: true }).first().textContent();
       expect(selected, "no selected tab");
-      await noOverflow(admin, tab);
+      await pageIsSound(admin, `admin ${tab}`);
       await shot(admin, `${vp.id}-admin-${tab}`);
     });
   }
+  await check("overview shows the weekly digest", async () => {
+    await open(admin, "/admin?tab=overview");
+    expect(await admin.getByRole("heading", { name: "This week" }).count(), "no digest heading");
+  });
   await check("activity tab says it keeps one hour", async () => {
     await open(admin, "/admin?tab=activity");
     expect(await admin.getByText(/last 60 minutes/i).count(), "no 1-hour note");
@@ -151,23 +209,23 @@ for (const vp of viewports) {
     await shot(admin, `${vp.id}-share-dialog`);
     await admin.keyboard.press("Escape");
   });
-  for (const path of ["/settings", "/planner/today", "/planner/new", "/planner/settings", "/library", "/browse"]) {
+  for (const path of ["/", "/settings", "/planner/today", "/planner", "/planner/ink", "/planner/analytics", "/planner/new", "/planner/settings", "/library", "/live", "/browse", "/search?q=physics"]) {
     await check(`page renders: ${path}`, async () => {
       await open(admin, path);
-      await noOverflow(admin, path);
+      await pageIsSound(admin, path);
       await shot(admin, `${vp.id}-page${path.replaceAll("/", "-")}`);
     });
   }
   await adminCtx.close();
 
   /* member */
-  const memberCtx = await browser.newContext({ viewport: vp });
+  const memberCtx = await browser.newContext({ viewport: vp, colorScheme });
   const member = await memberCtx.newPage();
   watch(member, "member");
   await check("member signs in to their dashboard", async () => {
     await signIn(member, memberEmail, memberPw);
     expect(new URL(member.url()).pathname === "/", `ended on ${member.url()}`);
-    await noOverflow(member, "member home");
+    await pageIsSound(member, "member home");
     await shot(member, `${vp.id}-member-home`);
   });
   await check("member has no Browse or Admin in the navigation", async () => {
@@ -190,10 +248,16 @@ for (const vp of viewports) {
     const status = await member.evaluate(async () => (await fetch("/api/admin/overview")).status);
     expect(status === 403, `got ${status}`);
   });
-  await check("member planner renders", async () => {
-    await open(member, "/planner/today");
-    await noOverflow(member, "member planner");
-    await shot(member, `${vp.id}-member-planner`);
+  for (const path of ["/planner/today", "/planner", "/planner/ink", "/library", "/settings"]) {
+    await check(`member page renders: ${path}`, async () => {
+      await open(member, path);
+      await pageIsSound(member, `member ${path}`);
+      await shot(member, `${vp.id}-member${path.replaceAll("/", "-")}`);
+    });
+  }
+  await check("member sees the weekly digest nowhere, admin sees it on Overview", async () => {
+    const status = await member.evaluate(async () => (await fetch("/api/admin/digest")).status);
+    expect(status === 403, `member digest -> ${status}`);
   });
   await memberCtx.close();
   await browser.close();

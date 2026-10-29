@@ -7,6 +7,7 @@
  *              reload once if anything on screen changed
  *   while on → every 15 s, push keys whose value moved since the last sync
  *   tab hide → push straight away (keepalive)
+ *   online   → push straight away (edits made offline were queued in localStorage)
  *   sign-out → push, then wipe synced keys from this browser
  */
 import { apiJson } from "@/lib/api-client";
@@ -215,6 +216,12 @@ function stopLoop() {
   timer = null;
   document.removeEventListener("visibilitychange", onHide);
   window.removeEventListener("pagehide", onPageHide);
+  window.removeEventListener("online", onOnline);
+}
+
+function onOnline() {
+  // Back from the train: push what changed while offline straight away.
+  void pushNow();
 }
 
 function onPageHide() {
@@ -269,6 +276,7 @@ export async function startAccountSync(userId: number): Promise<boolean> {
   timer = window.setInterval(() => void pushNow(), PUSH_EVERY_MS);
   document.addEventListener("visibilitychange", onHide);
   window.addEventListener("pagehide", onPageHide);
+  window.addEventListener("online", onOnline);
   return writes.length > 0;
 }
 

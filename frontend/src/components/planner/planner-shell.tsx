@@ -85,8 +85,8 @@ function OfflineBanner() {
         title={COPY.youreOffline}
         body={
           cache
-            ? `Today’s plan (“${cache.planName}”, ${cache.tasks.length} items) is saved on this device. The board still works. Sync resumes when you’re back.`
-            : "What is already on this device still works. Sync resumes when you’re back."
+            ? `Today’s plan (“${cache.planName}”, ${cache.tasks.length} items) is saved on this device. Tick tasks, rate reviews, re-ink — it all queues here and syncs the moment you’re back.`
+            : "Pages you have opened before still work. Changes queue on this device and sync the moment you’re back."
         }
       />
     </div>
