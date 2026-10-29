@@ -230,3 +230,9 @@ html[data-theme="light"] {
 .measure {
   max-width: var(--measure);
 }
+
+/* Glyphs (initials, subject marks, the logo "I") are painted from an attribute so they stay visual-only:
+   they never become part of a parent control's accessible name. */
+.glyph::before {
+  content: attr(data-glyph);
+}

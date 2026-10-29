@@ -205,7 +205,10 @@ describe("ui kit", () => {
     await m.render(m.React.createElement(Avatar, { name: "Brijesh Jindal" }));
     const el = m.doc.querySelector('[role="img"]')!;
     assert.equal(el.getAttribute("aria-label"), "Brijesh Jindal");
-    assert.equal(el.textContent, "BJ");
+    // Initials are painted via CSS (`.glyph::before { content: attr(data-glyph) }`), not a text node,
+    // so a decorative avatar inside a button never leaks "BJ" into that button's accessible name.
+    assert.equal(el.querySelector(".glyph")?.getAttribute("data-glyph"), "BJ");
+    assert.equal(el.textContent, "");
     await m.unmount();
   });
 

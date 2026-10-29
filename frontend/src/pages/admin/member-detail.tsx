@@ -217,7 +217,7 @@ export function MemberDetailView({ id }: { id: number }) {
               ) : (
                 <p className="text-sm text-fg-muted">
                   No groups yet.{" "}
-                  <Link to="/admin" search={{ tab: "groups" }} className="text-accent hover:underline">
+                  <Link to="/admin" search={{ tab: "groups" }} className="text-accent underline underline-offset-2 hover:text-fg">
                     Create one
                   </Link>
                 </p>

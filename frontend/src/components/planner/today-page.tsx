@@ -170,14 +170,14 @@ export function PlannerTodayPage() {
               <button
                 type="button"
                 aria-current={cell.isCurrent ? "date" : undefined}
-                aria-label={`${formatDay(cell.key, "EEEE d MMMM")}${cell.total ? `, ${cell.done} of ${cell.total} done` : cell.rest ? ", rest day" : ""}`}
                 onClick={() => goTo(cell.key)}
                 className={`flex w-full flex-col items-center rounded-md px-1 py-1.5 text-xs transition-colors ${
                   cell.isCurrent ? "bg-fg text-bg" : cell.isToday ? "bg-accent-subtle text-fg" : "text-fg-muted hover:bg-surface-raised hover:text-fg"
                 }`}
               >
-                <span className="uppercase tracking-wide">{cell.dow}</span>
+                <span className="uppercase tracking-wide">{cell.dow}</span>{" "}
                 <span className="font-mono text-base leading-tight tabular-nums">{cell.dom}</span>
+                <span className="sr-only">{` ${formatDay(cell.key, "MMMM")}${cell.total ? `, ${cell.done} of ${cell.total} done` : cell.rest ? ", rest day" : ""}`}</span>
                 <span className={`mt-0.5 h-1 w-4 rounded-full ${cell.total ? (cell.done === cell.total ? "bg-current" : "bg-current/40") : cell.rest ? "bg-warn/60" : "bg-transparent"}`} aria-hidden="true" />
               </button>
             </li>

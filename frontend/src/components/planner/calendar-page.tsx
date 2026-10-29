@@ -170,14 +170,16 @@ export function PlannerPage() {
           const id = e.dataTransfer.getData("text/task-id");
           if (id) moveTask(livePlan.id, id, date);
         }}
-        aria-label={`${formatDay(date, "EEE d MMM")}, ${list.length} classes, ${struck} done${hasExam ? ", exam" : ""}${hasHoliday ? ", holiday" : ""}`}
         className={`mini-board${date === today ? " is-today" : ""}${open === date ? " is-open" : ""}${hasExam ? " is-exam" : ""}${overdueDay ? " is-overdue" : ""}${view === "month" && !inMonth ? " is-out" : ""}`}
         style={{ ["--dust" as string]: String(dust) }}
       >
         <span className="dust" aria-hidden="true" />
-        <span className="day-num tabular">{date.slice(8)}</span>
+        <span className="day-num tabular">{date.slice(8)}</span>{" "}
         <span className="mt-auto text-xs text-fg-muted">
           {list.length ? `${struck}/${list.length}` : hasHoliday ? "rest" : ""}
+        </span>
+        <span className="sr-only">
+          {`, ${formatDay(date, "EEEE d MMMM")}, ${list.length} classes, ${struck} done${hasExam ? ", exam" : ""}${hasHoliday ? ", holiday" : ""}`}
         </span>
       </button>
     );

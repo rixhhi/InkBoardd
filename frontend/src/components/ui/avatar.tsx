@@ -30,7 +30,8 @@ export function Avatar({
       {show ? (
         <img src={src} alt="" loading="lazy" decoding="async" className="size-full object-cover" onError={() => setBroken(true)} />
       ) : (
-        initialsFrom(name) || "?"
+        /* Initials are drawn from CSS (`.glyph::before`), not a text node, so they never leak into a parent control's name. */
+        <span aria-hidden="true" data-glyph={initialsFrom(name) || "?"} className="glyph" />
       )}
     </span>
   );

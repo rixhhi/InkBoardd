@@ -57,13 +57,14 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
           <button
             {...p}
             type="button"
-            aria-label={`Account: ${user.name}`}
             className={cn(
               "flex items-center gap-2 rounded-md text-left text-sm text-fg-muted hover:bg-surface-raised/60 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring",
               compact ? "size-10 justify-center" : "h-11 w-full px-2",
             )}
           >
             <Avatar name={user.name} size="sm" decorative />
+            {/* Accessible name = this prefix + the visible text, so the name never contradicts what sighted users read. */}
+            <span className="sr-only">Account menu{compact ? `, ${user.name}, ${roleLabel(user.role)}` : ":"}</span>
             {!compact ? (
               <span className="hidden min-w-0 flex-1 lg:block">
                 <span className="block truncate font-medium text-fg">{user.name}</span>
@@ -158,11 +159,12 @@ function Sidebar() {
       )}
     >
       <div className="flex h-[var(--header-h)] items-center px-3 lg:px-4">
-        <Link to="/" className="flex items-center gap-2 rounded-md font-serif text-lg font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" aria-label="Inkboard, home">
-          <span aria-hidden="true" className="grid size-7 place-items-center rounded-md bg-fg text-sm text-bg">
-            I
+        <Link to="/" className="flex items-center gap-2 rounded-md font-serif text-lg font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+          <span aria-hidden="true" data-glyph="I" className="glyph grid size-7 place-items-center rounded-md bg-fg text-sm text-bg" />
+          <span className="sr-only">Inkboard, home</span>
+          <span aria-hidden="true" className="hidden lg:inline">
+            Inkboard
           </span>
-          <span className="hidden lg:inline">Inkboard</span>
         </Link>
       </div>
 
@@ -219,8 +221,8 @@ function ContextBar({ onLibrary }: { onLibrary: () => void }) {
   const trail = navTrail(pathname);
   return (
     <header className="sticky top-0 z-[var(--z-nav)] flex h-[var(--header-h)] items-center gap-2 border-b border-line bg-bg/90 px-3 backdrop-blur sm:px-4 lg:px-6">
-      <Link to="/" className="font-serif text-base font-semibold text-fg md:hidden" aria-label="Inkboard, home">
-        Inkboard
+      <Link to="/" className="font-serif text-base font-semibold text-fg md:hidden">
+        Inkboard<span className="sr-only">, home</span>
       </Link>
       {trail.length ? (
         <nav aria-label="You are here" className="hidden min-w-0 items-center gap-1 text-sm text-fg-muted md:flex">
@@ -239,7 +241,6 @@ function ContextBar({ onLibrary }: { onLibrary: () => void }) {
         <button
           type="button"
           onClick={() => openCommandPalette()}
-          aria-label={`${COPY.search} (Control or Command K)`}
           className="hidden h-9 w-64 items-center gap-2 rounded-md bg-surface px-3 text-sm text-fg-faint shadow-1 hover:text-fg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:flex lg:w-80"
         >
           <Search aria-hidden="true" className="size-4" />

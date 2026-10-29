@@ -60,8 +60,9 @@ function ContinueCard({ entry, primary }: { entry: WatchEntry; primary?: boolean
         params={{ lessonId: entry.lessonId }}
         // Pass the saved position so "Continue" really continues (the player honours ?t as startAt).
         search={{ title: entry.title, teacher: entry.teacher, course: entry.course, t: at ? Math.floor(entry.t) : undefined }}
+        // No aria-label: the card's visible text (eyebrow, title, "Resume at", "min left") IS the name,
+        // so screen readers and sighted users hear/see the same thing.
         className="block rounded-lg p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:p-5"
-        aria-label={`${COPY.onTheBoard}: ${entry.title}${at ? `, resume at ${at}` : ""}${left != null ? `, ${left} min left` : ""}`}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

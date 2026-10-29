@@ -137,11 +137,10 @@ export function SubjectDot({ subject }: { subject?: string | null }) {
   const id = subjectIdOf(subject);
   return (
     <span
-      className={`inline-grid size-5 shrink-0 place-items-center rounded-xs ${subjectHatchClass(id)} hatch-mark`}
+      className={`glyph inline-grid size-5 shrink-0 place-items-center rounded-xs ${subjectHatchClass(id)} hatch-mark`}
       aria-hidden="true"
-    >
-      {subjectMark(subject)}
-    </span>
+      data-glyph={subjectMark(subject)}
+    />
   );
 }
 

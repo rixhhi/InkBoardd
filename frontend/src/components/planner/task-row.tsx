@@ -106,8 +106,8 @@ export function TaskRow({
         className={`chalk-line${skipped ? " is-off" : ""}`}
         onClick={() => withUndo(done ? "reopen" : "done", () => setTaskStatus(plan.id, task.id, done ? "pending" : "done"))}
         aria-pressed={done}
-        aria-label={done ? "Mark pending" : "Mark done"}
       >
+        <span className="sr-only">{done ? "Mark pending: " : "Mark done: "}</span>
         {next ? <span className="chalk-caret" aria-hidden="true" /> : null}
         {index != null ? <span className="chalk-num tabular">{index}</span> : <span className="chalk-num" />}
         {clock ? <span className="chalk-clock tabular">{clock}</span> : null}
