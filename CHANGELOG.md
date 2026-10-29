@@ -18,6 +18,30 @@
 ### CI
 - New `e2e` job runs `scripts/e2e.mjs` in Chromium against a real API + SSR build and uploads screenshots.
 
+## 2026-10-28 — review pass, second round
+
+### Accessibility
+- Dark-mode `fg-muted`, `fg-faint`, `info` tokens and a dedicated `live-fg` now pass 4.5:1; out-of-month calendar cells and empty seals use colour mix instead of `opacity`.
+- `<main>` is focusable (skip-link works); lantern drag handle is `aria-hidden`; `Tabs` emit `aria-controls` only when panels exist; analytics figures are one `<dl>` each; heading levels no longer skip on Browse / course Live shelf.
+
+### Planner
+- **Fit to exam**: `fitToExam()` regenerates across lectures/day × daily minutes and offers the lightest setting that ends by the exam date, as a one-click button in the wizard.
+- Spaced reviews and the recap horizon are clamped to `examDate`; nothing is scheduled after the exam.
+- Last study day cannot be unticked (`toggleStudyDay`).
+- `overlappingTopics()` flags the same topic in two selected courses; wizard section "Same topic, two courses".
+
+### Accounts
+- `POST /api/auth/reset-request` ("Forgot your password → ask your admin"): flags `users.reset_requested_at` (migration `0002`), always 200, throttled like login, audited as `password.reset_requested`. Admin overview banner + "Asked for a reset" badge; cleared when the admin sets a new password.
+- `CSRF_TRUSTED_ORIGINS` separates the write allow-list from `CORS_ORIGINS` (`*` ignored for CSRF).
+- `share.add` audit detail names the members / groups.
+
+### Player
+- Safari / iOS without an HLS copy: banner explains and offers "Prepare for this device" (admins or members with Downloads).
+
+### UX
+- Zero-state copy for `DayBars`, analytics page and a calendar legend.
+- Hindi UI toggle labelled "preview" with its scope.
+
 
 ## 2026-10-28 (later) — sync merge, workspaces, page splits
 

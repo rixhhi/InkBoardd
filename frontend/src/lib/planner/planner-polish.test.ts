@@ -35,7 +35,8 @@ describe("round 2 phase 2 polish", () => {
     const cal = readFileSync(new URL("../../components/planner/calendar-page.tsx", import.meta.url), "utf8");
     const row = readFileSync(new URL("../../components/planner/task-row.tsx", import.meta.url), "utf8");
     assert.match(cal, /aria-label="Calendar legend"/);
-    assert.match(cal, /Overdue/);
+    assert.match(cal, /Underlined · overdue/);
+    assert.match(cal, /Ringed · exam day/);
     assert.doesNotMatch(cal, /Journal/, "journal is retired");
     assert.match(cal, /max-width: 639px/);
     assert.match(cal, /setView\(mq.matches \? "agenda"/);
@@ -111,7 +112,8 @@ describe("round 2 phase 2 polish", () => {
     assert.match(kit, /Dashed line · \{layout.goal\} min goal/);
     assert.match(cal, /aria-label="Calendar legend"/);
     assert.match(cal, /Done/);
-    assert.match(cal, /Overdue/);
+    assert.match(cal, /Underlined · overdue/);
+    assert.match(cal, /Hatched · minutes studied/);
     assert.match(shell, /WidgetErrorBoundary/);
     const skip = readFileSync(new URL("../../components/folio/skip-link.tsx", import.meta.url), "utf8");
     assert.match(skip, /COPY.skipToBoard/);

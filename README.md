@@ -13,7 +13,7 @@ A study desk for Unacademy replays: exam hubs, teacher and course shelves, a whi
 ## Status
 
 - **Typecheck**: clean in all three packages. **Lint**: `npm run lint` (Biome) — 0 errors; style warnings are reported, not fatal.
-- **Tests**: 1,055 passing (45 shared, 714 backend, 296 frontend), 0 failing; plus `scripts/e2e.mjs`, a browser run of 23 checks on desktop and phone (sign-in, every admin tab, share dialog, member restrictions, planner and settings pages, no sideways scroll, no page errors). CI runs it too (`e2e` job) against a real API + SSR build and uploads the screenshots.
+- **Tests**: 1,067 passing (50 shared, 721 backend, 296 frontend), 0 failing; plus `scripts/e2e.mjs`, a browser run of 23 checks on desktop and phone (sign-in, every admin tab, share dialog, member restrictions, planner and settings pages, no sideways scroll, no page errors). CI runs it too (`e2e` job) against a real API + SSR build and uploads the screenshots.
 - **Build**: `vite build` passes the bundle budget (first load 736 KB / 1,563 KB cap; total 2,458 KB / 4,395 KB cap).
 - **Stores**: `backend/.env` (gitignored) points at Neon Postgres and Upstash Redis. Accounts moved from the SQLite file into Neon on first boot (`[accounts] imported 3 account(s) and 2 share(s)`).
 
@@ -44,6 +44,20 @@ A study desk for Unacademy replays: exam hubs, teacher and course shelves, a whi
 - **Login lockout survives restarts.** The five-misses-per-account+IP / thirty-per-IP counters live in Redis when `REDIS_URL` is set (email hashed in the key, 15-minute expiry), with the in-memory map as fallback. Previously a `pm2 restart` cleared every lock.
 - **Schema migrations.** `SCHEMA` stays the idempotent baseline; anything that changes an existing table is an entry in `MIGRATIONS` (`backend/src/auth/store/connection.ts`) that runs once, in order, in a transaction and is recorded in `ib_migrations`. First entry: an `(user_id, id desc)` index on `ib_activity`.
 - **Course header says when there is nothing to play**: "No replays yet" / "3 without replay" next to the class count, instead of only a per-row badge after scrolling.
+
+#### Second pass (deeper audit: interactive, dark mode, axe, keyboard, planner logic)
+
+- **Accessibility, fixed at the token/kit level** rather than per page. Dark-mode `fg-muted` / `fg-faint` / `info` lifted to pass 4.5:1 on `bg-raised`; the `live` badge got its own foreground token; the "outside this month" calendar cells and empty seals use colour mix instead of `opacity`, so their text still passes contrast; `<main>` is focusable so the skip-link lands; the lantern drag handle is `aria-hidden`; `Tabs` only emit `aria-controls` when a matching panel id exists (`panels` prop); the analytics figures were a `<dl>` with nested `<dl>`s (now one per figure); heading order on Browse and course Live shelf no longer skips a level.
+- **Planner: "Fit to exam."** When the plan overshoots the exam date the wizard no longer just warns — it offers a one-click fix. `fitToExam()` (`shared/src/lib/planner/wizard.ts`) searches lectures/day × daily minutes (30-minute steps, up to 8 h) by regenerating the plan and picks the lightest setting that ends on or before the exam, shown as "Fit to exam · 3/day, 120 min".
+- **Planner: nothing lands after the exam.** Spaced reviews (`revision.ts`) and the recap horizon (`scheduler.ts`) are clamped to `examDate`; a review that would fall after the exam is pulled forward or dropped. Previously a long plan could schedule reviews weeks after the exam day and report that as "over".
+- **Planner: you cannot untick your last study day** (`toggleStudyDay`); the chip is `aria-disabled` with a hint.
+- **Planner: same topic in two courses.** `overlappingTopics()` (`feasibility.ts`) lists topics that appear in more than one selected course; the wizard shows "Same topic, two courses" so you can drop one before generating.
+- **Zero-states instead of empty charts**: `DayBars` renders role-specific copy ("No study yet this week" / "Nothing watched in the last 14 days") instead of an empty bar strip; the analytics page shows a short "once you log a session…" block when there are no sessions; the planner calendar has a legend for the exam / today / underlined-date marks.
+- **"Forgot your password" goes to your admin.** Members have no email; `POST /api/auth/reset-request` (always 200, throttled like login) flags the account (`users.reset_requested_at`, migration `0002`). The admin overview shows a banner, the member list a "Asked for a reset" badge, and setting a new password clears it. Audited as `password.reset_requested`.
+- **Safari / iOS: "Prepare for this device".** When native playback fails and no HLS copy exists, the player banner explains why and (for admins or members with Downloads) offers to prepare one, instead of a dead "can't play" message.
+- **Admin audit names people.** `share.add` detail now lists the members/groups the share went to (`members: riya@…, arjun@…`), not just a count.
+- **CSRF allow-list split from CORS.** `CSRF_TRUSTED_ORIGINS` (falls back to `CORS_ORIGINS`; `*` is ignored for CSRF) so a wide CORS setting for a read-only API client never widens cookie-authenticated writes.
+- **Hindi UI is labelled "preview"** in Settings with a note on what it covers (navigation, planner, player; not catalogue text).
 
 ### Fixed in this pass
 
@@ -160,6 +174,7 @@ All variables are optional. The `.env.example` files list them with comments. Th
 | `STATS_TZ` | `Asia/Kolkata` | Time zone for "per day" charts and rollups. |
 | `SETUP_CODE` | random | Pins the one-time admin setup code (handy in Docker). Otherwise it is printed in the API log and written to `backend/data/setup-code.txt`. |
 | `JOB_ID_SECRET` | random, kept in `JOB_DIR/.job-secret` | Keys job ids. Pin it when `JOB_DIR` is not persistent or several API boxes share one `JOB_DIR`; otherwise a rebuilt disk means existing jobs get new ids (a re-save, nothing worse). |
+| `CSRF_TRUSTED_ORIGINS` | falls back to `CORS_ORIGINS` | Comma-separated origins allowed to make cookie-authenticated writes. `*` is ignored here (it only ever applies to CORS reads), so a wide CORS setting never widens CSRF. |
 | `JOB_MIN_FREE_GB` / `JOB_DIR_MAX_GB` | `2` / `20` | Refuse new downloads below this free space; prune the oldest finished job folders above this total. |
 | `WARM_CACHE` / `WARM_EXAMS` | on / 5 big exams | Pre-loads exam hubs and the live feed after boot so the first visitor doesn't wait. |
 
