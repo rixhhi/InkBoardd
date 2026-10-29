@@ -20,11 +20,11 @@ export function Badge({ children, tone = "neutral", className }: { children: Rea
       className={cn(
         "inline-flex h-5 shrink-0 items-center gap-1 rounded-sm px-1.5 text-[11px] font-semibold tracking-wide uppercase",
         TONE[tone],
-        tone === "live" && "animate-pulse",
         className,
       )}
     >
-      {tone === "live" ? <span aria-hidden="true" className="size-1.5 rounded-full bg-current" /> : null}
+      {/* Only the dot pulses: fading the whole badge drops the label under 4.5:1 mid-animation. */}
+      {tone === "live" ? <span aria-hidden="true" className="size-1.5 animate-pulse rounded-full bg-current motion-reduce:animate-none" /> : null}
       {children}
     </span>
   );

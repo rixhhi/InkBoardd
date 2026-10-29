@@ -22,6 +22,7 @@
 
 ### Accessibility
 - Dark-mode `fg-muted`, `fg-faint`, `info` tokens and a dedicated `live-fg` now pass 4.5:1; out-of-month calendar cells and empty seals use colour mix instead of `opacity`.
+- Live badge pulses only its dot (fading the label dipped it to 4.4:1); unavailable list rows mute the title instead of fading the row (the badge went to 3.9:1); skipped planner tasks likewise. axe: 0 serious/critical on 20 pages in dark mode.
 - `<main>` is focusable (skip-link works); lantern drag handle is `aria-hidden`; `Tabs` emit `aria-controls` only when panels exist; analytics figures are one `<dl>` each; heading levels no longer skip on Browse / course Live shelf.
 
 ### Planner

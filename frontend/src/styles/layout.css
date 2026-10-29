@@ -345,8 +345,16 @@ li:first-child>.chalk-row {
   border-top: 1px solid var(--color-line);
 }
 
-.chalk-row.is-off {
-  opacity: 0.62;
+/* Skipped task: mute the ink, don't fade the row (opacity stacked twice here and
+   took the text to ~38%, well under 4.5:1). */
+.chalk-row.is-off .chalk-line,
+.chalk-row.is-off .chalk-num,
+.chalk-row.is-off .chalk-mins {
+  color: var(--color-fg-muted);
+}
+
+.chalk-row.is-off .chalk-caret {
+  opacity: 0.5;
 }
 
 .chalk-line {
@@ -359,10 +367,6 @@ li:first-child>.chalk-row {
   padding: 0.7rem 0.25rem 0.7rem 0.9rem;
   display: flex;
   position: relative;
-}
-
-.chalk-line.is-off {
-  opacity: 0.62;
 }
 
 .chalk-num {

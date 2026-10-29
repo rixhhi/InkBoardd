@@ -49,7 +49,6 @@ export function ListRow({
         density === "compact" ? "min-h-11 px-2 py-1.5" : "min-h-14 px-3 py-2.5",
         "hover:bg-surface-raised/60 focus-within:bg-surface-raised/60",
         current && "bg-accent-subtle hover:bg-accent-subtle",
-        struck && "opacity-60",
         onActivate && "cursor-pointer",
         className,
       )}
@@ -63,10 +62,11 @@ export function ListRow({
           : undefined
       }
     >
-      {leading ? <div className="flex shrink-0 items-center">{leading}</div> : null}
+      {/* Dim the picture and title, not the row: an opacity on the row pulls the badge text under 4.5:1. */}
+      {leading ? <div className={cn("flex shrink-0 items-center", struck && "opacity-70")}>{leading}</div> : null}
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
-          <div className={cn("min-w-0 flex-1 truncate font-medium text-fg", density === "compact" ? "text-sm" : "text-base")}>{title}</div>
+          <div className={cn("min-w-0 flex-1 truncate font-medium", struck ? "text-fg-muted" : "text-fg", density === "compact" ? "text-sm" : "text-base")}>{title}</div>
           {badge}
         </div>
         {meta ? <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-fg-muted [&>*]:truncate">{meta}</div> : null}
