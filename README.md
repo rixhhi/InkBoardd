@@ -13,7 +13,7 @@ A study desk for Unacademy replays: exam hubs, teacher and course shelves, a whi
 ## Status
 
 - **Typecheck**: clean in all three packages. **Lint**: `npm run lint` (Biome) — 0 errors; style warnings are reported, not fatal.
-- **Tests**: 1,067 passing (50 shared, 721 backend, 296 frontend), 0 failing; plus `scripts/e2e.mjs`, a browser run of 23 checks on desktop and phone (sign-in, every admin tab, share dialog, member restrictions, planner and settings pages, no sideways scroll, no page errors). CI runs it too (`e2e` job) against a real API + SSR build and uploads the screenshots.
+- **Tests**: 1,070 passing (53 shared, 721 backend, 296 frontend), 0 failing; plus `scripts/e2e.mjs`, a browser run of 23 checks on desktop and phone (sign-in, every admin tab, share dialog, member restrictions, planner and settings pages, no sideways scroll, no page errors). CI runs it too (`e2e` job) against a real API + SSR build and uploads the screenshots.
 - **Build**: `vite build` passes the bundle budget (first load 736 KB / 1,563 KB cap; total 2,458 KB / 4,395 KB cap).
 - **Stores**: `backend/.env` (gitignored) points at Neon Postgres and Upstash Redis. Accounts moved from the SQLite file into Neon on first boot (`[accounts] imported 3 account(s) and 2 share(s)`).
 

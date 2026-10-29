@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-29 — layout overflow and sign-in labels
+
+### Fixed
+- Admin → Activity: the left column slid under the "Online now" card at widths ≤ 1180 px, and the same stack overflowed on Overview and Member detail on phones. Root cause: a `grid gap-*` with no columns gets one implicit `auto` track whose minimum is its widest unbreakable child, so `truncate`/`min-w-0` further down could not shrink it. `base.css` now gives every `.grid` `grid-auto-columns: minmax(0, 1fr)` (explicit `grid-cols-*` tracks unaffected; `grid-flow-col` skipped), which fixes all 124 such grids at once instead of patching each page.
+- Sign-in rows showed the raw user-agent ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 …"). New `@inkboard/shared/device` (`deviceName`, `looksLikeUserAgent`, `signInLabel`) is used at write time (`POST /api/auth/login` now stores "Chrome on Linux") and at render time in ActivityFeed and OnlineNow so rows written before this change read the same. The sessions dialog shares the helper instead of its own copy.
+- Long badges ("Course on Principles of Inheritance…") pushed past list rows on phones (`/teacher/*`, `/live`). `Badge` ellipsises and `ListRow` caps a badge at half the row.
+
+### Tests
+- `shared/src/lib/device.test.ts` (3): browser/OS precedence (Android before Linux, CriOS, Samsung Internet), phone flag, empty input, humanising 120-char-truncated legacy rows.
+
 ## 2026-10-28 — review pass
 
 ### Security
