@@ -264,7 +264,14 @@ export async function registerAdmin(app: FastifyInstance) {
     if (audience === "all") created.push(await S.addShare({ ...common, audience }));
     if (audience === "user") for (const userId of [...new Set(userIds)]) created.push(await S.addShare({ ...common, audience, userId }));
     if (audience === "group") for (const groupId of [...new Set(groupIds)]) created.push(await S.addShare({ ...common, audience, groupId }));
-    const who = audience === "all" ? "everyone" : audience === "group" ? `${created.length} group(s)` : `${created.length} member(s)`;
+    let who = "everyone";
+    if (audience === "user") {
+      const names = new Map((await S.listUsers(["member"])).map((m) => [m.id, m.email]));
+      who = `members: ${[...new Set(userIds)].map((id) => names.get(id) ?? `#${id}`).join(", ")}`;
+    } else if (audience === "group") {
+      const names = new Map((await S.listGroups()).map((g) => [g.id, g.name]));
+      who = `groups: ${[...new Set(groupIds)].map((id) => names.get(id) ?? `#${id}`).join(", ")}`;
+    }
     await S.audit(req.user!.id, "share.add", `${kind} ${label || ref}`, who);
     return reply.status(201).send({ shares: sharesView(created) });
   });

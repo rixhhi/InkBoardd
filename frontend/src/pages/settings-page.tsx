@@ -65,7 +65,7 @@ export default function SettingsPage() {
                 { value: "light", label: "Light (paper)" },
               ]}
             />
-            <Switch label="Hindi labels in the app chrome" description="Navigation and button labels. Class titles stay as published." checked={locale === "hi"} onCheckedChange={() => toggle()} />
+            <Switch label="Hindi labels in the app chrome (preview)" description="Covers the navigation rail, home and offline notices so far; buttons and dialogs stay in English for now. Class titles stay as published." checked={locale === "hi"} onCheckedChange={() => toggle()} />
           </Surface>
         </Section>
 

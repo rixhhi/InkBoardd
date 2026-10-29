@@ -312,8 +312,14 @@ function deny(reply: FastifyReply, req: FastifyRequest, status: 401 | 403, code:
   return reply.status(status).type("application/json; charset=utf-8").send(jsonError(status, message, code, req.id));
 }
 
+/**
+ * Origins whose cross-site writes are accepted (CSRF allow-list). CSRF_TRUSTED_ORIGINS
+ * when set; otherwise CORS_ORIGINS, which is what earlier installs configured. Keeping
+ * them separate means widening CORS for a read-only embed does not also open writes.
+ */
 function trustedOrigins(): Set<string> {
-  return new Set((process.env.CORS_ORIGINS || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean));
+  const raw = process.env.CSRF_TRUSTED_ORIGINS ?? process.env.CORS_ORIGINS ?? "";
+  return new Set(raw.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s && s !== "*"));
 }
 
 /**
