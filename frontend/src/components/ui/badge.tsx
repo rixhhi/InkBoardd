@@ -10,7 +10,7 @@ const TONE: Record<BadgeTone, string> = {
   danger: "bg-danger-subtle text-danger",
   info: "bg-info-subtle text-info",
   accent: "bg-accent-subtle text-accent",
-  live: "bg-live text-bg",
+  live: "bg-live text-live-fg",
 };
 
 /** Status label. Text is always present; colour is never the only signal. */

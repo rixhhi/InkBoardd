@@ -47,8 +47,8 @@
   --color-overlay: #0c0e0dc7;
 
   --color-fg: #e8e6e1;
-  --color-fg-muted: #a8a59c;
-  --color-fg-faint: #8a877f;
+  --color-fg-muted: #aeaba2;
+  --color-fg-faint: #94918a;
 
   --color-border: #6e727c;
   --color-border-strong: #8a8f99;
@@ -66,9 +66,10 @@
   --color-warn-subtle: #d7a15e24;
   --color-danger: #e07a68;
   --color-danger-subtle: #e07a6824;
-  --color-info: #8aa8c8;
+  --color-info: #a9c3de;
   --color-info-subtle: #8aa8c824;
   --color-live: #e07a68;
+  --color-live-fg: #14080a;
 
   --color-subject-physics: #8aa8c8;
   --color-subject-chemistry: #c4a890;
@@ -194,6 +195,7 @@ html[data-theme="light"] {
   --color-info: #2a5080;
   --color-info-subtle: #2a50801f;
   --color-live: #9b3a2f;
+  --color-live-fg: #fff7f3;
 
   --color-subject-physics: #2a5080;
   --color-subject-chemistry: #7a4a20;

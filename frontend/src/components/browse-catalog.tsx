@@ -39,10 +39,10 @@ export function ExamCatalog({
         const id = `exam-group-${group.replace(/\W+/g, "-")}`;
         return (
           <section key={group} aria-labelledby={id}>
-            <h3 id={id} className="flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-fg-muted uppercase">
+            <h2 id={id} className="flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-fg-muted uppercase">
               <span aria-hidden="true" className="size-2 rounded-full" style={{ background: groupTone(group) }} />
               {group}
-            </h3>
+            </h2>
             <div className="mt-3 space-y-4">
               {families.map((fam) => (
                 <div key={`${group}-${fam.label || fam.exams[0]?.id}`}>

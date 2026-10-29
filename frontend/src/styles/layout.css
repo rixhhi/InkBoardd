@@ -561,8 +561,8 @@ li:first-child>.chalk-row {
 }
 
 .mini-board .day-num {
-  color: var(--color-muted);
-  font-size: 0.7rem;
+  color: var(--color-fg-muted);
+  font-size: 0.75rem;
   position: relative;
 }
 
@@ -594,7 +594,17 @@ li:first-child>.chalk-row {
 }
 
 .mini-board.is-out {
-  opacity: 0.38;
+  /* Dim the board, not the text: whole-cell opacity dropped day numbers to 2:1 in dark. */
+  background: color-mix(in srgb, var(--color-bg) 92%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-line) 60%, transparent);
+}
+
+.mini-board.is-out .dust {
+  opacity: calc(var(--dust, 0) * 0.5);
+}
+
+.mini-board.is-out .day-num {
+  color: var(--color-fg-faint);
 }
 
 .mini-board:hover,.mini-board:focus-visible {

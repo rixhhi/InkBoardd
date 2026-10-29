@@ -277,7 +277,7 @@ export default function LibraryPage() {
         eyebrow="Library"
         title="Your library"
         subline="Everything here lives in this browser. Nothing is sent anywhere."
-        tabs={<Tabs tabs={tabs} value={tab} label="Library sections" onChange={(id) => void nav({ to: "/library", search: { tab: id as LibraryTab } })} />}
+        tabs={<Tabs panels tabs={tabs} value={tab} label="Library sections" onChange={(id) => void nav({ to: "/library", search: { tab: id as LibraryTab } })} />}
       />
       <PageBody>
         <TabPanel id="saved" active={tab === "saved"}>

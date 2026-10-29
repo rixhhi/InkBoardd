@@ -351,7 +351,14 @@ html.reduce-motion *,html.reduce-motion :before,html.reduce-motion :after,html[d
 }
 
 .seal.is-empty {
-  opacity: 0.4;
+  /* Unearned: dashed ring and muted ink. Whole-tile opacity failed AA on every label. */
+  border-style: dashed;
+  box-shadow: inset 0 0 0 5px var(--color-bg), inset 0 0 0 6px color-mix(in srgb, var(--color-line) 70%, transparent);
+  color: var(--color-fg-muted);
+}
+
+.seal.is-empty .seal-meta {
+  color: var(--color-fg-faint);
 }
 
 .seal.is-today .seal-title {

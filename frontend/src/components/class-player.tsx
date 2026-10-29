@@ -340,7 +340,8 @@ export function ClassPlayer({
               <div
                 className="absolute inset-0 z-10 cursor-grab touch-none active:cursor-grabbing"
                 onPointerDown={(e) => onPointerDown(e, "move")}
-                aria-label="Move the lantern"
+                aria-hidden="true"
+                data-handle="move"
               />
             ) : null}
             <div className="lantern-face">{videoEl}</div>

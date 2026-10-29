@@ -17,6 +17,7 @@ export function Tabs({
   label,
   className,
   size = "md",
+  panels = false,
 }: {
   tabs: readonly TabDef[];
   value: string;
@@ -24,6 +25,8 @@ export function Tabs({
   label: string;
   className?: string;
   size?: "sm" | "md";
+  /** Set when the page renders a matching <TabPanel id=…> for the selected tab. */
+  panels?: boolean;
 }) {
   return (
     <div role="tablist" aria-label={label} className={cn("flex gap-1 overflow-x-auto border-b border-line [scrollbar-width:none]", className)}>
@@ -37,7 +40,9 @@ export function Tabs({
             role="tab"
             id={`tab-${tab.id}`}
             aria-selected={selected}
-            aria-controls={`panel-${tab.id}`}
+            // Only reference a panel that exists: most pages swap content without a TabPanel,
+            // and a dangling aria-controls is an axe "critical".
+            aria-controls={panels ? `panel-${tab.id}` : undefined}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(tab.id)}
             onKeyDown={(e) => {

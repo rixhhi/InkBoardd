@@ -282,7 +282,7 @@ export function LiveShelf({
             return (
               <Section
                 key={group.week ?? "all"}
-                level={3}
+                level={2}
                 title={group.week != null ? `Week ${group.week}` : "Classes"}
                 action={
                   <SaveChapterButton

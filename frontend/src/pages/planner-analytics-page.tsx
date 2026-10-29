@@ -92,12 +92,12 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Figures */}
-      <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Figure label="Struck" value={`${Math.round(report.completionRate * 100)}%`} ring={report.completionRate * 100} hint={`${report.lecturesDone}/${report.lecturesPlanned} lectures`} />
         <Figure label="Goal hit" value={`${Math.round(report.goalHitRate * 100)}%`} ring={report.goalHitRate * 100} hint="days at or over the daily minutes" />
         <Figure label="Sessions" value={String(report.sessions)} hint={`${sourceTotal} min across sources`} />
         <Figure label="Late finishes" value={`${Math.round(report.procrastinationIndex * 100)}%`} hint="done after the planned day" tone={report.procrastinationIndex > 0.3 ? "warn" : undefined} />
-      </dl>
+      </div>
 
       <section className="mt-8">
         <p className="text-sm text-fg-muted">
@@ -198,11 +198,11 @@ function Figure({ label, value, hint, ring, tone }: { label: string; value: stri
   return (
     <Card padded className="flex items-center gap-3">
       {ring != null ? <Ring value={ring} label={`${label} ${value}`} size={40} /> : null}
-      <div className="min-w-0">
+      <dl className="min-w-0">
         <dt className="text-xs text-fg-muted">{label}</dt>
         <dd className={`font-mono text-xl leading-tight tabular-nums ${tone === "warn" ? "text-warn" : "text-fg"}`}>{value}</dd>
         {hint ? <dd className="truncate text-xs text-fg-faint">{hint}</dd> : null}
-      </div>
+      </dl>
     </Card>
   );
 }

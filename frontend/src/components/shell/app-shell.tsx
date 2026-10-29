@@ -363,7 +363,7 @@ export function AppShell({ children, compact, immersive }: { children: ReactNode
             <ArrowLeft aria-hidden="true" className="size-5" strokeWidth={1.75} />
           </Link>
         </header>
-        <main id="main">
+        <main id="main" tabIndex={-1} className="outline-none">
           <WidgetErrorBoundary title={COPY.slateSlipped}>{children}</WidgetErrorBoundary>
         </main>
       </div>
@@ -376,7 +376,7 @@ export function AppShell({ children, compact, immersive }: { children: ReactNode
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <ContextBar onLibrary={() => panel.setOpen(true)} />
-        <main id="main" className="mx-auto w-full max-w-[var(--content-max)] flex-1">
+        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-[var(--content-max)] flex-1 outline-none">
           <UpstreamBanner />
           {pathname.startsWith("/planner") ? null : <OfflineNotice />}
           <WidgetErrorBoundary title={COPY.slateSlipped}>{children}</WidgetErrorBoundary>
