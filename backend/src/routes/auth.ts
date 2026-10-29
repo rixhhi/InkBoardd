@@ -7,6 +7,7 @@
  *   /api/admin/*  see routes/admin.ts (staff; enforced in auth/guard.ts)
  */
 import type { FastifyInstance } from "fastify";
+import { deviceName } from "@inkboard/shared/device";
 import { jsonError } from "../http.ts";
 import * as S from "../auth/store.ts";
 import {
@@ -102,7 +103,8 @@ export async function registerAuth(app: FastifyInstance) {
     if (found.status !== "active") return fail(reply, req, 403, "DISABLED", "This account is paused. Ask your admin.");
     await clearLoginFailuresShared(ip, email);
     const { passwordHash: _hash, ...user } = found;
-    if (user.role === "member") void S.logActivity(user.id, { kind: "login", label: String(req.headers["user-agent"] ?? "").slice(0, 120) }).catch(() => {});
+    // Store the short device name ("Chrome on Linux"), not the 120-char user-agent: this label is shown in admin feeds.
+    if (user.role === "member") void S.logActivity(user.id, { kind: "login", label: deviceName(String(req.headers["user-agent"] ?? "")).name }).catch(() => {});
     await startSession(req, reply, user);
     return { user: publicUser(user) };
   });

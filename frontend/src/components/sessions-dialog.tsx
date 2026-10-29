@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Laptop, LogOut, Smartphone } from "lucide-react";
 import { Badge, Button, Dialog, ErrorState, Skeleton, toast } from "@/components/ui";
+import { deviceName } from "@inkboard/shared/device";
 import { apiJson, describeError } from "@/lib/api-client";
 import { fmtAgo, sendJson } from "@/lib/session";
 
@@ -8,13 +9,7 @@ type SessionInfo = { id: string; createdAt: string; lastUsedAt: string; ip: stri
 
 const KEY = ["auth", "sessions"] as const;
 
-/** "Chrome on Android" from a user-agent string. Good enough for a device list. */
-export function deviceName(ua: string): { name: string; phone: boolean } {
-  const s = ua || "";
-  const browser = /Edg\//.test(s) ? "Edge" : /OPR\//.test(s) ? "Opera" : /Firefox\//.test(s) ? "Firefox" : /Chrome\//.test(s) ? "Chrome" : /Safari\//.test(s) ? "Safari" : "Browser";
-  const os = /Android/.test(s) ? "Android" : /iPhone|iPad/.test(s) ? "iOS" : /Windows/.test(s) ? "Windows" : /Mac OS X/.test(s) ? "macOS" : /Linux/.test(s) ? "Linux" : "";
-  return { name: os ? `${browser} on ${os}` : browser, phone: /Android|iPhone|iPad|Mobile/.test(s) };
-}
+export { deviceName };
 
 /** Where you're signed in, with sign-out per device and for all other devices. */
 export function SessionsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {

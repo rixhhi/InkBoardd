@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { signInLabel } from "@inkboard/shared/device";
 import { Avatar } from "@/components/ui";
 import { fmtAgo } from "@/lib/session";
 import type { Online } from "@/components/admin/api";
@@ -12,6 +13,8 @@ export function OnlineNow({ items }: { items: Online[] }) {
     <ul className="m-0 grid list-none gap-1 p-0" aria-label="Online now">
       {items.map((o) => {
         const name = o.name ?? o.user?.name ?? "Member";
+        // Older sign-in rows stored the raw user-agent; show "Chrome on Linux" either way.
+        const label = o.kind === "login" ? signInLabel(o.label) : o.label;
         return (
           <li key={o.userId} className="flex min-h-12 items-center gap-3 rounded-md px-2 py-1.5 hover:bg-surface-raised/60">
             <span className="relative">
@@ -23,7 +26,7 @@ export function OnlineNow({ items }: { items: Online[] }) {
                 {name}
               </Link>
               <p className="truncate text-xs text-fg-muted">
-                {VERB[o.kind] ?? "Active"} {o.label ? `· ${o.label}` : ""}
+                {VERB[o.kind] ?? "Active"} {label ? `· ${label}` : ""}
               </p>
             </div>
             <time dateTime={o.at} className="shrink-0 text-xs text-fg-faint">

@@ -67,7 +67,8 @@ export function ListRow({
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
           <div className={cn("min-w-0 flex-1 truncate font-medium", struck ? "text-fg-muted" : "text-fg", density === "compact" ? "text-sm" : "text-base")}>{title}</div>
-          {badge}
+          {/* A badge may take up to half the row; past that it ellipsises so the title keeps its share on phones. */}
+          {badge ? <div className="flex min-w-0 max-w-[50%] shrink-0">{badge}</div> : null}
         </div>
         {meta ? <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-fg-muted [&>*]:truncate">{meta}</div> : null}
       </div>

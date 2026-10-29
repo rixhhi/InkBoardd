@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 import { BookOpen, CirclePlay, GraduationCap, KeyRound, LogIn, Radio, Settings2, ShieldCheck, UserRound, Users } from "lucide-react";
+import { signInLabel } from "@inkboard/shared/device";
 import { Surface } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { fmtAgo, fmtMinutes } from "@/lib/session";
@@ -141,16 +142,17 @@ export function ActivityFeed({ items, showUser = false, empty = "Nothing yet." }
         const k = KIND[a.kind] ?? { icon: Radio, verb: a.kind };
         const Icon = k.icon;
         const target = targetOf(a);
-        const text = a.kind === "admin" || a.kind === "login" || a.kind === "setup" || a.kind === "password" ? a.label || k.verb : a.label || a.ref;
+        // Sign-in rows: "Signed in · Chrome on Linux". Older rows stored the raw user-agent; humanise those too.
+        const text = a.kind === "login" ? signInLabel(a.label) || k.verb : a.kind === "admin" || a.kind === "setup" || a.kind === "password" ? a.label || k.verb : a.label || a.ref;
         return (
-          <li key={a.id} className="flex min-h-12 items-center gap-3 rounded-md px-2 py-2 hover:bg-surface-raised/60">
+          <li key={a.id} className="flex min-h-12 min-w-0 items-center gap-3 rounded-md px-2 py-2 hover:bg-surface-raised/60">
             <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-raised text-fg-muted">
               <Icon className="size-4" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm text-fg">
                 {showUser && a.user ? <span className="font-medium">{a.user.name} · </span> : null}
-                <span className="text-fg-muted">{k.verb === text ? "" : `${k.verb} `}</span>
+                <span className="text-fg-muted">{k.verb === text ? "" : a.kind === "login" ? `${k.verb} · ` : `${k.verb} `}</span>
                 {target ? (
                   <Link to={target.to} params={target.params as never} search={target.search as never} className="hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
                     {text}

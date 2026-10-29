@@ -46,6 +46,21 @@
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
+
+  /*
+   * A `grid` with no explicit columns gets one implicit `auto` track whose
+   * minimum width is its widest unbreakable child (a long title, a URL, a
+   * user-agent string). `truncate` / `min-w-0` further down cannot shrink
+   * it, so the whole stack grows past its parent and slides under the next
+   * column. Give the implicit track the same floor explicit columns get
+   * from `minmax(0, 1fr)`. Explicit `grid-cols-*` tracks are unaffected
+   * (auto-columns only size implicit tracks), which also covers
+   * `lg:grid-cols-*` grids below their breakpoint. Column-flow grids are
+   * skipped: they want content-sized columns.
+   */
+  .grid:not([class*="grid-flow-col"]) {
+    grid-auto-columns: minmax(0, 1fr);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

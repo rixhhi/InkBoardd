@@ -18,14 +18,15 @@ export function Badge({ children, tone = "neutral", className }: { children: Rea
   return (
     <span
       className={cn(
-        "inline-flex h-5 shrink-0 items-center gap-1 rounded-sm px-1.5 text-[11px] font-semibold tracking-wide uppercase",
+        // max-w-full + an inner truncating span: a long badge ("Course on Principles of Inheritance") ellipsises instead of pushing past the row.
+        "inline-flex h-5 max-w-full shrink-0 items-center gap-1 rounded-sm px-1.5 text-[11px] font-semibold tracking-wide uppercase",
         TONE[tone],
         className,
       )}
     >
       {/* Only the dot pulses: fading the whole badge drops the label under 4.5:1 mid-animation. */}
-      {tone === "live" ? <span aria-hidden="true" className="size-1.5 animate-pulse rounded-full bg-current motion-reduce:animate-none" /> : null}
-      {children}
+      {tone === "live" ? <span aria-hidden="true" className="size-1.5 shrink-0 animate-pulse rounded-full bg-current motion-reduce:animate-none" /> : null}
+      <span className="min-w-0 truncate">{children}</span>
     </span>
   );
 }
