@@ -82,7 +82,7 @@ export function ListRow({
 /** Divider-free list container for ListRow. */
 export function List({ children, className, label }: { children: ReactNode; className?: string; label?: string }) {
   return (
-    <ul aria-label={label} className={cn("m-0 grid list-none grid-cols-1 gap-0.5 p-0", className)}>
+    <ul aria-label={label} className={cn("stagger m-0 grid list-none grid-cols-1 gap-0.5 p-0", className)}>
       {children}
     </ul>
   );

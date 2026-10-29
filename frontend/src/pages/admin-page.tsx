@@ -49,7 +49,8 @@ export default function AdminPage() {
         tabs={<Tabs tabs={tabs} value={tab} onChange={setTab} label="Admin sections" />}
       />
       <PageBody>
-        <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+        {/* key={tab} remounts the panel so each tab body gets the same short arrival instead of popping. */}
+        <div key={tab} role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="enter">
           {tab === "overview" ? <OverviewTab onGo={setTab} /> : null}
           {tab === "members" ? <MembersTab /> : null}
           {tab === "groups" ? <GroupsTab /> : null}

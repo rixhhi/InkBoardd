@@ -33,12 +33,12 @@ export function Skeleton({ className = "h-4 w-full" }: { className?: string }) {
 }
 
 export function EmptyState({
-  icon: Icon,
   title,
   body,
   action,
   className,
 }: {
+  /** Kept for callers; the empty state now draws an ink stroke instead of an icon tile. */
   icon?: LucideIcon;
   title: string;
   body?: ReactNode;
@@ -46,13 +46,12 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <Surface role="status" className={cn("text-center [animation:ui-fade-in_var(--dur-base)_var(--ease-out)]", className)}>
-      {Icon ? (
-        <div className="mx-auto mb-3 flex size-11 items-center justify-center rounded-lg bg-accent-subtle">
-          <Icon aria-hidden="true" className="size-5 text-accent" />
-        </div>
-      ) : null}
-      <p className="text-lg font-semibold text-fg">{title}</p>
+    <Surface role="status" className={cn("enter text-center", className)}>
+      {/* A drawn stroke, not an icon in a tinted square: empty space on a board is still a board. */}
+      <svg aria-hidden="true" viewBox="0 0 112 16" className="ink-empty-stroke mb-3">
+        <path d="M2 9c8-6 14 4 22 1s12-7 20-3 10 8 18 4 12-8 20-3 12 6 18 3 8-5 10-3" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" />
+      </svg>
+      <p className="font-serif text-lg font-semibold text-fg">{title}</p>
       {body ? <p className="mx-auto mt-1.5 max-w-[var(--measure)] text-sm text-fg-muted">{body}</p> : null}
       {action ? <div className="mt-4 flex justify-center gap-2">{action}</div> : null}
     </Surface>

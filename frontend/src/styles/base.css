@@ -29,6 +29,28 @@
     color: var(--color-fg);
     overflow-x: clip;
     max-width: 100%;
+    /* Numbers line up in every list and tile without each one asking for it. Prose is unaffected. */
+    font-variant-numeric: tabular-nums;
+  }
+  /*
+   * Paper grain. A fixed, barely-there noise layer behind everything so dark
+   * surfaces read as ink on paper instead of flat #hex. Pure CSS (SVG
+   * turbulence), no asset, no repaint cost: it is a single fixed layer.
+   */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.045;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    background-size: 160px 160px;
+  }
+  @media (prefers-reduced-transparency: reduce), print {
+    body::before {
+      display: none;
+    }
   }
   button,
   [role="button"] {
