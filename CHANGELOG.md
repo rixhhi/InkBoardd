@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-29 — help: a "?" on everything hard, and a Guide
+
+### Added
+- `shared/help.ts`: 19-topic help deck (what / how / why / tips / math / FAQ / see-also). 5 tests.
+- `HelpButton` / `HelpBody`: "?" icon button → Sheet with the topic; in-sheet see-also; link to the Guide.
+- `/planner/guide`: all topics in reading order, sticky TOC, `#anchors`; nav entry and palette row.
+- "?" placed on Ink, date slider, re-ink planner, Tasks, week strip, Focus timer, Month, Pace, Coverage, Instruments, Seals, revision intervals, offline banner, admin digest, storylines, member ink.
+- e2e: opens a "?" sheet and checks structure + axe.
+
+### Changed
+- `InlineAlert.title` accepts a ReactNode.
+
 ## 2026-10-29 — the planner closes its own loop
 
 ### Added

@@ -13,8 +13,8 @@ A study desk for Unacademy replays: exam hubs, teacher and course shelves, a whi
 ## Status
 
 - **Typecheck**: clean in all three packages. **Lint**: `npm run lint` (Biome) — 0 errors; style warnings are reported, not fatal.
-- **Tests**: 1,091 passing (71 shared, 719 backend, 301 frontend), 0 failing; plus `scripts/e2e.mjs`, a browser run of 23 checks on desktop and phone (sign-in, every admin tab, share dialog, member restrictions, planner and settings pages, no sideways scroll, no page errors). CI runs it too (`e2e` job) against a real API + SSR build and uploads the screenshots.
-- **Build**: `vite build` passes the bundle budget (first load 750 KB / 1,563 KB cap; total 2,504 KB / 4,395 KB cap).
+- **Tests**: 1,102 passing (76 shared, 725 backend, 301 frontend), 0 failing; plus `scripts/e2e.mjs`, a browser run of 23 checks on desktop and phone (sign-in, every admin tab, share dialog, member restrictions, planner and settings pages, no sideways scroll, no page errors). CI runs it too (`e2e` job) against a real API + SSR build and uploads the screenshots.
+- **Build**: `vite build` passes the bundle budget (first load 753 KB / 1,563 KB cap; total 2,533 KB / 4,395 KB cap).
 - **Browser matrix** (`scripts/e2e.mjs`, also the CI `e2e` job): every page check asserts 0 sideways scroll **and** axe-core 0 serious/critical. 35 checks per viewport; run as admin and as a member, light (`E2E_SCHEME` unset) and dark (`E2E_SCHEME=dark`), desktop and phone — all green.
 - **Stores**: `backend/.env` (gitignored) points at Neon Postgres and Upstash Redis. Accounts moved from the SQLite file into Neon on first boot (`[accounts] imported 3 account(s) and 2 share(s)`).
 
@@ -37,6 +37,13 @@ A study desk for Unacademy replays: exam hubs, teacher and course shelves, a whi
 - **Analytics**: figure cards with rings (struck, goal hit, sessions, late finishes), delta % vs previous period, weekday pattern and session-length bar charts, and a watched/focus/manual split of how the time was earned.
 - **Badges, Settings, Dashboard, History**: kit headers and buttons; badges show a progress ring and "closest to earning"; settings shows a live "Saved" pill.
 - **Modals**: `LogStudyDialog`, `AddTaskForm` and the planner `ConfirmDialog` are on the kit `Dialog`/`AlertDialog`.
+
+### Fifth pass (2026-10-29) — every hard thing has a "?"
+
+- **One help deck** (`shared/src/lib/help.ts`, 19 topics). Each topic answers the same five questions in the same order: *what it is* (two sentences), *how to use it* (numbered steps you can do right now), *why it's here* (in the student's terms — exam, time, memory), *worth knowing* (things people learn by accident), and, where a number might be questioned, *the math in plain words* plus *the questions people ask*. Tests lock that every topic is complete and every cross-link resolves.
+- **"?" buttons** sit next to: the Ink title, the date slider, the re-ink planner card, the Tasks title, the week strip, the Focus timer, the Month title, the Pace headline, Coverage, Instruments, Seals, the revision-interval chips in the wizard, the offline banner, and on the admin side the weekly digest, Activity storylines and a member's ink board. Each opens a side sheet (bottom drawer on phones) with the topic; *see also* jumps between topics without closing it.
+- **The Guide** (`/planner/guide`, nav "Guide", palette "Guide · how the planner thinks"): every topic in reading order with a sticky table of contents and `#anchors`, so you can send someone a link to exactly the explanation they need. Admin topics appear for admins only.
+- e2e now opens a "?" and asserts the three sections are present and axe passes with the sheet open.
 
 ### Fourth pass (2026-10-29) — the planner closes its own loop
 

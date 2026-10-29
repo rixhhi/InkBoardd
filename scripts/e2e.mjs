@@ -209,7 +209,7 @@ for (const vp of viewports) {
     await shot(admin, `${vp.id}-share-dialog`);
     await admin.keyboard.press("Escape");
   });
-  for (const path of ["/", "/settings", "/planner/today", "/planner", "/planner/ink", "/planner/analytics", "/planner/new", "/planner/settings", "/library", "/live", "/browse", "/search?q=physics"]) {
+  for (const path of ["/", "/settings", "/planner/today", "/planner", "/planner/ink", "/planner/analytics", "/planner/guide", "/planner/new", "/planner/settings", "/library", "/live", "/browse", "/search?q=physics"]) {
     await check(`page renders: ${path}`, async () => {
       await open(admin, path);
       await pageIsSound(admin, path);
@@ -248,7 +248,18 @@ for (const vp of viewports) {
     const status = await member.evaluate(async () => (await fetch("/api/admin/overview")).status);
     expect(status === 403, `got ${status}`);
   });
-  for (const path of ["/planner/today", "/planner", "/planner/ink", "/library", "/settings"]) {
+  await check("a '?' opens its help sheet with what / how / why, and axe passes with it open", async () => {
+    await open(member, "/planner/ink");
+    await member.getByRole("button", { name: /^Help: Ink/ }).first().click();
+    const sheet = member.getByRole("dialog").first();
+    await sheet.getByRole("heading", { name: "What it is" }).waitFor({ timeout: 5000 });
+    expect(await sheet.getByRole("heading", { name: "How to use it" }).count(), "no How section");
+    expect(await sheet.getByRole("heading", { name: "Why it's here" }).count(), "no Why section");
+    await noAxeSerious(member, "help sheet open");
+    await shot(member, `${vp.id}-member-help-sheet`);
+    await member.keyboard.press("Escape");
+  });
+  for (const path of ["/planner/today", "/planner", "/planner/ink", "/planner/guide", "/library", "/settings"]) {
     await check(`member page renders: ${path}`, async () => {
       await open(member, path);
       await pageIsSound(member, `member ${path}`);
