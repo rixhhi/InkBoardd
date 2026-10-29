@@ -6,6 +6,7 @@ import type { ActivityItem } from "@/components/admin/bits";
 import { Storylines } from "@/components/admin/storylines";
 import { AUDIT_LABEL, get, useMembers, type AuditItem, type Online } from "@/components/admin/api";
 import { fmtAgo } from "@/lib/session";
+import { HelpButton } from "@/components/help/help-button";
 
 type ActivityResponse = { windowMinutes: number; online: Online[]; items: ActivityItem[]; next: number | null };
 
@@ -34,6 +35,7 @@ export function ActivityTab() {
         <Clock3 aria-hidden="true" className="size-4" />
         <span>
           Last {q.data?.windowMinutes ?? 60} minutes, one line per sitting. Older events are deleted; watch time is kept as daily totals.
+          <HelpButton topic="admin-storylines" />
         </span>
         {q.data ? (
           <span className="inline-flex items-center gap-1.5 text-fg">

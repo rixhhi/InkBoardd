@@ -12,6 +12,7 @@ import { get, useGroups, type MemberDetail } from "@/components/admin/api";
 import { describeError } from "@/lib/api-client";
 import { fmtAgo as ago, fmtMinutes, sendJson, type SessionUser, type Share } from "@/lib/session";
 import { ShareLine } from "./share-line";
+import { HelpButton } from "@/components/help/help-button";
 
 export function MemberDetailView({ id }: { id: number }) {
   const qc = useQueryClient();
@@ -163,7 +164,13 @@ export function MemberDetailView({ id }: { id: number }) {
         </div>
 
         {planner?.ink?.length ? (
-          <Section title={`Where ${first}’s ink is fading`} description="Each stroke is a studied lesson; lighter ink is one the schedule expects them to have mostly forgotten. Drag the date to see exam day." className="mt-8">
+          <Section
+            title={
+              <span className="inline-flex items-center gap-1">
+                Where {first}’s ink is fading
+                <HelpButton topic="admin-member-ink" />
+              </span>
+            } description="Each stroke is a studied lesson; lighter ink is one the schedule expects them to have mostly forgotten. Drag the date to see exam day." className="mt-8">
             <Surface>
               <FadingInk items={planner.ink} today={todayKey()} examDate={planner.examDate} owner={member.name} />
             </Surface>

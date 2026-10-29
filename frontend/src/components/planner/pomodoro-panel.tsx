@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Pause, Play, SkipForward, Square, Timer } from "lucide-react";
 import { Button, Dialog, IconButton, Ring, Select, toast } from "@/components/ui";
+import { HelpButton } from "@/components/help/help-button";
+
 import { SUBJECT_IDS, subjectIdOf, type SubjectId } from "@inkboard/shared/planner/subjects";
 import {
   POMODORO_PRESETS,
@@ -90,7 +92,10 @@ export function PomodoroCard({ tasks, planId, compact = false }: { tasks: PlanTa
           <div className="flex min-w-0 items-center gap-3">
             <Timer aria-hidden="true" className="size-5 shrink-0 text-fg-muted" />
             <div className="min-w-0">
-              <p className="text-sm font-medium text-fg">Focus timer</p>
+              <p className="flex items-center gap-1 text-sm font-medium text-fg">
+                Focus timer
+                <HelpButton topic="pomodoro" />
+              </p>
               <p className="truncate text-xs text-fg-muted">{next ? `Next up: ${next.title}` : "Pick a lecture or a subject and start a block."}</p>
             </div>
           </div>

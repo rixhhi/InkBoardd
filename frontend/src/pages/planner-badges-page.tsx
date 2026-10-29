@@ -13,6 +13,7 @@ import { getServerSessions, liveSessions, subscribeSessions } from "@inkboard/sh
 import { comebackCount, isCaughtUp } from "@inkboard/shared/planner/streaks";
 
 import { usePlanner } from "@inkboard/shared/planner/use-planner";
+import { HelpButton } from "@/components/help/help-button";
 
 const CATS: BadgeCategory[] = ["Consistency", "Lectures", "Time", "Revision", "Reflection", "Comeback"];
 
@@ -52,7 +53,10 @@ export default function BadgesPage() {
     <div className="py-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold tracking-wide text-fg-faint uppercase">Seals</p>
+          <p className="flex items-center gap-1 text-xs font-semibold tracking-wide text-fg-faint uppercase">
+            Seals
+            <HelpButton topic="badges" />
+          </p>
           <h1 className="chalk-draw mt-1 font-serif text-display">Stamp sheet</h1>
           <p className="mt-2 text-sm tabular text-fg-muted">
             {earned} earned · {list.filter((b) => !b.earned).length} empty

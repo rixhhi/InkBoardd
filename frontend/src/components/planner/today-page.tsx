@@ -6,6 +6,8 @@ import { PlannerOnboarding } from "@/components/planner/onboarding.tsx";
 import { AddTaskForm } from "@/components/planner/add-task.tsx";
 import { TaskRow } from "@/components/planner/task-row.tsx";
 import { PomodoroCard } from "@/components/planner/pomodoro-panel.tsx";
+import { HelpButton } from "@/components/help/help-button";
+
 import { InlineAlert } from "@/components/ui/planner/kit.tsx";
 import { Badge, Button, EmptyState, IconButton, Menu, Ring, Skeleton, toast } from "@/components/ui";
 import { orderQueue, queueClockTimes, queueRemaining, shortenDay } from "@inkboard/shared/planner/daily";
@@ -153,7 +155,10 @@ export function PlannerTodayPage() {
             {label.relative ?? ""}
             {isToday ? ` · ${slotCaption(plan.prefs.timeSlot)}` : ""}
           </p>
-          <h1 className="font-serif text-2xl font-semibold sm:text-3xl">{formatDay(date, "EEEE d MMMM")}</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="font-serif text-2xl font-semibold sm:text-3xl">{formatDay(date, "EEEE d MMMM")}</h1>
+            <HelpButton topic="today" size="md" />
+          </div>
           <p className="mt-2 text-sm text-fg-muted tabular-nums">{isToday ? dayRemainCopy(remaining.pending, remaining.minutes) : dayPlanCopy(queue, date, today)}</p>
           {isToday && streak.current ? <Badge tone="ok" className="mt-2">{streakDaysCopy(streak.current)}</Badge> : null}
         </div>
@@ -184,6 +189,7 @@ export function PlannerTodayPage() {
           ))}
         </ol>
         <IconButton label="Next day" icon={ChevronRight} disabled={!canStepDay(date, today, 1, plan)} onClick={() => goTo(addDaysKey(date, 1))} />
+        <HelpButton topic="today-strip" />
       </nav>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {!isToday ? (

@@ -17,6 +17,7 @@ import { subjectHatchClassFor, subjectMark } from "@inkboard/shared/planner/subj
 import { planPace } from "@inkboard/shared/planner/streaks";
 import { syllabusCoverage, topicCoverage, unavailableCopy } from "@inkboard/shared/planner/syllabus";
 import { usePlanner } from "@inkboard/shared/planner/use-planner";
+import { HelpButton } from "@/components/help/help-button";
 
 export function PlannerDashboard() {
   const { state, plan, streak, sync, retrySync, atRisk, savedByFreeze, date } = usePlanner();
@@ -55,7 +56,10 @@ export function PlannerDashboard() {
   return (
     <div className="max-w-[72ch] py-6">
       <p className="text-xs font-semibold tracking-wide text-fg-faint uppercase">{COPY.pace}</p>
-      <h1 className="font-serif text-2xl font-semibold sm:text-3xl">{paceSentence(pace)}</h1>
+      <div className="flex items-center gap-1">
+        <h1 className="font-serif text-2xl font-semibold sm:text-3xl">{paceSentence(pace)}</h1>
+        <HelpButton topic="dashboard-pace" size="md" />
+      </div>
       <p className="mt-2 text-sm text-fg-muted">
         {slotCopy(plan.prefs.timeSlot)}
         {examLeft == null ? "" : ` · exam in ${examLeft} days`}
@@ -117,7 +121,10 @@ export function PlannerDashboard() {
 
       {tab === "syllabus" ? (
         <section className="mt-8">
-          <h2 className="text-xs font-semibold tracking-wide text-fg-faint uppercase">Coverage</h2>
+          <div className="flex items-center gap-1">
+            <h2 className="text-xs font-semibold tracking-wide text-fg-faint uppercase">Coverage</h2>
+            <HelpButton topic="dashboard-coverage" />
+          </div>
           <p className="mt-2 text-sm text-fg-muted">Topics when the course lists them. Otherwise we say so.</p>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2">
             {topicRows.length || missingRows.length ? (

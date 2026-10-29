@@ -7,6 +7,7 @@ import { CatchUpLines, PaceCatchUpButton } from "@/components/planner/behind-ban
 import { BlankInstrument } from "@/components/planner/onboarding.tsx";
 import { TaskRow } from "@/components/planner/task-row.tsx";
 import { InlineAlert, KitSelect, SkeletonBlock } from "@/components/ui/planner/kit.tsx";
+import { HelpButton } from "@/components/help/help-button";
 import { Button, Dialog, IconButton, Tabs } from "@/components/ui";
 import { CalendarDays, ChevronLeft, ChevronRight, Download, Plus } from "lucide-react";
 import { COPY } from "@inkboard/shared/copy";
@@ -190,7 +191,10 @@ export function PlannerPage() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-xs font-semibold tracking-wide text-fg-faint uppercase">{COPY.month}</p>
-          <h1 className="font-serif text-2xl font-semibold sm:text-3xl">{monthTitle}</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="font-serif text-2xl font-semibold sm:text-3xl">{monthTitle}</h1>
+            <HelpButton topic="month" size="md" />
+          </div>
           <p className="mt-1 text-sm text-fg-muted">
             {plan.name} · {slotCopy(plan.prefs.timeSlot)}
           </p>

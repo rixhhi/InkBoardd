@@ -32,6 +32,7 @@ import { Route as PlannerIndexRouteImport } from './routes/planner.index'
 import { Route as PlannerAnalyticsRouteImport } from './routes/planner.analytics'
 import { Route as PlannerBadgesRouteImport } from './routes/planner.badges'
 import { Route as PlannerDashboardRouteImport } from './routes/planner.dashboard'
+import { Route as PlannerGuideRouteImport } from './routes/planner.guide'
 import { Route as PlannerHistoryRouteImport } from './routes/planner.history'
 import { Route as PlannerInkRouteImport } from './routes/planner.ink'
 import { Route as PlannerNewRouteImport } from './routes/planner.new'
@@ -155,6 +156,11 @@ const PlannerDashboardRoute = PlannerDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => PlannerRoute,
 } as any)
+const PlannerGuideRoute = PlannerGuideRouteImport.update({
+  id: '/guide',
+  path: '/guide',
+  getParentRoute: () => PlannerRoute,
+} as any)
 const PlannerHistoryRoute = PlannerHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -212,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/planner/analytics': typeof PlannerAnalyticsRoute
   '/planner/badges': typeof PlannerBadgesRoute
   '/planner/dashboard': typeof PlannerDashboardRoute
+  '/planner/guide': typeof PlannerGuideRoute
   '/planner/history': typeof PlannerHistoryRoute
   '/planner/ink': typeof PlannerInkRoute
   '/planner/new': typeof PlannerNewRoute
@@ -242,6 +249,7 @@ export interface FileRoutesByTo {
   '/planner/analytics': typeof PlannerAnalyticsRoute
   '/planner/badges': typeof PlannerBadgesRoute
   '/planner/dashboard': typeof PlannerDashboardRoute
+  '/planner/guide': typeof PlannerGuideRoute
   '/planner/history': typeof PlannerHistoryRoute
   '/planner/ink': typeof PlannerInkRoute
   '/planner/new': typeof PlannerNewRoute
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/planner/analytics': typeof PlannerAnalyticsRoute
   '/planner/badges': typeof PlannerBadgesRoute
   '/planner/dashboard': typeof PlannerDashboardRoute
+  '/planner/guide': typeof PlannerGuideRoute
   '/planner/history': typeof PlannerHistoryRoute
   '/planner/ink': typeof PlannerInkRoute
   '/planner/new': typeof PlannerNewRoute
@@ -309,6 +318,7 @@ export interface FileRouteTypes {
     | '/planner/analytics'
     | '/planner/badges'
     | '/planner/dashboard'
+    | '/planner/guide'
     | '/planner/history'
     | '/planner/ink'
     | '/planner/new'
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/planner/analytics'
     | '/planner/badges'
     | '/planner/dashboard'
+    | '/planner/guide'
     | '/planner/history'
     | '/planner/ink'
     | '/planner/new'
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '/planner/analytics'
     | '/planner/badges'
     | '/planner/dashboard'
+    | '/planner/guide'
     | '/planner/history'
     | '/planner/ink'
     | '/planner/new'
@@ -568,6 +580,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlannerDashboardRouteImport
       parentRoute: typeof PlannerRoute
     }
+    '/planner/guide': {
+      id: '/planner/guide'
+      path: '/guide'
+      fullPath: '/planner/guide'
+      preLoaderRoute: typeof PlannerGuideRouteImport
+      parentRoute: typeof PlannerRoute
+    }
     '/planner/history': {
       id: '/planner/history'
       path: '/history'
@@ -638,6 +657,7 @@ interface PlannerRouteChildren {
   PlannerAnalyticsRoute: typeof PlannerAnalyticsRoute
   PlannerBadgesRoute: typeof PlannerBadgesRoute
   PlannerDashboardRoute: typeof PlannerDashboardRoute
+  PlannerGuideRoute: typeof PlannerGuideRoute
   PlannerHistoryRoute: typeof PlannerHistoryRoute
   PlannerInkRoute: typeof PlannerInkRoute
   PlannerNewRoute: typeof PlannerNewRoute
@@ -650,6 +670,7 @@ const PlannerRouteChildren: PlannerRouteChildren = {
   PlannerAnalyticsRoute: PlannerAnalyticsRoute,
   PlannerBadgesRoute: PlannerBadgesRoute,
   PlannerDashboardRoute: PlannerDashboardRoute,
+  PlannerGuideRoute: PlannerGuideRoute,
   PlannerHistoryRoute: PlannerHistoryRoute,
   PlannerInkRoute: PlannerInkRoute,
   PlannerNewRoute: PlannerNewRoute,

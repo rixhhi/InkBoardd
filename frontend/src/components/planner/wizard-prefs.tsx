@@ -8,6 +8,7 @@ import { dailyPreviewCopy, requiredPaceCopy } from "@inkboard/shared/planner/wiz
 import { WizardSampleWeek } from "./wizard-preview.tsx";
 import { Badge, Button, Field, IconButton, Input, Section, Segmented, Select, Surface, Switch } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import { HelpButton } from "@/components/help/help-button";
 
 /** A card-style single choice (pace, time of day, how courses mix). */
 function ChoiceCard({ on, onClick, title, hint, note, caution }: { on: boolean; onClick: () => void; title: string; hint: string; note?: string; caution?: boolean }) {
@@ -210,7 +211,8 @@ export function WizardPrefs({
           </Field>
           <Switch label="Spaced revision" description="Revisit each class a few days after you watch it." checked={prefs.includeRevision} onCheckedChange={(on) => onChange({ ...prefs, includeRevision: on })} />
           {prefs.includeRevision ? (
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Revision after">
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Revision after">
+              <HelpButton topic="revision-intervals" />
               {DEFAULT_REVISION_INTERVALS.map((n) => {
                 const on = prefs.revisionIntervals.includes(n);
                 return (

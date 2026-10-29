@@ -7,6 +7,7 @@ import { InlineAlert } from "@/components/ui/planner/kit.tsx";
 import { COPY } from "@inkboard/shared/copy";
 import { isBrowserOffline, readTodayCache } from "@inkboard/shared/planner/offline";
 import { usePlanner } from "@inkboard/shared/planner/use-planner";
+import { HelpButton } from "@/components/help/help-button";
 
 /** Planner pages share the app shell; the planner keeps its own section nav under the context bar. */
 export function PlannerShell({ children }: { children: React.ReactNode }) {
@@ -39,6 +40,7 @@ const SECTIONS = [
   { to: "/planner/ink", label: () => COPY.ink, match: (p: string) => p.startsWith("/planner/ink") },
   { to: "/planner/badges", label: () => COPY.seals, match: (p: string) => p.startsWith("/planner/badges") },
   { to: "/planner/settings", label: () => COPY.settings, match: (p: string) => p.startsWith("/planner/settings") },
+  { to: "/planner/guide", label: () => COPY.guide, match: (p: string) => p.startsWith("/planner/guide") },
 ] as const;
 
 function PlannerSubnav() {
@@ -82,7 +84,12 @@ function OfflineBanner() {
   return (
     <div className="mb-4">
       <InlineAlert
-        title={COPY.youreOffline}
+        title={
+          <span className="inline-flex items-center gap-1">
+            {COPY.youreOffline}
+            <HelpButton topic="offline" />
+          </span>
+        }
         body={
           cache
             ? `Today’s plan (“${cache.planName}”, ${cache.tasks.length} items) is saved on this device. Tick tasks, rate reviews, re-ink — it all queues here and syncs the moment you’re back.`

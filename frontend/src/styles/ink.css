@@ -371,3 +371,129 @@
 .digest-ink-ghost {
   background: transparent;
 }
+
+/* ---------------- Help ("?") sheets and the Guide page ---------------- */
+.help-btn {
+  flex-shrink: 0;
+}
+.help-body {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--color-fg);
+}
+.help-body p,
+.help-body li,
+.help-body dd {
+  color: var(--color-fg-muted);
+}
+.help-where {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-fg-faint);
+}
+.help-h {
+  margin-top: 1.25rem;
+  margin-bottom: 0.375rem;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+.help-body-compact .help-h {
+  margin-top: 0.875rem;
+}
+.help-steps {
+  display: grid;
+  gap: 0.375rem;
+  padding-left: 1.25rem;
+  list-style: decimal;
+}
+.help-steps li::marker {
+  color: var(--color-accent);
+  font-variant-numeric: tabular-nums;
+}
+.help-tips {
+  display: grid;
+  gap: 0.375rem;
+  padding-left: 1.1rem;
+  list-style: "— ";
+}
+.help-math {
+  margin-top: 1.25rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-md, 0.5rem);
+  background: color-mix(in srgb, var(--color-surface-raised) 70%, transparent);
+}
+.help-math summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--color-fg);
+}
+.help-math p {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+.help-faq {
+  display: grid;
+  gap: 0.75rem;
+}
+.help-faq dt {
+  font-weight: 500;
+  color: var(--color-fg);
+}
+.help-faq dd {
+  margin-top: 0.125rem;
+  font-size: 0.875rem;
+}
+.help-see,
+.help-foot {
+  margin-top: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--color-fg-faint);
+}
+.help-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-line);
+}
+.help-link {
+  color: var(--color-fg);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-fg) 35%, transparent);
+  text-underline-offset: 2px;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.help-link:hover {
+  color: var(--color-accent);
+  text-decoration-color: currentColor;
+}
+
+/* Guide page */
+.guide-toc {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+.guide-toc a {
+  color: var(--color-fg-muted);
+}
+.guide-toc a:hover {
+  color: var(--color-fg);
+}
+.guide-topic {
+  scroll-margin-top: calc(var(--header-h) + 1rem);
+  padding-top: 2rem;
+  margin-top: 2rem;
+  border-top: 1px solid var(--color-line);
+}
+.guide-topic:first-of-type {
+  border-top: 0;
+  margin-top: 0;
+}

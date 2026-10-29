@@ -14,6 +14,7 @@ import { moveTasks, skipTasks, undoLast } from "@inkboard/shared/planner/storage
 import { usePlanner } from "@inkboard/shared/planner/use-planner";
 import type { StudyPlan } from "@inkboard/shared/planner/types";
 import { isApplyReady, weeklyApplyDiff } from "@inkboard/shared/planner/weekly-apply";
+import { HelpButton } from "@/components/help/help-button";
 
 const SOURCE_LABEL: Record<SessionSource, string> = { watch: "Watched here", focus: "Focus blocks", manual: "Logged by hand" };
 
@@ -71,7 +72,10 @@ export default function AnalyticsPage() {
 
   return (
     <div className="max-w-[80ch] py-6">
-      <p className="text-xs font-semibold tracking-wide text-fg-faint uppercase">Instruments</p>
+      <p className="flex items-center gap-1 text-xs font-semibold tracking-wide text-fg-faint uppercase">
+        Instruments
+        <HelpButton topic="analytics" />
+      </p>
       <h1 className="chalk-draw mt-1 font-serif text-display">{insight}</h1>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm tabular text-fg-muted">

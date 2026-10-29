@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { toast } from "sonner";
 import { FadingInk } from "@/components/planner/fading-ink";
 import { ReinkPlanner } from "@/components/planner/reink-planner";
+import { HelpButton } from "@/components/help/help-button";
 import { PlannerCard } from "@/components/ui/planner/kit.tsx";
 import { inkItems } from "@inkboard/shared/planner/ink";
 import { reinkLesson, scheduleReinks, undoLast } from "@inkboard/shared/planner/storage";
@@ -25,7 +26,10 @@ export default function InkPage() {
   return (
     <div className="grid gap-4">
       <header className="min-w-0">
-        <h1 className="font-serif text-2xl text-fg">Ink</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="font-serif text-2xl text-fg">Ink</h1>
+          <HelpButton topic="ink" size="md" />
+        </div>
         <p className="mt-1 max-w-prose text-sm text-fg-muted">What you studied, drawn as ink. It fades at the rate your review schedule expects, so you can see what to re-ink before the exam.</p>
       </header>
       <PlannerCard>

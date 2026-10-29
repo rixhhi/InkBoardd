@@ -10,6 +10,7 @@ import { Avatar, Badge, ErrorState, Section, Skeleton } from "@/components/ui";
 import { get } from "@/components/admin/api";
 import type { SessionUser } from "@/lib/session";
 import { fmtAgo } from "@/lib/session";
+import { HelpButton } from "@/components/help/help-button";
 
 export type DigestRow = {
   member: SessionUser;
@@ -55,7 +56,12 @@ export function WeekDigest() {
   const total = deltaLabel(d.totals.minutes, d.totals.minutesPrev);
   return (
     <Section
-      title="This week"
+      title={
+        <span className="inline-flex items-center gap-1">
+          This week
+          <HelpButton topic="admin-digest" />
+        </span>
+      }
       description={`${d.totals.minutes} min across ${d.totals.active} of ${d.rows.length} members · ${total.text === "—" ? "nothing studied yet" : `${total.text} vs last week`}${d.totals.ghosts ? ` · ${d.totals.ghosts} ghost lessons to re-ink` : ""}`}
     >
       <ol className="digest-rows" aria-label="Members, quietest first">

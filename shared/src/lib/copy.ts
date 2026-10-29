@@ -14,6 +14,7 @@ export const COPY = {
   pace: "Dashboard",
   instruments: "Analytics",
   ink: "Ink",
+  guide: "Guide",
   seals: "Badges",
   history: "History",
   month: "Month",

@@ -223,7 +223,7 @@ export function InlineAlert({
   action,
   tone = "warn",
 }: {
-  title: string;
+  title: ReactNode;
   body?: string;
   action?: ReactNode;
   tone?: "warn" | "danger" | "primary";

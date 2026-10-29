@@ -15,6 +15,7 @@ import { fadesOn, INK_BANDS, inkBand, inkSeed, inkSummary, reinkQueue, retention
 import { SUBJECT_IDS, SUBJECT_MARK, subjectVar, type SubjectId } from "@inkboard/shared/planner/subjects";
 import type { ReviewRating } from "@inkboard/shared/planner/types";
 import { cn } from "@/lib/cn";
+import { HelpButton } from "@/components/help/help-button";
 
 export type FadingInkProps = {
   items: InkItem[];
@@ -131,6 +132,7 @@ export function FadingInk({ items, today, examDate, onReink, owner, className }:
       {/* Time scrubber */}
       <div className="ink-scrubber mt-5">
         <div className="flex items-center gap-2">
+          <HelpButton topic="ink-scrubber" />
           <button type="button" className="ink-step" aria-label="One day earlier" onClick={() => setOffset((o) => Math.max(0, o - 1))} disabled={offset === 0}>
             <ChevronLeft aria-hidden="true" className="size-4" />
           </button>

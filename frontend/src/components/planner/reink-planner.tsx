@@ -11,6 +11,7 @@ import { liveTasks, type StudyPlan } from "@inkboard/shared/planner/types";
 import { Button } from "@/components/ui";
 import { Segmented } from "@/components/ui/controls";
 import { SubjectDot } from "@/components/ui/planner/kit.tsx";
+import { HelpButton } from "@/components/help/help-button";
 
 type Horizon = "week" | "fortnight" | "exam";
 
@@ -44,9 +45,12 @@ export function ReinkPlanner({ plan, items, today, onSchedule }: { plan: StudyPl
     <section className="reink-planner" aria-labelledby="reink-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 id="reink-title" className="font-serif text-base font-semibold text-fg">
-            Put the fading ones on the calendar
-          </h2>
+          <div className="flex items-center gap-1">
+            <h2 id="reink-title" className="font-serif text-base font-semibold text-fg">
+              Put the fading ones on the calendar
+            </h2>
+            <HelpButton topic="ink-bridge" />
+          </div>
           <p className="mt-1 max-w-prose text-sm text-fg-muted">Picks what will have faded by the deadline, worst first, and spreads it over your study days as short re-ink reviews.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
