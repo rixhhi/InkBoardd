@@ -56,7 +56,7 @@ export function WeekDigest() {
   return (
     <Section
       title="This week"
-      description={`${d.totals.minutes} min across ${d.totals.active} of ${d.rows.length} members · ${total.text === "—" ? "no watching yet" : `${total.text} vs last week`}${d.totals.ghosts ? ` · ${d.totals.ghosts} ghost lessons to re-ink` : ""}`}
+      description={`${d.totals.minutes} min across ${d.totals.active} of ${d.rows.length} members · ${total.text === "—" ? "nothing studied yet" : `${total.text} vs last week`}${d.totals.ghosts ? ` · ${d.totals.ghosts} ghost lessons to re-ink` : ""}`}
     >
       <ol className="digest-rows" aria-label="Members, quietest first">
         {d.rows.map((r) => {
