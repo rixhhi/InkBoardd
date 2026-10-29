@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Clock3 } from "lucide-react";
-import { Button, ErrorState, Section, Select, Skeleton, Surface } from "@/components/ui";
-import { ActivityFeed, type ActivityItem } from "@/components/admin/bits";
+import { Button, ErrorState, Select, Skeleton, Surface } from "@/components/ui";
+import type { ActivityItem } from "@/components/admin/bits";
+import { Storylines } from "@/components/admin/storylines";
 import { AUDIT_LABEL, get, useMembers, type AuditItem, type Online } from "@/components/admin/api";
 import { fmtAgo } from "@/lib/session";
-import { OnlineNow } from "./online-now";
 
 type ActivityResponse = { windowMinutes: number; online: Online[]; items: ActivityItem[]; next: number | null };
 
@@ -26,14 +26,23 @@ export function ActivityTab() {
     refetchInterval: before ? false : 20_000,
   });
   const reset = () => setPages([]);
+  const online = q.data?.online.length ?? 0;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+    <div className="grid max-w-3xl gap-4">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
+        <Clock3 aria-hidden="true" className="size-4" />
+        <span>
+          Last {q.data?.windowMinutes ?? 60} minutes, one line per sitting. Older events are deleted; watch time is kept as daily totals.
+        </span>
+        {q.data ? (
+          <span className="inline-flex items-center gap-1.5 text-fg">
+            <span aria-hidden="true" className={online ? "size-2 rounded-full bg-ok" : "size-2 rounded-full bg-line"} />
+            {online ? `${online} online now` : "Nobody online right now"}
+          </span>
+        ) : null}
+      </p>
       <div className="grid content-start gap-4">
-        <p className="flex items-center gap-2 text-sm text-fg-muted">
-          <Clock3 aria-hidden="true" className="size-4" />
-          Showing the last {q.data?.windowMinutes ?? 60} minutes. Older events are deleted; watch time is kept as daily totals.
-        </p>
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
           <Select
             label="Member"
@@ -67,21 +76,12 @@ export function ActivityTab() {
             </Button>
           ) : null}
         </div>
-        <Surface>
-          {q.isLoading ? <Skeleton className="h-60" /> : q.isError ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : <ActivityFeed items={q.data?.items ?? []} showUser empty="No member activity in the last hour." />}
-        </Surface>
+        <Surface>{q.isLoading ? <Skeleton className="h-60" /> : q.isError ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : <Storylines items={q.data?.items ?? []} />}</Surface>
         {q.data?.next ? (
           <Button variant="secondary" className="justify-self-center" onClick={() => setPages((p) => [...p, q.data!.next!])}>
             Older
           </Button>
         ) : null}
-      </div>
-      <div className="grid content-start gap-6">
-        <Section title="Online now" description="Active in the last 5 minutes">
-          <Surface>
-            <OnlineNow items={q.data?.online ?? []} />
-          </Surface>
-        </Section>
       </div>
     </div>
   );

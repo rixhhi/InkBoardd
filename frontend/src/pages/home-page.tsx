@@ -39,19 +39,29 @@ function pctOf(e: WatchEntry) {
   return e.duration > 0 ? Math.min(100, Math.round((e.t / e.duration) * 100)) : 0;
 }
 
+/** "23:14" for a resume point; null when the class was barely started or is finished. */
+function resumeClock(e: WatchEntry): string | null {
+  if (e.t < 30 || (e.duration > 0 && e.t >= e.duration - 30)) return null;
+  const m = Math.floor(e.t / 60);
+  const s = Math.floor(e.t % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 /* ---------------- Continue ---------------- */
 
 function ContinueCard({ entry, primary }: { entry: WatchEntry; primary?: boolean }) {
   const left = minutesLeft(entry);
   const pct = pctOf(entry);
+  const at = resumeClock(entry);
   return (
     <Card padded={false} className="relative">
       <Link
         to="/play/$lessonId"
         params={{ lessonId: entry.lessonId }}
-        search={{ title: entry.title, teacher: entry.teacher, course: entry.course }}
+        // Pass the saved position so "Continue" really continues (the player honours ?t as startAt).
+        search={{ title: entry.title, teacher: entry.teacher, course: entry.course, t: at ? Math.floor(entry.t) : undefined }}
         className="block rounded-lg p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:p-5"
-        aria-label={`${COPY.onTheBoard}: ${entry.title}${left != null ? `, ${left} min left` : ""}`}
+        aria-label={`${COPY.onTheBoard}: ${entry.title}${at ? `, resume at ${at}` : ""}${left != null ? `, ${left} min left` : ""}`}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -59,7 +69,9 @@ function ContinueCard({ entry, primary }: { entry: WatchEntry; primary?: boolean
             <p className={primary ? "mt-1 line-clamp-2 font-serif text-xl text-fg" : "mt-1 line-clamp-2 font-medium text-fg"}>{entry.title}</p>
             <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-fg-muted">
               {entry.teacher ? <span>{entry.teacher}</span> : null}
-              {entry.teacher && left != null ? <Dot /> : null}
+              {entry.teacher && (at || left != null) ? <Dot /> : null}
+              {at ? <span className="text-fg tabular-nums">Resume at {at}</span> : null}
+              {at && left != null ? <Dot /> : null}
               {left != null ? <span>{left ? `${left} min left` : "Finished"}</span> : null}
             </p>
           </div>

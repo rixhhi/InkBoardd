@@ -2,10 +2,10 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Activity as ActivityIcon, Clock3, KeyRound, Radio, Share2, UserPlus } from "lucide-react";
 import { Avatar, Badge, Button, EmptyState, ErrorState, List, ListRow, Section, Skeleton, Surface } from "@/components/ui";
-import { ActivityFeed, DayBars, StatTile } from "@/components/admin/bits";
+import { DayBars, StatTile } from "@/components/admin/bits";
+import { Storylines } from "@/components/admin/storylines";
 import { get, type MemberRow, type Overview } from "@/components/admin/api";
 import { fmtAgo, fmtMinutes } from "@/lib/session";
-import { OnlineNow } from "./online-now";
 
 export function MemberLine({ m }: { m: MemberRow }) {
   return (
@@ -75,18 +75,9 @@ export function OverviewTab({ onGo }: { onGo: (tab: string) => void }) {
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <Surface>
-          <DayBars days={d.daily} label="Minutes watched per day (14 days)" empty="No member has watched a class in the last 14 days. Share an exam or course to get them started." />
-        </Surface>
-        <Surface>
-          <h2 className="mb-2 flex items-center gap-2 text-sm font-medium text-fg">
-            <span aria-hidden="true" className="size-2 rounded-full bg-ok" />
-            Online now
-          </h2>
-          <OnlineNow items={d.online} />
-        </Surface>
-      </div>
+      <Surface>
+        <DayBars days={d.daily} label="Minutes watched per day (14 days)" empty="No member has watched a class in the last 14 days. Share an exam or course to get them started." />
+      </Surface>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Section title="Members this week" action={<Button variant="ghost" size="sm" onClick={() => onGo("members")}>All members</Button>}>
@@ -96,8 +87,16 @@ export function OverviewTab({ onGo }: { onGo: (tab: string) => void }) {
             ))}
           </List>
         </Section>
-        <Section title="Last hour" description="Raw activity is kept for one hour; daily totals are kept for charts." action={<Button variant="ghost" size="sm" onClick={() => onGo("activity")}>Full log</Button>}>
-          <ActivityFeed items={d.recent.slice(0, 10)} showUser empty="No activity in the last hour." />
+        <Section
+          title="Last hour"
+          description={d.online.length ? `${d.online.length} online now · one line per sitting` : "One line per sitting. Raw events are kept for an hour; daily totals for charts."}
+          action={
+            <Button variant="ghost" size="sm" onClick={() => onGo("activity")}>
+              Full log
+            </Button>
+          }
+        >
+          <Storylines items={d.recent.slice(0, 40)} empty="No activity in the last hour." />
         </Section>
       </div>
 

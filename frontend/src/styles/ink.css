@@ -220,3 +220,61 @@
     transition: none;
   }
 }
+
+/* ---------- Activity storylines ---------- */
+.story {
+  padding: 0.6rem 0.5rem 0.5rem;
+  border-radius: var(--radius-md);
+}
+.story:hover {
+  background: color-mix(in srgb, var(--color-surface-raised) 60%, transparent);
+}
+.story-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.story-steps {
+  position: relative;
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.35rem 0 0;
+  padding: 0 0 0 2.75rem;
+  list-style: none;
+}
+.story-steps::before {
+  content: "";
+  position: absolute;
+  left: 0.95rem;
+  top: 0.1rem;
+  bottom: 0.3rem;
+  width: 1px;
+  background: var(--color-line);
+}
+.story-step {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  min-height: 1.6rem;
+}
+.story-dot {
+  position: absolute;
+  left: 0.75rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--color-fg-faint);
+}
+.story-dot[data-kind="watch"] {
+  background: var(--color-accent);
+}
+.story-dot[data-kind="login"] {
+  background: var(--color-info);
+}
+.story-dot[data-kind="exam"],
+.story-dot[data-kind="course"],
+.story-dot[data-kind="batch"] {
+  background: var(--color-warn);
+}
