@@ -14,6 +14,7 @@ import { slideAt, type Timeline } from "@inkboard/shared/dcn";
 import { completeLessonInPlan } from "@inkboard/shared/planner/storage";
 import { COPY } from "@inkboard/shared/copy";
 import { writePrepared } from "@/lib/prepared-media";
+import { useAccess } from "@/lib/session";
 import {
   formatTime,
   layoutSlate,
@@ -67,7 +68,7 @@ export function ClassPlayer({
     nav, sleepUntil, setSleepUntil, sleepLeft, help, isBoard, timeMs, ended, canPlay, err,
     wantPlay, round, nextLesson, holdEnd, openLesson, advanceLeft, slide, pins,
     chaptersOpen, chapterQuery, setChapterQuery, setChaptersOpen, summaryBusy, summary, summaryNote,
-    keepOpen, setSheet, setAudioUrl, setHlsUrl, setSilence, setWaveform, setJobId, notesOpen, setNotesOpen,
+    keepOpen, setSheet, setAudioUrl, hlsUrl, setHlsUrl, setSilence, setWaveform, setJobId, notesOpen, setNotesOpen,
   } = core;
   void tapTimer;
   const chromeOpenRef = useRef(true);
@@ -117,6 +118,9 @@ export function ClassPlayer({
     const probe = document.createElement("video");
     setCanPlay(probe.canPlayType("video/webm") !== "");
   }, [timeline.videoUrl, setCanPlay]);
+  // The prepare job needs the Downloads switch for members; admins always may.
+  const access = useAccess();
+  const canPrepare = access.admin || access.perms.downloads;
 
   useEffect(() => {
     const el = stageRef.current;
@@ -375,10 +379,17 @@ export function ClassPlayer({
             </Button>
           </div>
         ) : null}
-        {!canPlay ? (
-          <div role="alert" className="absolute bottom-3 left-1/2 z-30 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-3 rounded-md bg-warn-subtle px-3 py-2 text-xs text-fg shadow-2">
+        {!canPlay && !hlsUrl ? (
+          <div role="alert" className="absolute bottom-3 left-1/2 z-30 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-wrap items-center gap-x-3 gap-y-2 rounded-md bg-warn-subtle px-3 py-2 text-xs text-fg shadow-2">
             <TriangleAlert aria-hidden="true" className="size-4 shrink-0 text-warn" />
-            <span className="min-w-0">{COPY.cantPlayClass}</span>
+            <span className="min-w-0">
+              <span className="font-medium">{COPY.cantPlayClass}.</span> {canPrepare ? COPY.cantPlayClassHint : COPY.prepareNeedsAdmin}
+            </span>
+            {canPrepare ? (
+              <Button size="sm" onClick={() => setKeepOpen(true)}>
+                {COPY.prepareForThisDevice}
+              </Button>
+            ) : null}
             {resolvedNotes ? (
               <Button size="sm" variant="secondary" asChild>
                 <a href={resolvedNotes} target="_blank" rel="noreferrer">
