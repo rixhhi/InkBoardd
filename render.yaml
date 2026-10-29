@@ -1,0 +1,47 @@
+# Render Blueprint — the InkBoard API as one Docker web service.
+# Dashboard → New → Blueprint → pick this repo. The site lives on Vercel and
+# proxies /api, /healthz and /readyz here; see README "Deploying: Render + Vercel".
+services:
+  - type: web
+    name: inkboard-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: starter            # free works too (sleeps after 15 min; no disk)
+    region: singapore        # closest to India; change to suit
+    healthCheckPath: /healthz
+    autoDeploy: true
+    # Uncomment on a paid plan so saved-lecture artifacts survive deploys.
+    # disk:
+    #   name: inkboard-jobs
+    #   mountPath: /data/jobs
+    #   sizeGB: 10
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JOB_DIR
+        value: /data/jobs
+      - key: LOG_LEVEL
+        value: info
+      # Vercel sits in front: trust two X-Forwarded-For hops, but only when the
+      # site stamps this secret. Copy the generated value into Vercel as
+      # INKBOARD_PROXY_SECRET.
+      - key: TRUST_PROXY
+        value: "2"
+      - key: INKBOARD_PROXY_SECRET
+        generateValue: true
+      # One-time code to claim the install at /setup (printed in logs otherwise).
+      - key: SETUP_CODE
+        generateValue: true
+      # Browser origin(s) of the site, for CORS/CSRF. Comma separated.
+      - key: CORS_ORIGINS
+        sync: false
+      # Neon (postgres://…?sslmode=require) and Upstash (rediss://…). Leave
+      # unset to run on the embedded PGlite + in-memory fallbacks.
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      # Optional: xAI key for revision bullets.
+      - key: XAI_API_KEY
+        sync: false

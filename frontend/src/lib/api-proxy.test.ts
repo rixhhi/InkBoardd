@@ -37,11 +37,10 @@ describe("Vercel API proxy", () => {
     assert.equal(new URL(open.url).pathname, "/healthz");
   });
 
-  it("the Vercel middleware reads INKBOARD_PROXY_SECRET and the build does not set BUDGET_STRICT", () => {
-    const middleware = readFileSync(new URL("../../middleware.ts", import.meta.url), "utf8");
-    assert.match(middleware, /INKBOARD_PROXY_SECRET/);
-    assert.match(middleware, /proxyApi\(/);
-    assert.match(middleware, /\/api\/:path\*/);
+  it("the server-side upstream reads INKBOARD_PROXY_SECRET and the build does not set BUDGET_STRICT", () => {
+    const upstream = readFileSync(new URL("./server/api-upstream.ts", import.meta.url), "utf8");
+    assert.match(upstream, /INKBOARD_PROXY_SECRET/);
+    assert.match(upstream, /proxyApi\(/);
     const vercel = readFileSync(new URL("../../vercel.json", import.meta.url), "utf8");
     assert.doesNotMatch(vercel, /BUDGET_STRICT/);
     assert.doesNotMatch(vercel, /INKBOARD_PROXY_SECRET/);

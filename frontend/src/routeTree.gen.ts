@@ -14,13 +14,16 @@ import { Route as SplatRouteImport } from './routes/$'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as FavouritesRouteImport } from './routes/favourites'
+import { Route as HealthzRouteImport } from './routes/healthz'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OfflineRouteImport } from './routes/offline'
 import { Route as PlannerRouteImport } from './routes/planner'
+import { Route as ReadyzRouteImport } from './routes/readyz'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SetupRouteImport } from './routes/setup'
+import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as BatchBatchIdRouteImport } from './routes/batch.$batchId'
 import { Route as CourseCourseIdRouteImport } from './routes/course.$courseId'
 import { Route as ExamGoalIdRouteImport } from './routes/exam.$goalId'
@@ -66,6 +69,11 @@ const FavouritesRoute = FavouritesRouteImport.update({
   path: '/favourites',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HealthzRoute = HealthzRouteImport.update({
+  id: '/healthz',
+  path: '/healthz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LibraryRoute = LibraryRouteImport.update({
   id: '/library',
   path: '/library',
@@ -86,6 +94,11 @@ const PlannerRoute = PlannerRouteImport.update({
   path: '/planner',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReadyzRoute = ReadyzRouteImport.update({
+  id: '/readyz',
+  path: '/readyz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -99,6 +112,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSplatRoute = ApiSplatRouteImport.update({
+  id: '/api/$',
+  path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BatchBatchIdRoute = BatchBatchIdRouteImport.update({
@@ -203,13 +221,16 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/browse': typeof BrowseRoute
   '/favourites': typeof FavouritesRouteWithChildren
+  '/healthz': typeof HealthzRoute
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/offline': typeof OfflineRoute
   '/planner': typeof PlannerRouteWithChildren
+  '/readyz': typeof ReadyzRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/setup': typeof SetupRoute
+  '/api/$': typeof ApiSplatRoute
   '/batch/$batchId': typeof BatchBatchIdRoute
   '/course/$courseId': typeof CourseCourseIdRoute
   '/exam/$goalId': typeof ExamGoalIdRoute
@@ -235,12 +256,15 @@ export interface FileRoutesByTo {
   '/$': typeof SplatRoute
   '/admin': typeof AdminRoute
   '/browse': typeof BrowseRoute
+  '/healthz': typeof HealthzRoute
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/offline': typeof OfflineRoute
+  '/readyz': typeof ReadyzRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/setup': typeof SetupRoute
+  '/api/$': typeof ApiSplatRoute
   '/batch/$batchId': typeof BatchBatchIdRoute
   '/course/$courseId': typeof CourseCourseIdRoute
   '/exam/$goalId': typeof ExamGoalIdRoute
@@ -268,13 +292,16 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/browse': typeof BrowseRoute
   '/favourites': typeof FavouritesRouteWithChildren
+  '/healthz': typeof HealthzRoute
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/offline': typeof OfflineRoute
   '/planner': typeof PlannerRouteWithChildren
+  '/readyz': typeof ReadyzRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/setup': typeof SetupRoute
+  '/api/$': typeof ApiSplatRoute
   '/batch/$batchId': typeof BatchBatchIdRoute
   '/course/$courseId': typeof CourseCourseIdRoute
   '/exam/$goalId': typeof ExamGoalIdRoute
@@ -303,13 +330,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/browse'
     | '/favourites'
+    | '/healthz'
     | '/library'
     | '/login'
     | '/offline'
     | '/planner'
+    | '/readyz'
     | '/search'
     | '/settings'
     | '/setup'
+    | '/api/$'
     | '/batch/$batchId'
     | '/course/$courseId'
     | '/exam/$goalId'
@@ -335,12 +365,15 @@ export interface FileRouteTypes {
     | '/$'
     | '/admin'
     | '/browse'
+    | '/healthz'
     | '/library'
     | '/login'
     | '/offline'
+    | '/readyz'
     | '/search'
     | '/settings'
     | '/setup'
+    | '/api/$'
     | '/batch/$batchId'
     | '/course/$courseId'
     | '/exam/$goalId'
@@ -367,13 +400,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/browse'
     | '/favourites'
+    | '/healthz'
     | '/library'
     | '/login'
     | '/offline'
     | '/planner'
+    | '/readyz'
     | '/search'
     | '/settings'
     | '/setup'
+    | '/api/$'
     | '/batch/$batchId'
     | '/course/$courseId'
     | '/exam/$goalId'
@@ -401,13 +437,16 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   BrowseRoute: typeof BrowseRoute
   FavouritesRoute: typeof FavouritesRouteWithChildren
+  HealthzRoute: typeof HealthzRoute
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
   OfflineRoute: typeof OfflineRoute
   PlannerRoute: typeof PlannerRouteWithChildren
+  ReadyzRoute: typeof ReadyzRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   SetupRoute: typeof SetupRoute
+  ApiSplatRoute: typeof ApiSplatRoute
   BatchBatchIdRoute: typeof BatchBatchIdRoute
   CourseCourseIdRoute: typeof CourseCourseIdRoute
   ExamGoalIdRoute: typeof ExamGoalIdRoute
@@ -454,6 +493,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FavouritesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/healthz': {
+      id: '/healthz'
+      path: '/healthz'
+      fullPath: '/healthz'
+      preLoaderRoute: typeof HealthzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/library': {
       id: '/library'
       path: '/library'
@@ -482,6 +528,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlannerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/readyz': {
+      id: '/readyz'
+      path: '/readyz'
+      fullPath: '/readyz'
+      preLoaderRoute: typeof ReadyzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
@@ -501,6 +554,13 @@ declare module '@tanstack/react-router' {
       path: '/setup'
       fullPath: '/setup'
       preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/$': {
+      id: '/api/$'
+      path: '/api/$'
+      fullPath: '/api/$'
+      preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/batch/$batchId': {
@@ -688,13 +748,16 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   BrowseRoute: BrowseRoute,
   FavouritesRoute: FavouritesRouteWithChildren,
+  HealthzRoute: HealthzRoute,
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
   OfflineRoute: OfflineRoute,
   PlannerRoute: PlannerRouteWithChildren,
+  ReadyzRoute: ReadyzRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   SetupRoute: SetupRoute,
+  ApiSplatRoute: ApiSplatRoute,
   BatchBatchIdRoute: BatchBatchIdRoute,
   CourseCourseIdRoute: CourseCourseIdRoute,
   ExamGoalIdRoute: ExamGoalIdRoute,

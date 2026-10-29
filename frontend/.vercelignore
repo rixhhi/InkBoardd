@@ -1,0 +1,4 @@
+# Only the site is built here; the API is on Render.
+node_modules
+.output
+tests

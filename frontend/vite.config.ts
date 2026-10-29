@@ -98,5 +98,14 @@ export default defineConfig({
       "@inkboard/shared": join(root, "../shared/src/lib"),
     },
   },
-  plugins: [apiProxy(), resolveSharedDeps(), tailwindcss(), tanstackStart({ router: { autoCodeSplitting: true } }), nitro(), viteReact()],
+  plugins: [
+    apiProxy(),
+    resolveSharedDeps(),
+    tailwindcss(),
+    tanstackStart({ router: { autoCodeSplitting: true } }),
+    // On Vercel, Nitro emits .vercel/output (Build Output API v3). Everywhere else
+    // (PM2, Docker, CI) it emits the plain Node server in .output/.
+    nitro(process.env.VERCEL ? { preset: "vercel" } : {}),
+    viteReact(),
+  ],
 });

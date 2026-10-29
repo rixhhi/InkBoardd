@@ -3,6 +3,7 @@ node_modules/
 
 dist/
 .output/
+.vercel/
 .vinxi/
 .tanstack/
 .env

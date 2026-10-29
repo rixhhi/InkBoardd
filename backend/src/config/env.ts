@@ -8,8 +8,10 @@ function safePort(raw: string | undefined, fallback: number): number {
   return Number.isFinite(n) && n >= 1 && n <= 65535 ? Math.floor(n) : fallback;
 }
 
-export const BACKEND_PORT = safePort(env("BACKEND_PORT"), 8787);
-export const BACKEND_HOST = env("BACKEND_HOST") || "127.0.0.1";
+/** Render, Railway, Fly and friends inject PORT and expect the process to bind every interface. */
+const PAAS = Boolean(env("PORT") || env("RENDER") || env("RAILWAY_ENVIRONMENT") || env("FLY_APP_NAME"));
+export const BACKEND_PORT = safePort(env("BACKEND_PORT") ?? env("PORT"), 8787);
+export const BACKEND_HOST = env("BACKEND_HOST") || (PAAS ? "0.0.0.0" : "127.0.0.1");
 export const DATABASE_URL = env("DATABASE_URL");
 export const REDIS_URL = env("REDIS_URL");
 export const JOB_DIR = env("JOB_DIR") || "/tmp/inkboard-jobs";

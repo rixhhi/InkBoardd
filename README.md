@@ -230,43 +230,69 @@ Rate buckets per visitor per `RATE_WINDOW_MS` (60 s): catalog `RATE_LIMIT` (120)
 - `backend/tests/auth/auth.test.ts` runs an in-memory PGlite database that peaks around 600 MB. On a 1 GB machine that is also running the site, the kernel can kill it mid-run (it shows up as `signal: SIGKILL`, not an assertion). Stop PM2 first or run it on a larger box; CI runners are fine.
 - The offline library is a separate PWA entry (`/offline`) that stores saved classes in the browser.
 
-## Deploying behind Vercel and Render (original split)
+## Deploying: Render (API) + Vercel (site)
 
-The single-box setup above replaces this for an internal install, but the split still works and the proxy-trust rules below apply to any reverse proxy.
+The site on Vercel proxies `/api`, `/healthz` and `/readyz` to the API on Render from inside the Nitro server (`frontend/src/routes/api.$.tsx`, `healthz.tsx`, `readyz.tsx` → `src/lib/server/api-upstream.ts`). The browser only ever talks to the Vercel origin, so cookies are first-party and the API host never reaches the client. `vercel.json` has **no rewrites** — deep links such as `/play/…` and `/planner/today` are rendered by the TanStack server.
 
-<!-- original section preserved verbatim below -->
+### 1. API on Render
 
-The site on Vercel proxies `/api`, `/healthz`, and `/readyz` to the API on Render through `frontend/middleware.ts`. That file is the only proxy: it adds `x-inkboard-proxy-secret`. `vercel.json` does not rewrite those paths. It only sets response headers. The Vercel app is the TanStack Start server. Deep links such as `/play/…` and `/planner/today` are rendered by that server. Do not add a rewrite to `/index.html` — that rewrite served the shell for every path and is gone on purpose.
+Dashboard → **New → Blueprint** → this repo. `render.yaml` defines one Docker web service built from `backend/Dockerfile` (Node 22 + ffmpeg; no build step — the backend runs TypeScript natively). Fill in the three `sync: false` variables when prompted:
 
-Set `INKBOARD_API_ORIGIN` on Vercel to the Render origin, including the scheme and no path (for example `https://your-service.onrender.com`). The middleware reads that variable only. If it is unset in production, `/api`, `/healthz`, and `/readyz` return 500 JSON. There is no hardcoded host. A path the middleware does not proxy is left alone so the TanStack server can render it.
+| Variable | Value |
+| --- | --- |
+| `DATABASE_URL` | your Neon URL (`postgres://…?sslmode=require`) |
+| `REDIS_URL` | your Upstash URL (`rediss://…`) |
+| `CORS_ORIGINS` | the Vercel origin(s), e.g. `https://inkboard.vercel.app,https://inkboard.example` |
 
-Set these on the Render service:
+Render generates `INKBOARD_PROXY_SECRET` and `SETUP_CODE`; copy both from the service's Environment tab — you need the first on Vercel and the second once, to claim the install. `TRUST_PROXY=2` is already set (two forwarding hops: Vercel → Render), so rate-limit buckets are per real visitor only when the site stamps the secret. The API binds `0.0.0.0:$PORT` automatically on Render.
 
-- `TRUST_PROXY` is how many proxies to trust, counted from the right. It is not a boolean. `1` trusts one proxy: `req.ip` is the last `X-Forwarded-For` entry, and a forged entry to its left does not open a new rate-limit bucket. Leave it unset and the header is ignored, so `req.ip` stays the socket address.
+Check: `curl https://<service>.onrender.com/readyz` → `{"postgres":"ok","redis":"ok",…}`. On the free plan the instance sleeps after 15 minutes and has no disk, so saved-lecture artifacts (`JOB_DIR`) vanish on each deploy; uncomment the `disk:` block on a paid plan.
 
-  The Render origin is public. `TRUST_PROXY=2` by itself would let a direct caller forge `req.ip`. The API trusts a second hop only when the request has `x-inkboard-proxy-secret` and `crypto.timingSafeEqual` says it matches `INKBOARD_PROXY_SECRET`. When the hop count is above 1 and the secret is missing or wrong, the API deletes `X-Forwarded-For`. `req.ip` is the socket address. A forged entry is not used.
+### 2. Site on Vercel
 
-  Set the same `INKBOARD_PROXY_SECRET` on Vercel and on Render. `frontend/middleware.ts` proxies `/api`, `/healthz`, and `/readyz` and sets that header from the env var. A secret sent by the browser is replaced. When `INKBOARD_PROXY_SECRET` is set on Render, the API logs a one-time warning if an `/api` request arrives without the secret from a socket address that is not private.
+**New Project → Import** this repo. Settings:
 
-  This table is the hop rule, not a capture from production:
+| Setting | Value |
+| --- | --- |
+| Root Directory | `frontend` |
+| Framework Preset | Other (`vercel.json` carries install/build/output) |
+| Node.js version | 22.x |
 
-  | Trust | `X-Forwarded-For` | Secret | `req.ip` |
-  | --- | --- | --- | --- |
-  | 1 | `203.0.113.10, 76.76.21.21` | either | `76.76.21.21` (the last entry) |
-  | 2, secret matches | `203.0.113.10, 76.76.21.21` | matches | `203.0.113.10` |
-  | 2, secret matches | `198.51.100.50, 203.0.113.10, 76.76.21.21` | matches | `203.0.113.10`. The forged left entry is ignored. |
-  | 2 configured, secret missing or wrong | `198.51.100.50` | no | the socket address. The header is deleted. |
-  | 2 configured, secret missing or wrong | `198.51.100.50, 203.0.113.10` | no | the socket address. Neither entry is used. |
-  | unset | anything | either | the socket address |
+`vercel.json` runs `npm ci` at the repo root (workspaces: shared + frontend) and `npm run build`; the Nitro `vercel` preset emits `.vercel/output` when `VERCEL=1`. Environment variables (Production and Preview):
 
-  To see the chain this deploy actually produces, set `LOG_TRUST=1` on Render for one request. The API logs `req.ip` and `req.ips` once. Hit the site, then hit the Render URL directly, and compare those values with the table. `req.ips` runs from the socket toward the client. The last entry is `req.ip`. Turn `LOG_TRUST` off after that. Run that `LOG_TRUST` check once on the real deploy to confirm `frontend/middleware.ts` runs under the Nitro build. This repository does not verify that. Use `TRUST_PROXY=2` with the secret when Vercel sits in front of Render. Use `TRUST_PROXY=1` when the browser connects to Render directly. Do not set `true`: that trusts every entry, including a forged one. Fastify 5.12 fail-closes a numeric `trustProxy`, so the process applies the hop count itself.
-- `RATE_LIMIT` and `RATE_WINDOW_MS`. The default window is 60 seconds. Each visitor has separate buckets. The bucket is chosen from the method and the path:
-  - **catalog** — other `/api/*` routes. Cap is `RATE_LIMIT` (default 120) per window.
-  - **media** — `/api/slide`, `/api/notes`, `/api/live-slide`, and `GET /api/jobs/:id/artifacts/*`. At least 600 per window.
-  - **generous** — `/api/live-board`, `/api/study`, and `GET /api/jobs/:id` (the poll). At least 300 per window. `GET /api/live-board` then applies its own cap of 8 requests a minute. That inner cap is fixed.
-  - **expensive** — `POST /api/jobs/lectures`, `POST /api/jobs/:id/clips`, and `DELETE /api/jobs/:id`. Capped at 30 per window, even when `RATE_LIMIT` is higher. A `GET` of the job or its artifacts is not in this bucket.
-- `POST /api/study/summary` allows 6 requests per minute per visitor. That cap is fixed; it does not grow with `RATE_LIMIT`. It sits on top of the generous study bucket.
-- `XAI_API_KEY` asks xAI for revision bullets. Without it, the summary is the board outline. `XAI_MODEL` selects the model. Leave it empty to use `grok-4.20-non-reasoning`. The current xAI model list documents that name as an alias of `grok-4.20-0309-non-reasoning` (non-reasoning chat). `grok-3-mini` is not in the API anymore.
-- Catalog routes stop at 25 seconds and answer `UPSTREAM_TIMEOUT` instead of holding the socket open.
+| Variable | Value |
+| --- | --- |
+| `INKBOARD_API_ORIGIN` | `https://<service>.onrender.com` — scheme + host, no path |
+| `INKBOARD_PROXY_SECRET` | the value Render generated |
+| `NODE_OPTIONS` | `--max-old-space-size=4096` (the SSR build wants ~1.5 GB) |
 
-Ping `GET /healthz` every 5 to 10 minutes so a free Render instance does not sleep. The first class after a sleep can take a minute.
+Deploy. Then open `https://<site>.vercel.app/healthz` — it must return the API's `{"ok":true,"service":"inkboard-api"}` through the proxy. If it returns `{"code":"MISCONFIGURED"}`, `INKBOARD_API_ORIGIN` is unset on Vercel.
+
+### 3. First run
+
+1. Open `https://<site>/setup`, enter `SETUP_CODE` from Render, create the super-admin.
+2. Admin → Members → add members. Share an exam or course.
+3. Add the Vercel preview origins to `CORS_ORIGINS` on Render if you want preview deployments to sign in.
+
+### Proxy trust, in one table
+
+`TRUST_PROXY` is a hop count from the right of `X-Forwarded-For`, not a boolean. Hop 2 is trusted only when `x-inkboard-proxy-secret` matches (`crypto.timingSafeEqual`); otherwise the header is dropped and `req.ip` is the socket address, so a direct caller cannot forge a bucket.
+
+| Trust | `X-Forwarded-For` | Secret | `req.ip` |
+| --- | --- | --- | --- |
+| 2, matches | `203.0.113.10, 76.76.21.21` | yes | `203.0.113.10` (the visitor) |
+| 2, matches | `198.51.100.50, 203.0.113.10, 76.76.21.21` | yes | `203.0.113.10` — the forged left entry is ignored |
+| 2, missing/wrong | anything | no | socket address; header deleted |
+| 1 | `203.0.113.10, 76.76.21.21` | either | `76.76.21.21` — use when the browser hits Render directly |
+| unset | anything | either | socket address (one shared bucket — the API logs a warning) |
+
+Set `LOG_TRUST=1` on Render for one request to see the chain the real deploy produces, then unset it.
+
+### Other knobs on the API
+
+- `RATE_LIMIT` / `RATE_WINDOW_MS` (default 120 per 60 s per visitor). Buckets: catalog (`/api/*`), media (slides/notes, ≥600), generous (live-board/study/job poll, ≥300; live-board then capped at 8/min), expensive (`POST /api/jobs/lectures`, clips, delete; 30). `POST /api/study/summary` is fixed at 6/min.
+- `XAI_API_KEY` / `XAI_MODEL` for revision bullets; without them the summary is the board outline.
+- `COOKIE_SAMESITE=none` only for an https iframe embed.
+- Catalog routes time out at 25 s with `UPSTREAM_TIMEOUT`.
+
+Ping `GET /healthz` every 5–10 minutes (cron-job.org, UptimeRobot) so a free Render instance does not sleep.
