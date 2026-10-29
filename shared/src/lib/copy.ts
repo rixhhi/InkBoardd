@@ -13,6 +13,7 @@ export const COPY = {
   unfold: "Show",
   pace: "Dashboard",
   instruments: "Analytics",
+  ink: "Ink",
   seals: "Badges",
   history: "History",
   month: "Month",

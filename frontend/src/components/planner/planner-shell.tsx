@@ -36,6 +36,7 @@ const SECTIONS = [
   { to: "/planner/dashboard", label: () => COPY.pace, match: (p: string) => p.startsWith("/planner/dashboard") },
   { to: "/planner/history", label: () => COPY.history, match: (p: string) => p.startsWith("/planner/history") },
   { to: "/planner/analytics", label: () => COPY.instruments, match: (p: string) => p.startsWith("/planner/analytics") },
+  { to: "/planner/ink", label: () => COPY.ink, match: (p: string) => p.startsWith("/planner/ink") },
   { to: "/planner/badges", label: () => COPY.seals, match: (p: string) => p.startsWith("/planner/badges") },
   { to: "/planner/settings", label: () => COPY.settings, match: (p: string) => p.startsWith("/planner/settings") },
 ] as const;

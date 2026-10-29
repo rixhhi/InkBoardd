@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiJson } from "@/lib/api-client";
 import type { AccessMode, Permissions, SessionUser, Share } from "@/lib/session";
+import type { InkItem } from "@inkboard/shared/planner/ink";
 import type { ActivityItem } from "./bits";
 
 export type Stats = { userId: number; watchSeconds7d: number; watchSeconds30d: number; lessons7d: number; activeDays30d: number; lastActivityAt: string | null };
@@ -18,6 +19,8 @@ export type PlannerSummary = {
   todayDone: number;
   minutes7d: number;
   updatedAt: string;
+  examDate: string | null;
+  ink: InkItem[];
 } | null;
 
 export type Overview = {

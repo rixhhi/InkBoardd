@@ -51,6 +51,7 @@ export {
   addCustomTask,
   patchTask,
   rateRevision,
+  reinkLesson,
   carryForward,
   logManualStudy,
   completeLessonInPlan,

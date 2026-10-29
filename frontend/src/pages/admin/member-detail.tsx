@@ -5,6 +5,8 @@ import { ArrowLeft, CalendarDays, Copy, LogOut, Pause, Play, Share2, Trash2 } fr
 import { AppShell } from "@/components/app-shell";
 import { Avatar, Badge, Button, ConfirmDialog, Dialog, ErrorState, Field, Input, List, Menu, PageBody, PageHeader, Progress, Section, Skeleton, Surface, toast } from "@/components/ui";
 import { ActivityFeed, DayBars, StatTile, suggestPassword } from "@/components/admin/bits";
+import { FadingInk } from "@/components/planner/fading-ink";
+import { todayKey } from "@inkboard/shared/planner/dates";
 import { EditShareDialog, ShareDialog } from "@/components/admin/share-dialog";
 import { get, useGroups, type MemberDetail } from "@/components/admin/api";
 import { describeError } from "@/lib/api-client";
@@ -159,6 +161,14 @@ export function MemberDetailView({ id }: { id: number }) {
             )}
           </Surface>
         </div>
+
+        {planner?.ink?.length ? (
+          <Section title={`Where ${first}’s ink is fading`} description="Each stroke is a studied lesson; lighter ink is one the schedule expects them to have mostly forgotten. Drag the date to see exam day." className="mt-8">
+            <Surface>
+              <FadingInk items={planner.ink} today={todayKey()} examDate={planner.examDate} owner={member.name} />
+            </Surface>
+          </Section>
+        ) : null}
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <div>

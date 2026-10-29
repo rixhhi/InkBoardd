@@ -345,3 +345,41 @@ export function reschedulePlan(planId: string, strategy: "push" | "spread" | "sk
 export function stampTask(task: PlanTask): PlanTask {
   return { ...task, updatedAt: nowIso() };
 }
+
+/**
+ * Re-ink a lesson straight from the Fading Ink board: record a recall rating
+ * without needing a scheduled revision task. Advances the review stage and
+ * sets the next due date exactly like rating a revision task would.
+ */
+export function reinkLesson(planId: string, lessonId: string, rating: ReviewRating, title?: string) {
+  const today = todayKey();
+  const at = nowIso();
+  return patchPlanner((s) => ({
+    ...s,
+    plans: s.plans.map((p) => {
+      if (p.id !== planId) return p;
+      const intervals = p.prefs.revisionIntervals?.length ? p.prefs.revisionIntervals : [1, 3, 7, 21];
+      const reviews = [...(p.reviews ?? [])];
+      const existing = reviews.find((r) => r.lessonId === lessonId);
+      const stage = existing ? existing.stage + 1 : 1;
+      const interval = reviewGap(intervals[Math.min(stage - 1, intervals.length - 1)] ?? 7, rating, stage);
+      const due = addDaysKey(today, interval);
+      if (existing) {
+        existing.stage = stage;
+        existing.lastRating = rating;
+        existing.dueDate = due;
+        existing.lectureCompletedOn = existing.lectureCompletedOn ?? today;
+      } else {
+        const lecture = liveTasks(p.tasks).find((t) => t.type === "lesson" && t.lessonId === lessonId);
+        reviews.push({ lessonId, stage, dueDate: due, lastRating: rating, lectureDate: lecture?.plannedDate || lecture?.date || today, lectureCompletedOn: today });
+      }
+      // Also close any pending revision task for this lesson that is due today or overdue.
+      const tasks = p.tasks.map((t) =>
+        t.type === "revision" && t.status === "pending" && t.date <= today && (t.refLessonIds?.includes(lessonId) || t.lessonId === lessonId)
+          ? { ...t, status: "done" as const, completedAt: at, updatedAt: at, note: rating, title: t.title || title || "Review" }
+          : t,
+      );
+      return stampPlan({ ...p, tasks, reviews }, at);
+    }),
+  }));
+}

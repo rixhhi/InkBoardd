@@ -1,3 +1,5 @@
+import { inkItems, type InkItem } from "@inkboard/shared/planner/ink";
+import type { StudyPlan, WatchLog } from "@inkboard/shared/planner/types";
 import { one, q, store } from "./connection.ts";
 import { statsTz } from "./types.ts";
 import { iso, n } from "./util.ts";
@@ -69,7 +71,13 @@ export type PlannerSummary = {
   todayDone: number;
   minutes7d: number;
   updatedAt: string;
+  /** Exam day from the plan, for the ink scrubber. */
+  examDate: string | null;
+  /** Fading Ink items, the same math the member sees. Capped so the admin payload stays small. */
+  ink: InkItem[];
 } | null;
+
+const INK_CAP = 400;
 
 /** A member's active study plan, read from their synced planner state. */
 export async function plannerSummary(userId: number): Promise<PlannerSummary> {
@@ -78,12 +86,20 @@ export async function plannerSummary(userId: number): Promise<PlannerSummary> {
   try {
     const state = JSON.parse(row.value) as {
       activePlanId?: string | null;
-      plans?: { id: string; name?: string; examName?: string; deletedAt?: string | null; tasks?: { date?: string; status?: string }[] }[];
+      plans?: (Partial<StudyPlan> & { id: string })[];
       days?: { date?: string; minutesStudied?: number }[];
+      watchLogs?: WatchLog[];
     };
     const plan = (state.plans ?? []).find((p) => p.id === state.activePlanId && !p.deletedAt) ?? (state.plans ?? []).find((p) => !p.deletedAt);
     if (!plan) return null;
     const tasks = plan.tasks ?? [];
+    let ink: InkItem[] = [];
+    try {
+      // Tolerate partial plans from older clients: inkItems only needs courses, tasks, reviews and prefs.
+      ink = inkItems({ ...plan, courses: plan.courses ?? [], tasks, reviews: plan.reviews ?? [], prefs: plan.prefs ?? ({} as StudyPlan["prefs"]) } as StudyPlan, state.watchLogs ?? []).slice(0, INK_CAP);
+    } catch {
+      ink = [];
+    }
     const today = new Intl.DateTimeFormat("en-CA", { timeZone: statsTz() }).format(new Date());
     const weekAgo = new Intl.DateTimeFormat("en-CA", { timeZone: statsTz() }).format(new Date(Date.now() - 6 * 86_400_000));
     const done = (t: { status?: string }) => t.status === "done";
@@ -96,6 +112,8 @@ export async function plannerSummary(userId: number): Promise<PlannerSummary> {
       todayDone: tasks.filter((t) => t.date === today && done(t)).length,
       minutes7d: (state.days ?? []).filter((d) => (d.date ?? "") >= weekAgo).reduce((s, d) => s + (d.minutesStudied ?? 0), 0),
       updatedAt: iso(row.updated_at),
+      examDate: plan.prefs?.examDate ?? null,
+      ink,
     };
   } catch {
     return null;
