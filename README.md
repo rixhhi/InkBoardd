@@ -13,9 +13,9 @@ A study desk for Unacademy replays: exam hubs, teacher and course shelves, a whi
 ## Status
 
 - **Typecheck**: clean in all three packages. **Lint**: `npm run lint` (Biome) — 0 errors; style warnings are reported, not fatal.
-- **Tests**: 1,070 passing (63 shared, 708 backend, 299 frontend), 0 failing; plus `scripts/e2e.mjs`, a browser run of 23 checks on desktop and phone (sign-in, every admin tab, share dialog, member restrictions, planner and settings pages, no sideways scroll, no page errors). CI runs it too (`e2e` job) against a real API + SSR build and uploads the screenshots.
-- **Build**: `vite build` passes the bundle budget (first load 742 KB / 1,563 KB cap; total 2,493 KB / 4,395 KB cap).
-- **Browser matrix** (`/tmp`-style runner kept in `scripts/e2e.mjs`): 26 screens × 4 widths (390 / 768 / 1180 / 1366) × light + dark as admin and as a member — 0 sideways scroll, 0 page errors, axe 0 serious/critical.
+- **Tests**: 1,091 passing (71 shared, 719 backend, 301 frontend), 0 failing; plus `scripts/e2e.mjs`, a browser run of 23 checks on desktop and phone (sign-in, every admin tab, share dialog, member restrictions, planner and settings pages, no sideways scroll, no page errors). CI runs it too (`e2e` job) against a real API + SSR build and uploads the screenshots.
+- **Build**: `vite build` passes the bundle budget (first load 750 KB / 1,563 KB cap; total 2,504 KB / 4,395 KB cap).
+- **Browser matrix** (`scripts/e2e.mjs`, also the CI `e2e` job): every page check asserts 0 sideways scroll **and** axe-core 0 serious/critical. 35 checks per viewport; run as admin and as a member, light (`E2E_SCHEME` unset) and dark (`E2E_SCHEME=dark`), desktop and phone — all green.
 - **Stores**: `backend/.env` (gitignored) points at Neon Postgres and Upstash Redis. Accounts moved from the SQLite file into Neon on first boot (`[accounts] imported 3 account(s) and 2 share(s)`).
 
 ### UI rebuild (Phases A–G of `docs/ui-rebuild-plan.md`) — done
@@ -37,6 +37,15 @@ A study desk for Unacademy replays: exam hubs, teacher and course shelves, a whi
 - **Analytics**: figure cards with rings (struck, goal hit, sessions, late finishes), delta % vs previous period, weekday pattern and session-length bar charts, and a watched/focus/manual split of how the time was earned.
 - **Badges, Settings, Dashboard, History**: kit headers and buttons; badges show a progress ring and "closest to earning"; settings shows a live "Saved" pill.
 - **Modals**: `LogStudyDialog`, `AddTaskForm` and the planner `ConfirmDialog` are on the kit `Dialog`/`AlertDialog`.
+
+### Fourth pass (2026-10-29) — the planner closes its own loop
+
+- **Ink → Tasks.** The Ink page ends with *Put the fading ones on the calendar*: pick a deadline (this week · two weeks · by the exam) and a count (3 · 5 · 8), see exactly which lessons land on which study days ("Today · 45 min: Continuity, Differentiation, Applications of derivatives · Tomorrow · 30 min: Limits, Projectile motion"), then **Add N to my plan**. `planReinks()` (`shared/src/lib/planner/ink.ts`) takes what will be below crisp on the deadline, worst first, skips lessons that already have a review in the window, and spreads them over work days within a daily re-ink budget (a third of `dailyMinutes`). `scheduleReinks()` writes them as ordinary revision tasks (`Re-ink: …`, note `from Ink`) so Today, the calendar, the pace meter and rating all treat them like any other review; one Undo entry, and none if nothing was added.
+- **The model learns you.** Every rating (from Today or from Ink) is compared with what the model predicted at that moment: a *shaky* on a lesson it called crisp lowers that lesson's stability ×0.8; a *solid* on a ghost raises it ×1.25; agreement leaves it alone, confirmed-crisp slowly recovers toward 1. Bounded to [0.5, 2] so one odd day cannot wreck the picture. Stored per lesson as `LessonReviewState.calibration` (optional — old states load as 1) and applied inside `stabilityFor()`, so the admin's view calibrates identically.
+- **Admin weekly digest** (`GET /api/admin/digest`, shown as *This week* on Overview). One line per member, quietest first: minutes this week vs last (+40% / −15% / new), active days of 7, distinct lessons, streak, share of ink still crisp, last seen — and a one-sentence nudge when there is one ("Quiet this week after a busy one — worth a message", "4 of 7 studied lessons are ghosts — reviews are overdue", "9-day streak"). Streak and week totals come from one SQL pass over `ib_daily`; ink bands from the same shared math the member sees.
+- **Offline-first planner.** `sw.js` now caches the app shell: hashed `/assets/*` cache-first, navigations network-first with the last good copy as fallback (and `/planner/today` or `/` for never-visited pages); the API is never cached. Planner edits made offline sit in localStorage as before and `account-sync` now pushes them the moment the `online` event fires. The offline banner says so.
+- **CI keeps the bar.** `scripts/e2e.mjs` runs axe-core (serious + critical) on every page it opens, in both roles, with `E2E_SCHEME=dark` for the dark palette; the page list grew to Home, Ink, Analytics, Live, Search and the member planner pages; the digest is checked to render for admins and 403 for members.
+- Small: "Most watched" shows *Untitled class* instead of a raw lesson id.
 
 ### Third pass (2026-10-29) — Fading Ink, storylines, craft, a11y names
 

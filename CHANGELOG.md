@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-29 — the planner closes its own loop
+
+### Added
+- **Ink → Tasks**: `planReinks()` / `scheduleReinks()` and the *Put the fading ones on the calendar* card on `/planner/ink` — deadline (week / fortnight / exam) × count (3 / 5 / 8), per-day preview, one-tap add as revision tasks, Undo.
+- **Calibration loop**: per-lesson `calibration` multiplier (0.5–2) learned from ratings vs the model's prediction; applied in `stabilityFor()` on both member and admin sides. Old states load as 1.
+- **Admin weekly digest**: `GET /api/admin/digest` + *This week* section on Overview (minutes vs last week, active days, lessons, streak, ink bands, nudge). `weekDigest()`, `streakFrom()`, `inkBandsForAll()`.
+- **Offline-first**: service worker caches the app shell (assets cache-first, pages network-first with fallback); `account-sync` flushes on `online`.
+- **CI**: `scripts/e2e.mjs` asserts axe-core 0 serious/critical on every page, supports `E2E_SCHEME=dark`, covers more pages and the member matrix.
+
+### Fixed
+- `scheduleReinks` no longer pushes an undo snapshot when nothing was added (Undo would otherwise restore the tasks it was meant to remove).
+- Admin "Most watched" showed a raw lesson id when the label was empty.
+
+### Tests
+- shared 71 (+8: calibration, planReinks properties, bridge storage), backend 719 (+4 streak), frontend 301 (+2 digest copy). e2e: 35 checks × {desktop dark, phone light} green.
+
 ## 2026-10-29 — Fading Ink, storylines, craft, accessible names
 
 ### Added

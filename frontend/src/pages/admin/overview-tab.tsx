@@ -111,7 +111,7 @@ export function OverviewTab({ onGo }: { onGo: (tab: string) => void }) {
                 <li key={l.ref} className="flex items-center gap-3 text-sm">
                   <span className="w-5 shrink-0 text-right font-mono text-xs text-fg-faint tabular-nums">{i + 1}</span>
                   <Link to="/play/$lessonId" params={{ lessonId: l.ref }} search={{ title: l.label }} className="min-w-0 flex-1 truncate text-fg hover:underline">
-                    {l.label || l.ref}
+                    {l.label || "Untitled class"}
                   </Link>
                   <span className="shrink-0 text-xs text-fg-muted tabular-nums">
                     {l.members} {l.members === 1 ? "member" : "members"} · {fmtMinutes(l.seconds)}
