@@ -269,7 +269,9 @@ export function ChartTable({
   rows: { label: string; value: string }[];
 }) {
   return (
-    <table className="sr-only">
+    <div className="sr-only">
+      {/* Wrapper, not the table, carries sr-only: a 1px absolutely positioned table still widens the page's scrollable area on phones. */}
+      <table>
       <caption>{caption}</caption>
       <thead>
         <tr>
@@ -286,6 +288,7 @@ export function ChartTable({
         ))}
       </tbody>
     </table>
+      </div>
   );
 }
 

@@ -33,6 +33,7 @@ import { Route as PlannerAnalyticsRouteImport } from './routes/planner.analytics
 import { Route as PlannerBadgesRouteImport } from './routes/planner.badges'
 import { Route as PlannerDashboardRouteImport } from './routes/planner.dashboard'
 import { Route as PlannerHistoryRouteImport } from './routes/planner.history'
+import { Route as PlannerInkRouteImport } from './routes/planner.ink'
 import { Route as PlannerNewRouteImport } from './routes/planner.new'
 import { Route as PlannerSettingsRouteImport } from './routes/planner.settings'
 import { Route as PlannerTodayRouteImport } from './routes/planner.today'
@@ -159,6 +160,11 @@ const PlannerHistoryRoute = PlannerHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => PlannerRoute,
 } as any)
+const PlannerInkRoute = PlannerInkRouteImport.update({
+  id: '/ink',
+  path: '/ink',
+  getParentRoute: () => PlannerRoute,
+} as any)
 const PlannerNewRoute = PlannerNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/planner/badges': typeof PlannerBadgesRoute
   '/planner/dashboard': typeof PlannerDashboardRoute
   '/planner/history': typeof PlannerHistoryRoute
+  '/planner/ink': typeof PlannerInkRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/settings': typeof PlannerSettingsRoute
   '/planner/today': typeof PlannerTodayRoute
@@ -236,6 +243,7 @@ export interface FileRoutesByTo {
   '/planner/badges': typeof PlannerBadgesRoute
   '/planner/dashboard': typeof PlannerDashboardRoute
   '/planner/history': typeof PlannerHistoryRoute
+  '/planner/ink': typeof PlannerInkRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/settings': typeof PlannerSettingsRoute
   '/planner/today': typeof PlannerTodayRoute
@@ -268,6 +276,7 @@ export interface FileRoutesById {
   '/planner/badges': typeof PlannerBadgesRoute
   '/planner/dashboard': typeof PlannerDashboardRoute
   '/planner/history': typeof PlannerHistoryRoute
+  '/planner/ink': typeof PlannerInkRoute
   '/planner/new': typeof PlannerNewRoute
   '/planner/settings': typeof PlannerSettingsRoute
   '/planner/today': typeof PlannerTodayRoute
@@ -301,6 +310,7 @@ export interface FileRouteTypes {
     | '/planner/badges'
     | '/planner/dashboard'
     | '/planner/history'
+    | '/planner/ink'
     | '/planner/new'
     | '/planner/settings'
     | '/planner/today'
@@ -330,6 +340,7 @@ export interface FileRouteTypes {
     | '/planner/badges'
     | '/planner/dashboard'
     | '/planner/history'
+    | '/planner/ink'
     | '/planner/new'
     | '/planner/settings'
     | '/planner/today'
@@ -361,6 +372,7 @@ export interface FileRouteTypes {
     | '/planner/badges'
     | '/planner/dashboard'
     | '/planner/history'
+    | '/planner/ink'
     | '/planner/new'
     | '/planner/settings'
     | '/planner/today'
@@ -563,6 +575,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlannerHistoryRouteImport
       parentRoute: typeof PlannerRoute
     }
+    '/planner/ink': {
+      id: '/planner/ink'
+      path: '/ink'
+      fullPath: '/planner/ink'
+      preLoaderRoute: typeof PlannerInkRouteImport
+      parentRoute: typeof PlannerRoute
+    }
     '/planner/new': {
       id: '/planner/new'
       path: '/new'
@@ -620,6 +639,7 @@ interface PlannerRouteChildren {
   PlannerBadgesRoute: typeof PlannerBadgesRoute
   PlannerDashboardRoute: typeof PlannerDashboardRoute
   PlannerHistoryRoute: typeof PlannerHistoryRoute
+  PlannerInkRoute: typeof PlannerInkRoute
   PlannerNewRoute: typeof PlannerNewRoute
   PlannerSettingsRoute: typeof PlannerSettingsRoute
   PlannerTodayRoute: typeof PlannerTodayRoute
@@ -631,6 +651,7 @@ const PlannerRouteChildren: PlannerRouteChildren = {
   PlannerBadgesRoute: PlannerBadgesRoute,
   PlannerDashboardRoute: PlannerDashboardRoute,
   PlannerHistoryRoute: PlannerHistoryRoute,
+  PlannerInkRoute: PlannerInkRoute,
   PlannerNewRoute: PlannerNewRoute,
   PlannerSettingsRoute: PlannerSettingsRoute,
   PlannerTodayRoute: PlannerTodayRoute,

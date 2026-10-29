@@ -221,7 +221,9 @@ export function FadingInk({ items, today, examDate, onReink, owner, className }:
       {pickedItem ? <InkDetail item={pickedItem} day={day} today={today} onReink={onReink} onClose={() => setPicked(null)} /> : null}
 
       {/* Screen-reader table of the same data */}
-      <table className="sr-only">
+      <div className="sr-only">
+      {/* Wrapper, not the table, carries sr-only: a 1px absolutely positioned table still widens the page's scrollable area on phones. */}
+      <table>
         <caption>Estimated memory per lesson as of {formatDay(day)}</caption>
         <thead>
           <tr>
@@ -244,6 +246,7 @@ export function FadingInk({ items, today, examDate, onReink, owner, className }:
           ))}
         </tbody>
       </table>
+      </div>
       <p className="mt-4 text-[11px] leading-relaxed text-fg-faint">
         How it is drawn: retention ≈ e<sup>−days / stability</sup>, where stability comes from your revision intervals and how each recall went (shaky, ok, solid). Ink at a review’s due date is about half gone; twice that gap, a ghost. A shorter stroke is a lesson you only watched part of. It is a lens on your own plan, not a test.
       </p>

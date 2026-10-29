@@ -80,7 +80,9 @@ export function DayBars({
         <span>{days[0]?.day.slice(5)}</span>
         <span>{days[days.length - 1]?.day.slice(5)}</span>
       </div>
-      <table className="sr-only">
+      <div className="sr-only">
+      {/* Wrapper, not the table, carries sr-only: a 1px absolutely positioned table still widens the page's scrollable area on phones. */}
+      <table>
         <caption>{label}</caption>
         <thead>
           <tr>
@@ -97,6 +99,7 @@ export function DayBars({
           ))}
         </tbody>
       </table>
+      </div>
     </figure>
   );
 }
