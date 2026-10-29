@@ -273,6 +273,8 @@ export type PlanSummary = {
   requiredLecturesPerDay: number | null;
   warning: string | null;
   feasibility: FeasibilityOptions | null;
+  /** Topics that appear in more than one selected course (same chapter taught twice). */
+  overlappingTopics: { topic: string; courses: string[]; lessons: number }[];
 };
 
 export type GenerateResult = {

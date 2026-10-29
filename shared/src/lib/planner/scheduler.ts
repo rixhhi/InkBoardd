@@ -89,7 +89,9 @@ export function generatePlan(
   if (localPrefs.includeRevision && localPrefs.catchUpDay != null) {
     const lessons = lectureTasks.filter((t) => t.type === "lesson");
     const lastLesson = lessons.reduce((a, t) => (t.date > a ? t.date : a), lessons[0]?.date ?? localPrefs.startDate);
-    const horizon = addDaysKey(lastLesson, 8);
+    const horizonRaw = addDaysKey(lastLesson, 8);
+    // Recaps stop at the exam too.
+    const horizon = localPrefs.examDate && localPrefs.examDate < horizonRaw ? localPrefs.examDate : horizonRaw;
     const seen = new Set<string>();
     let cursor = nextWorkDay(localPrefs, localPrefs.startDate, true);
     for (let i = 0; i < MAX_DAYS && cursor <= horizon; i += 1) {

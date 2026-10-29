@@ -76,8 +76,13 @@ export function placeReviews(
   const bundles = new Map<string, PendingReview[]>();
   const overflow: PendingReview[] = [];
 
+  // A review after the exam is worthless: the exam has happened. Drop it rather than
+  // pushing the plan's end date weeks past the exam (which also made "fits before
+  // exam" false even when every lecture was done in time).
+  const afterExam = (date: string) => Boolean(prefs.examDate && date > prefs.examDate);
+
   const pushTo = (date: string, review: PendingReview) => {
-    if (twoIntervalsLate(review, date)) return;
+    if (afterExam(date) || twoIntervalsLate(review, date)) return;
     const list = bundles.get(date) ?? [];
     if (list.length >= 3) {
       overflow.push({ ...review, due: nextStudySessionDay(prefs, date, false) });
@@ -92,7 +97,7 @@ export function placeReviews(
   for (const review of overflow) {
     let date = snapReviewDate(prefs, review.due);
     for (let hops = 0; hops < 40; hops += 1) {
-      if (twoIntervalsLate(review, date)) break;
+      if (afterExam(date) || twoIntervalsLate(review, date)) break;
       const list = bundles.get(date) ?? [];
       if (list.length < 3) {
         list.push({ ...review, due: date });

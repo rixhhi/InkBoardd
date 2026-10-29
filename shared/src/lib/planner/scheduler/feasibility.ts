@@ -24,6 +24,41 @@ export function workDayCount(prefs: PlannerPrefs, from: string, until: string): 
   return n;
 }
 
+/** Normalise a topic/title for overlap matching: lower-case, no punctuation, no "part 2 / L03 / lecture 4" suffixes. */
+function topicKey(raw: string | undefined): string {
+  if (!raw) return "";
+  return raw
+    .toLowerCase()
+    .replace(/\b(part|lecture|lec|class|session|l)\s*[-:]?\s*\d+\b/g, " ")
+    .replace(/\b(i{1,3}|iv|v|vi{0,3})\b/g, " ")
+    .replace(/[^a-z0-9\u0900-\u097f ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Same topic scheduled from two courses: usually two teachers covering one chapter.
+ * Reported, not removed, since the student may want both.
+ */
+export function overlappingTopics(courses: PlanCourseInput[]): PlanSummary["overlappingTopics"] {
+  const byTopic = new Map<string, { label: string; courses: Set<string>; lessons: number }>();
+  for (const c of courses) {
+    for (const l of sortedPlayable(c)) {
+      const key = topicKey(l.topic) || "";
+      if (key.length < 4) continue;
+      const hit = byTopic.get(key) ?? { label: l.topic || key, courses: new Set<string>(), lessons: 0 };
+      hit.courses.add(c.title);
+      hit.lessons += 1;
+      byTopic.set(key, hit);
+    }
+  }
+  return [...byTopic.values()]
+    .filter((x) => x.courses.size > 1)
+    .sort((a, b) => b.lessons - a.lessons)
+    .slice(0, 12)
+    .map((x) => ({ topic: x.label, courses: [...x.courses], lessons: x.lessons }));
+}
+
 export function feasibilityOptions(
   prefs: PlannerPrefs,
   courses: PlanCourseInput[],
@@ -87,6 +122,7 @@ export function summarize(
       : "No playable lessons in the selected courses.";
   }
   const feas = feasibilityOptions(prefs, courses, lessons.length, finishDate);
+  const overlapping = overlappingTopics(courses);
   if (examDate && lessons.length) {
     const n = Math.max(1, workDayCount(prefs, prefs.startDate, examDate));
     requiredMinutesPerDay = Math.ceil(totalMinutes / n);
@@ -109,6 +145,7 @@ export function summarize(
     requiredLecturesPerDay,
     warning,
     feasibility: feas,
+    overlappingTopics: overlapping,
   };
 }
 

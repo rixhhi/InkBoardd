@@ -1,7 +1,8 @@
+import { useMemo } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
 import { TIME_SLOTS, WEEKDAYS, SPEEDS, DEFAULT_REVISION_INTERVALS, HARD_MAX_LECTURES } from "@inkboard/shared/planner/types";
-import type { PaceId, PlannerPrefs, PlaybackSpeed, PlaylistMode, TimeSlot } from "@inkboard/shared/planner/types";
-import { applyPace, isPastStart, PACE_CARDS, PLAYLIST_MODES, tomorrowKey } from "@inkboard/shared/planner/wizard";
+import type { PaceId, PlanCourseInput, PlannerPrefs, PlaybackSpeed, PlaylistMode, TimeSlot } from "@inkboard/shared/planner/types";
+import { applyPace, fitToExam, isPastStart, PACE_CARDS, PLAYLIST_MODES, toggleStudyDay, tomorrowKey } from "@inkboard/shared/planner/wizard";
 import type { GenerateResult } from "@inkboard/shared/planner/types";
 import { dailyPreviewCopy, requiredPaceCopy } from "@inkboard/shared/planner/wizard";
 import { WizardSampleWeek } from "./wizard-preview.tsx";
@@ -40,6 +41,7 @@ export function WizardPrefs({
   prefs,
   onChange,
   preview,
+  courses,
   onBack,
   onNext,
   onDropPlaylist,
@@ -47,6 +49,7 @@ export function WizardPrefs({
   prefs: PlannerPrefs;
   onChange: (next: PlannerPrefs) => void;
   preview: GenerateResult;
+  courses: PlanCourseInput[];
   onBack: () => void;
   onNext: () => void;
   onDropPlaylist: (courseId: string) => void;
@@ -54,6 +57,8 @@ export function WizardPrefs({
   const past = isPastStart(prefs.startDate);
   const feas = preview.summary.feasibility;
   const overshoot = Boolean(prefs.examDate && preview.summary.fitsBeforeExam === false);
+  // Regenerates up to ~40 candidate plans; only when the current one overshoots.
+  const fit = useMemo(() => (overshoot ? fitToExam(prefs, courses) : null), [overshoot, prefs, courses]);
 
   function setPace(id: PaceId) {
     onChange(applyPace(prefs, id, id === "custom" ? prefs.lecturesPerDay : undefined));
@@ -101,6 +106,11 @@ export function WizardPrefs({
             <p className="text-sm font-medium text-fg">{requiredPaceCopy(feas.requiredLecturesPerDay, prefs.examDate)}</p>
             <p className="text-xs text-fg-muted">We won&apos;t quietly pack more than {prefs.lecturesPerDay} a day. Pick a fix:</p>
             <div className="flex flex-wrap gap-2">
+              {fit?.enough ? (
+                <Button size="sm" onClick={() => onChange(fit.prefs)}>
+                  Fit to exam · {fit.lecturesPerDay}/day, {fit.dailyMinutes} min
+                </Button>
+              ) : null}
               {feas.raisePaceTo ? (
                 <Button
                   size="sm"
@@ -135,7 +145,9 @@ export function WizardPrefs({
                 type="button"
                 aria-pressed={on}
                 aria-label={d.label}
-                onClick={() => onChange({ ...prefs, studyDays: on ? prefs.studyDays.filter((x) => x !== d.id) : [...prefs.studyDays, d.id] })}
+                aria-disabled={on && prefs.studyDays.length <= 1 ? true : undefined}
+                title={on && prefs.studyDays.length <= 1 ? "Keep at least one study day" : undefined}
+                onClick={() => onChange({ ...prefs, studyDays: toggleStudyDay(prefs.studyDays, d.id) })}
                 className={dayChip(on)}
               >
                 {d.short}
@@ -144,6 +156,21 @@ export function WizardPrefs({
           })}
         </div>
       </Section>
+
+      {preview.summary.overlappingTopics?.length ? (
+        <Section title="Same topic, two courses" description="These chapters are in more than one course you picked. Both get scheduled; drop a course if you only want one teacher's take.">
+          <ul className="grid gap-1 text-sm">
+            {preview.summary.overlappingTopics.slice(0, 6).map((o) => (
+              <li key={o.topic} className="flex flex-wrap items-baseline gap-x-2">
+                <span className="font-medium text-fg">{o.topic}</span>
+                <span className="text-xs text-fg-muted">
+                  {o.lessons} classes · {o.courses.join(" + ")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
 
       <Section title="Time of day">
         <div className="grid gap-2 sm:grid-cols-2">

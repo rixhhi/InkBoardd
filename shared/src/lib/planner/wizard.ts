@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { addDaysKey, parseKey, todayKey } from "./dates.ts";
 import { hoursForCourse } from "./syllabus.ts";
+import { generatePlan } from "./scheduler.ts";
 import { fillPrefs, HARD_MAX_LECTURES, PACE_LECTURES } from "./types.ts";
 import type {
   GenerateResult,
@@ -49,6 +50,48 @@ export function applyPace(prefs: PlannerPrefs, pace: PaceId, customLectures?: nu
       ? Math.min(HARD_MAX_LECTURES, Math.max(1, customLectures ?? prefs.lecturesPerDay ?? 3))
       : PACE_LECTURES[pace];
   return fillPrefs({ ...prefs, pace, lecturesPerDay: lectures });
+}
+
+/**
+ * Smallest change to the prefs that makes the plan end on or before the exam.
+ * The "required per day" averages undercount (revision tasks and light days also
+ * take study days), so this searches: raise lectures/day up to the hard cap, then
+ * the minute budget in 30-minute steps up to 8 h, regenerating each time.
+ */
+export function fitToExam(
+  prefs: PlannerPrefs,
+  courses: PlanCourseInput[],
+  generate: (p: PlannerPrefs, c: PlanCourseInput[]) => Pick<GenerateResult, "endDate"> = (p, c) => generatePlan(p, c),
+): { prefs: PlannerPrefs; enough: boolean; lecturesPerDay: number; dailyMinutes: number; endDate: string } {
+  const base = fillPrefs(prefs);
+  const exam = base.examDate;
+  const current = generate(base, courses);
+  if (!exam || current.endDate <= exam) return { prefs: base, enough: true, lecturesPerDay: base.lecturesPerDay, dailyMinutes: base.dailyMinutes, endDate: current.endDate };
+  const MAX_MIN = 480;
+  let best: { prefs: PlannerPrefs; endDate: string } | null = null;
+  for (let minutes = base.dailyMinutes; minutes <= MAX_MIN && !best; minutes = Math.min(MAX_MIN, Math.ceil((minutes + 30) / 30) * 30)) {
+    for (let lectures = Math.max(1, base.lecturesPerDay); lectures <= HARD_MAX_LECTURES; lectures += 1) {
+      const candidate = fillPrefs({ ...base, pace: "custom", lecturesPerDay: lectures, dailyMinutes: minutes, maxNewMinutesPerDay: Math.max(base.maxNewMinutesPerDay, minutes) });
+      const { endDate } = generate(candidate, courses);
+      if (endDate <= exam) {
+        best = { prefs: candidate, endDate };
+        break;
+      }
+    }
+    if (minutes === MAX_MIN) break;
+  }
+  if (!best) {
+    const ceiling = fillPrefs({ ...base, pace: "custom", lecturesPerDay: HARD_MAX_LECTURES, dailyMinutes: MAX_MIN, maxNewMinutesPerDay: MAX_MIN });
+    return { prefs: ceiling, enough: false, lecturesPerDay: HARD_MAX_LECTURES, dailyMinutes: MAX_MIN, endDate: generate(ceiling, courses).endDate };
+  }
+  return { prefs: best.prefs, enough: true, lecturesPerDay: best.prefs.lecturesPerDay, dailyMinutes: best.prefs.dailyMinutes, endDate: best.endDate };
+}
+
+/** Toggle a study weekday without ever leaving the set empty (an empty set schedules every day). */
+export function toggleStudyDay(studyDays: number[], day: number): number[] {
+  const on = studyDays.includes(day);
+  if (on && studyDays.length <= 1) return studyDays;
+  return on ? studyDays.filter((d) => d !== day) : [...studyDays, day].sort((a, b) => a - b);
 }
 
 export function isPastStart(startDate: string, today = todayKey()): boolean {

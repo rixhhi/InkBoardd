@@ -440,6 +440,7 @@ export function PlannerNew() {
             prefs={prefs}
             onChange={setPrefs}
             preview={preview}
+            courses={selected}
             onBack={() => setStep(1)}
             onNext={() => setStep(3)}
             onDropPlaylist={(id) => {
