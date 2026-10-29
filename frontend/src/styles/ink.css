@@ -335,3 +335,39 @@
 .reink-day-head {
   font-size: 0.8125rem;
 }
+
+/* ---------------- Admin weekly digest ---------------- */
+.digest-rows {
+  display: grid;
+  gap: 0.25rem;
+}
+.digest-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.625rem 0.5rem;
+  border-radius: var(--radius-md, 0.5rem);
+}
+.digest-row:hover {
+  background: color-mix(in srgb, var(--color-surface-raised) 60%, transparent);
+}
+.digest-ink {
+  display: inline-flex;
+  width: 4.5rem;
+  height: 0.375rem;
+  flex-shrink: 0;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-line);
+}
+.digest-ink-crisp {
+  background: var(--color-fg);
+}
+.digest-ink-fading {
+  background: color-mix(in srgb, var(--color-fg) 45%, transparent);
+}
+.digest-ink-ghost {
+  background: transparent;
+}

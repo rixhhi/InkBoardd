@@ -148,3 +148,65 @@ export async function listAudit(filter: { limit?: number; before?: number } = {}
   );
   return rows.map((r) => ({ id: n(r.id), actorId: r.actor_id == null ? null : n(r.actor_id), actorName: r.actor_name ?? "Removed account", at: iso(r.at), action: r.action, target: r.target, detail: r.detail }));
 }
+
+export type WeekDigest = {
+  userId: number;
+  /** This week = the 7 days ending today, in the stats time zone. */
+  minutes: number;
+  minutesPrev: number;
+  activeDays: number;
+  lessons: number;
+  /** Consecutive days ending today (or yesterday) with any watch/open. */
+  streak: number;
+  lastActivityAt: string | null;
+};
+
+/**
+ * One row per member: this week vs last week, active days, distinct lessons,
+ * and the current streak. One query; the admin digest card is built from it.
+ */
+export async function weekDigest(userId?: number): Promise<WeekDigest[]> {
+  const tz = statsTz();
+  const rows = await q<{ user_id: number; m7: unknown; m14: unknown; d7: unknown; l7: unknown; last_at: unknown; days: unknown }>(
+    `with today as (select (now() at time zone $1)::date as d)
+     select u.id as user_id,
+       coalesce((select sum(watch_seconds) from ib_daily x, today where x.user_id = u.id and x.day > today.d - 7), 0) as m7,
+       coalesce((select sum(watch_seconds) from ib_daily x, today where x.user_id = u.id and x.day > today.d - 14 and x.day <= today.d - 7), 0) as m14,
+       coalesce((select count(*) from ib_daily x, today where x.user_id = u.id and x.day > today.d - 7 and (x.watch_seconds > 0 or x.opens > 0)), 0) as d7,
+       coalesce((select count(distinct ref) from ib_daily_lessons x, today where x.user_id = u.id and x.day > today.d - 7), 0) as l7,
+       u.last_seen_at as last_at,
+       coalesce((select string_agg(to_char(x.day, 'YYYY-MM-DD'), ',' order by x.day desc) from ib_daily x, today where x.user_id = u.id and x.day > today.d - 60 and (x.watch_seconds > 0 or x.opens > 0)), '') as days
+     from ib_users u where u.role = 'member' ${userId !== undefined ? "and u.id = $2" : ""}`,
+    userId !== undefined ? [tz, userId] : [tz],
+  );
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date());
+  return rows.map((r) => ({
+    userId: n(r.user_id),
+    minutes: Math.round(n(r.m7) / 60),
+    minutesPrev: Math.round(n(r.m14) / 60),
+    activeDays: n(r.d7),
+    lessons: n(r.l7),
+    streak: streakFrom(String(r.days ?? "").split(",").filter(Boolean), today),
+    lastActivityAt: isoOrNull(r.last_at),
+  }));
+}
+
+/** Consecutive active days ending today or yesterday (a streak survives until the day after a miss). */
+export function streakFrom(activeDaysDesc: string[], today: string): number {
+  if (!activeDaysDesc.length) return 0;
+  const set = new Set(activeDaysDesc);
+  const dayMs = 86_400_000;
+  const start = Date.parse(`${today}T00:00:00Z`);
+  let cursor = set.has(today) ? start : set.has(isoDay(start - dayMs)) ? start - dayMs : Number.NaN;
+  if (Number.isNaN(cursor)) return 0;
+  let streak = 0;
+  while (set.has(isoDay(cursor))) {
+    streak += 1;
+    cursor -= dayMs;
+  }
+  return streak;
+}
+
+function isoDay(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
+}

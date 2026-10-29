@@ -4,6 +4,7 @@ import { Activity as ActivityIcon, Clock3, KeyRound, Radio, Share2, UserPlus } f
 import { Avatar, Badge, Button, EmptyState, ErrorState, List, ListRow, Section, Skeleton, Surface } from "@/components/ui";
 import { DayBars, StatTile } from "@/components/admin/bits";
 import { Storylines } from "@/components/admin/storylines";
+import { WeekDigest } from "@/components/admin/week-digest";
 import { get, type MemberRow, type Overview } from "@/components/admin/api";
 import { fmtAgo, fmtMinutes } from "@/lib/session";
 
@@ -78,6 +79,8 @@ export function OverviewTab({ onGo }: { onGo: (tab: string) => void }) {
       <Surface>
         <DayBars days={d.daily} label="Minutes watched per day (14 days)" empty="No member has watched a class in the last 14 days. Share an exam or course to get them started." />
       </Surface>
+
+      <WeekDigest />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Section title="Members this week" action={<Button variant="ghost" size="sm" onClick={() => onGo("members")}>All members</Button>}>

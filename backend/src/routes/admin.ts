@@ -87,6 +87,43 @@ export async function registerAdmin(app: FastifyInstance) {
     };
   });
 
+  /**
+   * Weekly digest: one card per member — minutes this week vs last, active
+   * days, distinct lessons, streak, and how much of their ink is crisp /
+   * fading / ghost. Everything the admin would otherwise piece together from
+   * Activity, Members and each Member detail.
+   */
+  app.get("/api/admin/digest", async (_req, reply) => {
+    reply.header("cache-control", "no-store");
+    const [members, digest, bands] = await Promise.all([S.listUsers(["member"]), S.weekDigest(), S.inkBandsForAll()]);
+    const byId = new Map(digest.map((d) => [d.userId, d]));
+    const rows = members.map((m) => {
+      const d = byId.get(m.id);
+      return {
+        member: publicUser(m),
+        minutes: d?.minutes ?? 0,
+        minutesPrev: d?.minutesPrev ?? 0,
+        activeDays: d?.activeDays ?? 0,
+        lessons: d?.lessons ?? 0,
+        streak: d?.streak ?? 0,
+        lastActivityAt: d?.lastActivityAt ?? null,
+        ink: bands.get(m.id) ?? null,
+      };
+    });
+    // Quietest first so the people who need a nudge are at the top.
+    rows.sort((a, b) => a.minutes - b.minutes || (a.lastActivityAt ?? "").localeCompare(b.lastActivityAt ?? ""));
+    return {
+      weekStart: new Date(Date.now() - 6 * 86_400_000).toISOString().slice(0, 10),
+      rows,
+      totals: {
+        minutes: rows.reduce((n, r) => n + r.minutes, 0),
+        minutesPrev: rows.reduce((n, r) => n + r.minutesPrev, 0),
+        active: rows.filter((r) => r.activeDays > 0).length,
+        ghosts: rows.reduce((n, r) => n + (r.ink?.ghost ?? 0), 0),
+      },
+    };
+  });
+
   /* ---------------- members ---------------- */
 
   app.get("/api/admin/members", async () => {

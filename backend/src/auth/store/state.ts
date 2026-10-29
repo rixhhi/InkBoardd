@@ -1,4 +1,4 @@
-import { inkItems, type InkItem } from "@inkboard/shared/planner/ink";
+import { inkBand, inkItems, retentionAt, type InkItem } from "@inkboard/shared/planner/ink";
 import type { StudyPlan, WatchLog } from "@inkboard/shared/planner/types";
 import { one, q, store } from "./connection.ts";
 import { statsTz } from "./types.ts";
@@ -118,4 +118,30 @@ export async function plannerSummary(userId: number): Promise<PlannerSummary> {
   } catch {
     return null;
   }
+}
+
+export type InkBands = { crisp: number; fading: number; ghost: number; total: number };
+
+/**
+ * Ink band counts for every member in one pass over ib_user_state. Used by the
+ * admin weekly digest; the same math the member sees on /planner/ink.
+ */
+export async function inkBandsForAll(): Promise<Map<number, InkBands>> {
+  const rows = await q<{ user_id: number; value: string }>("select user_id, value from ib_user_state where key = 'inkboard.planner.v1'");
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: statsTz() }).format(new Date());
+  const out = new Map<number, InkBands>();
+  for (const row of rows) {
+    try {
+      const state = JSON.parse(row.value) as { activePlanId?: string | null; plans?: (Partial<StudyPlan> & { id: string })[]; watchLogs?: WatchLog[] };
+      const plan = (state.plans ?? []).find((p) => p.id === state.activePlanId && !p.deletedAt) ?? (state.plans ?? []).find((p) => !p.deletedAt);
+      if (!plan) continue;
+      const items = inkItems({ ...plan, courses: plan.courses ?? [], tasks: plan.tasks ?? [], reviews: plan.reviews ?? [], prefs: plan.prefs ?? ({} as StudyPlan["prefs"]) } as StudyPlan, state.watchLogs ?? []);
+      const bands: InkBands = { crisp: 0, fading: 0, ghost: 0, total: items.length };
+      for (const it of items) bands[inkBand(retentionAt(it, today))] += 1;
+      out.set(n(row.user_id), bands);
+    } catch {
+      /* malformed state: no bands */
+    }
+  }
+  return out;
 }
