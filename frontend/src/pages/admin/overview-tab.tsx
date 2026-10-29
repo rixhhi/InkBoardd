@@ -64,7 +64,7 @@ export function OverviewTab({ onGo }: { onGo: (tab: string) => void }) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Surface>
-          <DayBars days={d.daily} label="Minutes watched per day (14 days)" />
+          <DayBars days={d.daily} label="Minutes watched per day (14 days)" empty="No member has watched a class in the last 14 days. Share an exam or course to get them started." />
         </Surface>
         <Surface>
           <h2 className="mb-2 flex items-center gap-2 text-sm font-medium text-fg">

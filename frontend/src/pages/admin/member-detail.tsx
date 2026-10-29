@@ -118,7 +118,7 @@ export function MemberDetailView({ id }: { id: number }) {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <Surface>
-            <DayBars days={daily} label="Minutes watched per day (30 days)" />
+            <DayBars days={daily} label="Minutes watched per day (30 days)" empty="No watch time yet. Share something and check back once they've opened a class." />
           </Surface>
           <Surface className="grid content-start gap-3">
             <h2 className="flex items-center gap-2 text-sm font-medium text-fg">

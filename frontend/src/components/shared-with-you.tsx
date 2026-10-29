@@ -53,7 +53,7 @@ function MyWeek() {
         <StatTile label="Classes" value={s.lessons7d} hint="last 7 days" />
         <StatTile label="Active days" value={s.activeDays30d} hint="last 30 days" />
         <div className="rounded-lg bg-surface p-4 shadow-1">
-          <DayBars days={q.data.daily} label="Minutes per day" />
+          <DayBars days={q.data.daily} label="Minutes per day" empty="Open a shared class and your minutes will appear here, day by day." />
         </div>
       </div>
     </Section>

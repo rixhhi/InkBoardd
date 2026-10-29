@@ -36,9 +36,29 @@ export function StatTile({ label, value, hint, icon: Icon }: { label: string; va
 }
 
 /** Minutes per day as bars. A text table sits behind it for screen readers. */
-export function DayBars({ days, label }: { days: { day: string; seconds: number }[]; label: string }) {
+export function DayBars({
+  days,
+  label,
+  empty = "Nothing watched in this window yet. Minutes show up here as classes are played.",
+}: {
+  days: { day: string; seconds: number }[];
+  label: string;
+  /** Shown instead of a row of empty bars when every day is zero. */
+  empty?: ReactNode;
+}) {
   const max = Math.max(60, ...days.map((d) => d.seconds));
   const total = days.reduce((n, d) => n + d.seconds, 0);
+  if (!total) {
+    return (
+      <figure className="min-w-0">
+        <figcaption className="mb-3 flex items-baseline justify-between gap-3 text-sm">
+          <span className="font-medium text-fg">{label}</span>
+          <span className="text-fg-muted tabular-nums">0 min</span>
+        </figcaption>
+        <p className="grid h-32 place-items-center rounded-md border border-dashed border-line px-4 text-center text-sm text-fg-muted">{empty}</p>
+      </figure>
+    );
+  }
   return (
     <figure className="min-w-0">
       <figcaption className="mb-3 flex items-baseline justify-between gap-3 text-sm">

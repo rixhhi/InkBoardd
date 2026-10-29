@@ -91,6 +91,15 @@ export default function AnalyticsPage() {
         />
       </div>
 
+      {report.sessions === 0 && report.minutes === 0 ? (
+        <div role="status" className="mt-6 rounded-lg border border-dashed border-line p-4 text-sm text-fg-muted">
+          <p className="font-medium text-fg">Nothing to measure yet.</p>
+          <p className="mt-1">
+            Finish a class, run a focus block, or log study from the Tasks page. Completion, goal hits and session length fill in from there.
+          </p>
+        </div>
+      ) : null}
+
       {/* Figures */}
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Figure label="Struck" value={`${Math.round(report.completionRate * 100)}%`} ring={report.completionRate * 100} hint={`${report.lecturesDone}/${report.lecturesPlanned} lectures`} />

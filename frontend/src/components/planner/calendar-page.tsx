@@ -273,11 +273,27 @@ export function PlannerPage() {
         </div>
       </div>
 
-      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted" aria-label="Calendar legend">
-        <li>Dust · minutes studied (Done)</li>
-        <li>Stone underline · Overdue</li>
-        <li>Oxide ring · Exam</li>
-        <li>Bone edge · today</li>
+      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-fg-muted" aria-label="Calendar legend">
+        <li className="flex items-center gap-1.5">
+          <span aria-hidden="true" className="mini-board inline-block size-4 rounded-[3px]" style={{ "--dust": 0.9 } as never}>
+            <span className="dust" />
+          </span>
+          Hatched · minutes studied
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span aria-hidden="true" className="inline-block border-b-2 border-warn px-0.5 font-mono text-[10px] leading-none text-fg">
+            12
+          </span>
+          Underlined · overdue
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span aria-hidden="true" className="mini-board is-exam inline-block size-4 rounded-[3px]" />
+          Ringed · exam day
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span aria-hidden="true" className="mini-board is-today inline-block size-4 rounded-[3px]" />
+          Bold edge · today
+        </li>
       </ul>
 
       {view === "agenda" ? (
