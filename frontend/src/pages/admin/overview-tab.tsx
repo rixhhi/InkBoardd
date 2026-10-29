@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Activity as ActivityIcon, Clock3, Radio, Share2, UserPlus } from "lucide-react";
+import { Activity as ActivityIcon, Clock3, KeyRound, Radio, Share2, UserPlus } from "lucide-react";
 import { Avatar, Badge, Button, EmptyState, ErrorState, List, ListRow, Section, Skeleton, Surface } from "@/components/ui";
 import { ActivityFeed, DayBars, StatTile } from "@/components/admin/bits";
 import { get, type MemberRow, type Overview } from "@/components/admin/api";
@@ -61,6 +61,19 @@ export function OverviewTab({ onGo }: { onGo: (tab: string) => void }) {
         <StatTile label="Watch time · 7 days" value={fmtMinutes(d.counts.watchSeconds7d)} hint="across all members" icon={Clock3} />
         <StatTile label="Shared items" value={d.counts.shares} hint={d.accessMode === "open" ? "Open mode: members see everything" : `${d.counts.groups} group${d.counts.groups === 1 ? "" : "s"}`} icon={Share2} />
       </div>
+      {d.counts.resetRequests ? (
+        <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-danger-subtle p-4 text-sm">
+          <p className="flex items-center gap-2 text-fg">
+            <KeyRound aria-hidden="true" className="size-4 text-danger" />
+            {d.counts.resetRequests === 1 ? "A member asked for a password reset" : `${d.counts.resetRequests} members asked for a password reset`} from the sign-in page.
+          </p>
+          <Button variant="secondary" size="sm" asChild>
+            <Link to="/admin" search={{ tab: "members" }}>
+              Open members
+            </Link>
+          </Button>
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Surface>

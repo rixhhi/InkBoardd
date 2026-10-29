@@ -65,6 +65,18 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reset, setReset] = useState<"idle" | "sending" | "sent">("idle");
+
+  async function askForReset() {
+    if (!email || reset !== "idle") return;
+    setReset("sending");
+    try {
+      await sendJson("/api/auth/reset-request", "POST", { email });
+    } catch {
+      /* the answer is the same either way; the admin side is what matters */
+    }
+    setReset("sent");
+  }
 
   useEffect(() => {
     if (status.data?.needsSetup) void nav({ to: "/setup", replace: true });
@@ -97,7 +109,24 @@ export function LoginPage() {
           Sign in
         </Button>
       </form>
-      <p className="mt-4 text-xs text-fg-muted">Forgot your password? Ask your admin to reset it.</p>
+      <div className="mt-4 text-xs text-fg-muted">
+        {reset === "sent" ? (
+          <p role="status">If that account exists, your admin has been told. They will set a new password and share it with you.</p>
+        ) : (
+          <p>
+            Forgot your password?{" "}
+            <button
+              type="button"
+              onClick={askForReset}
+              disabled={!email || reset === "sending"}
+              title={!email ? "Type your email first" : undefined}
+              className="font-medium text-accent underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              {reset === "sending" ? "Telling your admin…" : "Ask your admin to reset it"}
+            </button>
+          </p>
+        )}
+      </div>
     </Frame>
   );
 }

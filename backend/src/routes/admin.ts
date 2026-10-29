@@ -51,7 +51,7 @@ export async function registerAdmin(app: FastifyInstance) {
 
   app.get("/api/admin/overview", async (_req, reply) => {
     reply.header("cache-control", "no-store");
-    const [members, stats, shares, groups, daily, topLessons, recent, online, accessMode] = await Promise.all([
+    const [members, stats, shares, groups, daily, topLessons, recent, online, accessMode, resetRequests] = await Promise.all([
       S.listUsers(["member"]),
       S.memberStats(),
       S.listShares(),
@@ -61,6 +61,7 @@ export async function registerAdmin(app: FastifyInstance) {
       S.listActivity({ limit: 25 }),
       S.onlineNow(),
       S.accessMode(),
+      S.countResetRequests(),
     ]);
     const byId = new Map(stats.map((s) => [s.userId, s]));
     const weekAgo = Date.now() - 7 * 86_400_000;
@@ -74,6 +75,7 @@ export async function registerAdmin(app: FastifyInstance) {
         shares: shares.length,
         groups: groups.length,
         watchSeconds7d: stats.reduce((n, s) => n + s.watchSeconds7d, 0),
+        resetRequests,
       },
       daily,
       topLessons,

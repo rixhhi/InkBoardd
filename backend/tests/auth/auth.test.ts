@@ -186,6 +186,36 @@ describe("accounts and access", () => {
     assert.equal(settings.json().permissions.browse, true);
   });
 
+  it("'forgot your password' flags the member for the admin and clears on reset", async () => {
+    // Public, same answer for any email (no oracle), rate-limited like sign-in.
+    const unknown = await app.inject({ method: "POST", url: "/api/auth/reset-request", payload: { email: "nobody@ink.dev" } });
+    assert.equal(unknown.statusCode, 200);
+    const known = await app.inject({ method: "POST", url: "/api/auth/reset-request", payload: { email: "RIYA@ink.dev" } });
+    assert.equal(known.statusCode, 200);
+    assert.equal(known.json().message, unknown.json().message);
+
+    const list = await app.inject({ url: "/api/admin/members", headers: { cookie: admin } });
+    const row = (list.json().members as { id: number; resetRequestedAt: string | null }[]).find((m) => m.id === memberId);
+    assert.ok(row?.resetRequestedAt, "member row carries the request");
+    const overview = await app.inject({ url: "/api/admin/overview", headers: { cookie: admin } });
+    assert.equal(overview.json().counts.resetRequests, 1);
+    const audit = await app.inject({ url: "/api/admin/audit", headers: { cookie: admin } });
+    assert.ok((audit.json().items as { action: string }[]).some((a) => a.action === "password.reset_requested"));
+
+    // Admins are not flagged (they manage their own password), and an admin reset clears it.
+    await app.inject({ method: "POST", url: "/api/auth/reset-request", payload: { email: "ada@ink.dev" } });
+    const admins = await app.inject({ url: "/api/admin/admins", headers: { cookie: owner } });
+    assert.ok((admins.json().admins as { resetRequestedAt: string | null }[]).every((a) => !a.resetRequestedAt));
+    await app.inject({ method: "PATCH", url: `/api/admin/members/${memberId}`, headers: { cookie: admin }, payload: { password: "member pass 2 fresh", mustChangePassword: true } });
+    const after = await app.inject({ url: "/api/admin/members", headers: { cookie: admin } });
+    assert.equal((after.json().members as { id: number; resetRequestedAt: string | null }[]).find((m) => m.id === memberId)?.resetRequestedAt, null);
+    assert.equal((await app.inject({ url: "/api/admin/overview", headers: { cookie: admin } })).json().counts.resetRequests, 0);
+    // Put the member's password back for the rest of the suite.
+    await app.inject({ method: "PATCH", url: `/api/admin/members/${memberId}`, headers: { cookie: admin }, payload: { password: "member pass 1", mustChangePassword: false } });
+    member = cookieOf(await login("riya@ink.dev", "member pass 1"));
+    resetLoginThrottle();
+  });
+
   it("a saved-lecture job is only reachable for a class shared with the member", async () => {
     // Regression: GET /api/jobs/* used to be open to every member, and job ids were a plain
     // sha256 of the lesson id, so a member could pull bundle.zip for any class they knew the id of.

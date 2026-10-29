@@ -15,6 +15,8 @@ export type User = {
   mustChangePassword: boolean;
   createdAt: string;
   lastSeenAt: string | null;
+  /** Set by "Forgot your password?" on the sign-in page; cleared by an admin reset. */
+  resetRequestedAt: string | null;
 };
 
 export type Share = {

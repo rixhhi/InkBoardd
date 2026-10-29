@@ -78,7 +78,7 @@ export function MemberDetailView({ id }: { id: number }) {
     <AppShell>
       <PageHeader
         crumbs={[{ label: "Admin", to: "/admin" }, { label: "Members", to: "/admin", search: { tab: "members" } }, { label: member.name }]}
-        eyebrow={paused ? "Paused member" : member.mustChangePassword ? "Member · new password pending" : "Member"}
+        eyebrow={paused ? "Paused member" : member.resetRequestedAt ? "Member · asked for a password reset" : member.mustChangePassword ? "Member · new password pending" : "Member"}
         title={member.name}
         subline={`${member.email} · joined ${new Date(member.createdAt).toLocaleDateString()} · seen ${ago(member.lastSeenAt)}`}
         leading={<Avatar name={member.name} size="lg" decorative />}

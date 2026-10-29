@@ -130,6 +130,12 @@ export const MIGRATIONS: readonly Migration[] = [
     // existing (user_id, at) index does not serve "order by id desc".
     sql: "create index if not exists ib_activity_user_id_desc on ib_activity (user_id, id desc)",
   },
+  {
+    id: "0002_users_reset_requested_at",
+    // "Forgot your password?" on the sign-in page sets this; the admin sees a badge and
+    // it clears when they reset the password.
+    sql: "alter table ib_users add column if not exists reset_requested_at timestamptz",
+  },
 ];
 
 export async function appliedMigrations(db: Db): Promise<Set<string>> {

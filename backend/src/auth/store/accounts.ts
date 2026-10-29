@@ -17,6 +17,7 @@ type UserRow = {
   must_change_password: boolean;
   created_at: unknown;
   last_seen_at: unknown;
+  reset_requested_at?: unknown;
 };
 
 function toUser(row: UserRow): User {
@@ -29,7 +30,19 @@ function toUser(row: UserRow): User {
     mustChangePassword: Boolean(row.must_change_password),
     createdAt: iso(row.created_at),
     lastSeenAt: isoOrNull(row.last_seen_at),
+    resetRequestedAt: row.reset_requested_at == null ? null : isoOrNull(row.reset_requested_at),
   };
+}
+
+/** Mark that someone asked for a reset from the sign-in page. Unknown emails are a no-op (no oracle). */
+export async function requestPasswordReset(email: string): Promise<boolean> {
+  const rows = await q("update ib_users set reset_requested_at = now() where lower(email) = lower($1) and role = 'member' returning id", [email]);
+  return rows.length > 0;
+}
+
+export async function countResetRequests(): Promise<number> {
+  const row = await one<{ n: unknown }>("select count(*) as n from ib_users where reset_requested_at is not null and role = 'member'");
+  return Number(row?.n ?? 0);
 }
 
 export async function superadminExists(): Promise<boolean> {
@@ -92,7 +105,10 @@ export async function updateUser(
   if (patch.email !== undefined) add("email", patch.email);
   if (patch.status !== undefined) add("status", patch.status);
   if (patch.role !== undefined) add("role", patch.role);
-  if (patch.password !== undefined) add("password_hash", hashPassword(patch.password));
+  if (patch.password !== undefined) {
+    add("password_hash", hashPassword(patch.password));
+    add("reset_requested_at", null);
+  }
   if (patch.mustChange !== undefined) add("must_change_password", patch.mustChange);
   if (sets.length) {
     args.push(id);

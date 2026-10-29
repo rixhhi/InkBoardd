@@ -43,7 +43,7 @@ function longRequest(url: string): boolean {
 function rateBucket(method: string, path: string): "skip" | "media" | "expensive" | "catalog" | "generous" {
   const verb = method.toUpperCase();
   if (path === "/healthz" || path === "/readyz" || path.startsWith("/api/upstream")) return "skip";
-  if (path === "/api/auth/login" || path === "/api/auth/setup") return "expensive";
+  if (path === "/api/auth/login" || path === "/api/auth/setup" || path === "/api/auth/reset-request") return "expensive";
   if (path.startsWith("/api/auth") || path.startsWith("/api/me") || path.startsWith("/api/admin") || path === "/api/activity") return "generous";
   if (path.startsWith("/api/live-board")) return "generous";
   if (/^\/api\/(slide|notes|live-slide)\b/.test(path)) return "media";

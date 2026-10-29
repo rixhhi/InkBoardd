@@ -235,7 +235,7 @@ export type Rule =
   | { admin: true; superOnly?: boolean }
   | { deny: true };
 
-const PUBLIC = new Set(["/healthz", "/readyz", "/api/auth/status", "/api/auth/setup", "/api/auth/login", "/api/auth/logout"]);
+const PUBLIC = new Set(["/healthz", "/readyz", "/api/auth/status", "/api/auth/setup", "/api/auth/login", "/api/auth/logout", "/api/auth/reset-request"]);
 /** Reachable while a password change is pending. */
 const PENDING_OK = new Set(["/api/auth/status", "/api/auth/logout", "/api/me", "/api/me/password"]);
 

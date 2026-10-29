@@ -107,6 +107,30 @@ export async function registerAuth(app: FastifyInstance) {
     return { user: publicUser(user) };
   });
 
+  /**
+   * "Forgot your password?" Members have no email reset (admins set passwords), so this
+   * flags the account for the admin: a badge on Members, a count on the overview, an
+   * audit row. Always 200 so the endpoint says nothing about which emails exist.
+   */
+  app.post("/api/auth/reset-request", async (req, reply) => {
+    reply.header("cache-control", "no-store");
+    const b = body(req);
+    const email = S.normalEmail(b.email);
+    const ip = req.ip || "local";
+    // Same bucket as sign-in misses: five per account+IP in fifteen minutes.
+    const locked = await loginLockedForShared(ip, `reset:${email ?? ""}`);
+    if (locked) return reply.header("retry-after", String(locked)).status(429).send(jsonError(429, "Too many requests. Try again later.", "RATE_LIMIT", req.id));
+    await noteLoginFailureShared(ip, `reset:${email ?? ""}`);
+    if (email) {
+      const flagged = await S.requestPasswordReset(email).catch(() => false);
+      if (flagged) {
+        const user = await S.findUserByEmail(email);
+        await S.audit(user?.id ?? null, "password.reset_requested", email, `from ${ip}`).catch(() => {});
+      }
+    }
+    return { ok: true, message: "If that account exists, your admin has been told. They will set a new password and share it with you." };
+  });
+
   app.post("/api/auth/logout", async (req, reply) => {
     await S.revokeSession(readCookie(req, SESSION_COOKIE)).catch(() => {});
     reply.header("set-cookie", sessionCookie(req, null, null));

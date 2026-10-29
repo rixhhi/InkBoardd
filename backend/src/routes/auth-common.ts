@@ -41,6 +41,7 @@ export function publicUser(u: S.User) {
     mustChangePassword: u.mustChangePassword,
     createdAt: u.createdAt,
     lastSeenAt: u.lastSeenAt,
+    resetRequestedAt: u.resetRequestedAt ?? null,
   };
 }
 

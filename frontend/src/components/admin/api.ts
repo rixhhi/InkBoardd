@@ -21,7 +21,7 @@ export type PlannerSummary = {
 } | null;
 
 export type Overview = {
-  counts: { members: number; active: number; activeThisWeek: number; onlineNow: number; shares: number; groups: number; watchSeconds7d: number };
+  counts: { members: number; active: number; activeThisWeek: number; onlineNow: number; shares: number; groups: number; watchSeconds7d: number; resetRequests?: number };
   daily: { day: string; seconds: number }[];
   topLessons: { ref: string; label: string; members: number; seconds: number }[];
   online: Online[];

@@ -21,6 +21,8 @@ export type SessionUser = {
   mustChangePassword?: boolean;
   createdAt: string;
   lastSeenAt: string | null;
+  /** Member pressed "Forgot your password?"; cleared when an admin resets it. */
+  resetRequestedAt?: string | null;
 };
 
 export type Share = {

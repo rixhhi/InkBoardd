@@ -82,6 +82,7 @@ export function MembersTab() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
+                    {m.resetRequestedAt ? <Badge tone="danger">Asked for a reset</Badge> : null}
                     {m.status !== "active" ? <Badge tone="warn">Paused</Badge> : m.mustChangePassword ? <Badge tone="info">New password pending</Badge> : <Badge tone="ok">Active</Badge>}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">{fmtMinutes(m.stats?.watchSeconds7d ?? 0)}</td>
