@@ -13,8 +13,9 @@ A study desk for Unacademy replays: exam hubs, teacher and course shelves, a whi
 ## Status
 
 - **Typecheck**: clean in all three packages. **Lint**: `npm run lint` (Biome) — 0 errors; style warnings are reported, not fatal.
-- **Tests**: 1,070 passing (53 shared, 721 backend, 296 frontend), 0 failing; plus `scripts/e2e.mjs`, a browser run of 23 checks on desktop and phone (sign-in, every admin tab, share dialog, member restrictions, planner and settings pages, no sideways scroll, no page errors). CI runs it too (`e2e` job) against a real API + SSR build and uploads the screenshots.
-- **Build**: `vite build` passes the bundle budget (first load 736 KB / 1,563 KB cap; total 2,458 KB / 4,395 KB cap).
+- **Tests**: 1,070 passing (63 shared, 708 backend, 299 frontend), 0 failing; plus `scripts/e2e.mjs`, a browser run of 23 checks on desktop and phone (sign-in, every admin tab, share dialog, member restrictions, planner and settings pages, no sideways scroll, no page errors). CI runs it too (`e2e` job) against a real API + SSR build and uploads the screenshots.
+- **Build**: `vite build` passes the bundle budget (first load 742 KB / 1,563 KB cap; total 2,493 KB / 4,395 KB cap).
+- **Browser matrix** (`/tmp`-style runner kept in `scripts/e2e.mjs`): 26 screens × 4 widths (390 / 768 / 1180 / 1366) × light + dark as admin and as a member — 0 sideways scroll, 0 page errors, axe 0 serious/critical.
 - **Stores**: `backend/.env` (gitignored) points at Neon Postgres and Upstash Redis. Accounts moved from the SQLite file into Neon on first boot (`[accounts] imported 3 account(s) and 2 share(s)`).
 
 ### UI rebuild (Phases A–G of `docs/ui-rebuild-plan.md`) — done
@@ -36,6 +37,16 @@ A study desk for Unacademy replays: exam hubs, teacher and course shelves, a whi
 - **Analytics**: figure cards with rings (struck, goal hit, sessions, late finishes), delta % vs previous period, weekday pattern and session-length bar charts, and a watched/focus/manual split of how the time was earned.
 - **Badges, Settings, Dashboard, History**: kit headers and buttons; badges show a progress ring and "closest to earning"; settings shows a live "Saved" pill.
 - **Modals**: `LogStudyDialog`, `AddTaskForm` and the planner `ConfirmDialog` are on the kit `Dialog`/`AlertDialog`.
+
+### Third pass (2026-10-29) — Fading Ink, storylines, craft, a11y names
+
+- **Fading Ink** (`/planner/ink`, nav "Ink", palette "Ink · what you're forgetting"). A board of every lesson you have studied, drawn as an ink stroke that fades as you forget it. Retention `R = exp(-t/S)`: `t` is days since you last touched the lesson, stability `S` is the spaced-review gap for its stage × rating × 1.25 (`shared/src/lib/planner/ink.ts`). Bands: **crisp ≥ 0.7**, **fading ≥ 0.35**, **ghost** below. Strokes are deterministic per lesson (`strokePath(inkSeed(id), …)`), so the board is stable between visits. A scrubber walks the board forward in time (Home/End, `E` jumps to the exam date; exam tick on the rail) to see what will have faded by then. Tap a stroke for the detail: when it fades, "re-ink" with shaky / ok / solid (writes a review task via `reinkLesson` and resets the stroke), and **"Watch the part you skipped · from m:ss"** — the first gap in your watch log (`firstGap`), deep-linked into the player at that second. Screen readers get the same data as an sr-only table; reduced motion drops the stroke animation. 10 property tests (fast-check) in `ink.test.ts`.
+- **Admins see the same board.** `GET /api/admin/members/:id` → `planner.ink` + `planner.examDate` are computed on the server with the *same* shared `inkItems()` from the member's synced planner state, and Member detail embeds a read-only "Where Riya's ink is fading" — so the admin never sees a different answer than the member.
+- **Activity as storylines, not a log.** `admin/storylines.tsx` groups a member's events into *sittings* (gap > 20 min starts a new one), collapses consecutive watch ticks, sums watch minutes, and shows a presence dot for anyone active in the last 5 minutes. Activity tab header reads "N online now"; the separate "Online now" card is gone (it was the thing overlapping the left column on narrow widths).
+- **Continue really continues.** The home Continue card shows "Resume at 23:14" and passes `?t=` so the player starts there; a class barely started or nearly finished starts from the top.
+- **Craft pass**: paper grain on the page (SVG turbulence at 4.5 % opacity; off under reduced-transparency and print), one motion vocabulary (`.enter` for arriving panels, `.stagger > *` for lists; both no-ops under reduced motion), ink-stroke empty states, tabular numerals everywhere numbers line up, admin tab panels arrive instead of popping.
+- **Accessible names say what you see.** axe 4.14's `label-content-name-mismatch` flagged 36 controls whose `aria-label` did not contain their visible text (account menu, logo, search, calendar day cells, the day strip, every task row, the Continue card). Fixed at the kit level: avatar initials, subject marks and the logo glyph are painted with CSS (`.glyph::before { content: attr(data-glyph) }`) so decorative glyphs never leak into a parent control's name, and the controls use visible text + an sr-only prefix/suffix instead of a replacement label. Inline "Create one" link is underlined.
+- **Demo data**: `node --experimental-strip-types scripts/seed-ink-demo.ts riya@inkboard.local <password>` seeds a realistic 3-course JEE plan (74 tasks, 28 reviewed lessons, exam 2026-12-06) through the real `/api/me/state` sync endpoint, so Ink and the admin view have something to show.
 
 ### Review pass (2026-10-28)
 

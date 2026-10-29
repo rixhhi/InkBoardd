@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-10-29 — Fading Ink, storylines, craft, accessible names
+
+### Added
+- **Fading Ink** (`/planner/ink`): every studied lesson as an ink stroke that fades with forgetting (`R = exp(-t/S)`, `S` = spaced-review gap × 1.25; bands crisp ≥ 0.7 / fading ≥ 0.35 / ghost). Time scrubber (Home/End/`E` = exam), per-subject rows, detail panel with shaky/ok/solid "re-ink" (`reinkLesson` writes a review task) and "Watch the part you skipped · from m:ss" (first gap in the watch log, deep-linked to the player). sr-only data table; reduced-motion safe. `shared/src/lib/planner/ink.ts` + 10 property tests.
+- Admin Member detail embeds the member's ink board; `planner.ink` and `planner.examDate` are computed server-side with the shared `inkItems()` so admin and member always agree.
+- Admin Activity → **storylines**: events grouped into sittings (20-minute gap), watch ticks collapsed, minutes summed, presence dot; header shows "N online now". `frontend/src/components/admin/storylines.tsx` + 3 tests.
+- Home Continue card resumes at the saved second ("Resume at 23:14", `?t=`).
+- Command palette: "Ink · what you're forgetting"; `/planner/ink` mapped in the planner room map.
+- `scripts/seed-ink-demo.ts` seeds a realistic 3-course plan via the real sync API.
+- Craft: paper grain, `.enter` / `.stagger` motion vocabulary, ink-stroke empty states, tabular numerals, animated admin tab arrival.
+
+### Fixed
+- **Accessible names now contain the visible text** (axe `label-content-name-mismatch`, 36 controls): account menu, logo links, search button, calendar day cells, today day-strip, task rows, Continue card. Avatar initials, subject marks and the logo glyph are drawn via `.glyph::before { content: attr(data-glyph) }` so they never leak into a parent control's name. "Create one" inline link underlined (`link-in-text-block`).
+- sr-only chart tables are wrapped in a `div.sr-only` instead of being classed directly — a classed `<table class="sr-only">` still widened the phone layout.
+- Admin "Online now" card removed (it was the element overlapping the Activity column at ≤ 1180 px); the information moved into the Activity header and storyline presence dots.
+
+### Tests
+- shared 63, backend 708, frontend 299 — all passing. Browser matrix: 26 screens × 4 widths × light/dark × admin/member — 0 overflow, 0 page errors, axe 0 serious/critical.
+
 ## 2026-10-29 — layout overflow and sign-in labels
 
 ### Fixed
