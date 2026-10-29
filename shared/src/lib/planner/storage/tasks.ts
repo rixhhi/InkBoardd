@@ -1,10 +1,11 @@
-import { fillTask, liveTasks, type EventKind, type PlanTask, type ReviewRating, type TaskType, type WatchLog } from "../types.ts";
+import { fillTask, liveTasks, type EventKind, type LessonReviewState, type PlanTask, type ReviewRating, type TaskType, type WatchLog } from "../types.ts";
 import { addDaysKey, nowIso, todayKey } from "../dates.ts";
 import { nextWorkDay, previewReschedule } from "../scheduler.ts";
 import { uid } from "../ids.ts";
 import { oldestOverdueIds } from "../daily.ts";
 import { addSession, liveSessions, validateManualLog, type ManualLogInput } from "../sessions.ts";
 import { reviewGap } from "../scheduler/days.ts";
+import { calibrate, retentionAt, stabilityFor, type ReinkDraft } from "../ink.ts";
 import { captureUndo, patchPlanner, readPlanner, snapshotUndo, stampPlan } from "./core.ts";
 import { activePlan, replacePlanTasks } from "./plans.ts";
 import { addWatchMinutes, bumpDay } from "./days.ts";
@@ -172,6 +173,7 @@ export function rateRevision(planId: string, taskId: string, rating: ReviewRatin
         const interval = reviewGap(intervals[Math.min(stage - 1, intervals.length - 1)] ?? 7, rating, stage);
         const due = addDaysKey(today, interval);
         if (existing) {
+          existing.calibration = calibrateReview(existing, intervals, today, rating);
           existing.stage = stage;
           existing.lastRating = rating;
           existing.dueDate = due;
@@ -365,6 +367,7 @@ export function reinkLesson(planId: string, lessonId: string, rating: ReviewRati
       const interval = reviewGap(intervals[Math.min(stage - 1, intervals.length - 1)] ?? 7, rating, stage);
       const due = addDaysKey(today, interval);
       if (existing) {
+        existing.calibration = calibrateReview(existing, intervals, today, rating);
         existing.stage = stage;
         existing.lastRating = rating;
         existing.dueDate = due;
@@ -382,4 +385,72 @@ export function reinkLesson(planId: string, lessonId: string, rating: ReviewRati
       return stampPlan({ ...p, tasks, reviews }, at);
     }),
   }));
+}
+
+/**
+ * What the ink model predicted for this lesson right now, fed back as a
+ * calibration update. Last touch is the later of the lecture completion and
+ * the last review (approximated by dueDate minus the stage gap when no
+ * explicit touch is kept), which is the same signal `inkItems` uses.
+ */
+function calibrateReview(existing: LessonReviewState, intervals: number[], today: string, rating: ReviewRating): number {
+  const gap = intervals[Math.min(Math.max(0, existing.stage - 1), intervals.length - 1)] ?? 7;
+  const lastTouch = existing.dueDate ? addDaysKey(existing.dueDate, -gap) : (existing.lectureCompletedOn ?? today);
+  const stability = stabilityFor(intervals, existing.stage, existing.lastRating, existing.calibration);
+  const predicted = retentionAt({ lastTouch: lastTouch > today ? today : lastTouch, stability }, today);
+  return calibrate(existing.calibration, predicted, rating);
+}
+
+/**
+ * Ink -> Tasks bridge. Writes the drafts from `planReinks` as revision tasks
+ * (one per lesson, on the chosen day) so they show up on Today, the calendar
+ * and the pace meter like any other review. Skips lessons that already have a
+ * pending revision on that day. Returns how many were added. Undoable.
+ */
+export function scheduleReinks(planId: string, drafts: ReinkDraft[]): number {
+  if (!drafts.length) return 0;
+  const at = nowIso();
+  const current = readPlanner().plans.find((p) => p.id === planId);
+  if (!current) return 0;
+  const live = liveTasks(current.tasks);
+  const perDay = new Map<string, number>();
+  for (const t of live) perDay.set(t.date, (perDay.get(t.date) ?? 0) + 1);
+  const fresh: PlanTask[] = [];
+  for (const d of drafts) {
+    const dup =
+      live.some((t) => t.type === "revision" && t.status === "pending" && t.date === d.date && (t.lessonId === d.lessonId || t.refLessonIds?.includes(d.lessonId))) ||
+      fresh.some((t) => t.lessonId === d.lessonId);
+    if (dup) continue;
+    const orderIdx = perDay.get(d.date) ?? 0;
+    perDay.set(d.date, orderIdx + 1);
+    fresh.push(
+      fillTask({
+        id: uid("tsk"),
+        title: `Re-ink: ${d.title}`,
+        date: d.date,
+        plannedDate: d.date,
+        durationMin: d.durationMin,
+        type: "revision",
+        lessonId: d.lessonId,
+        courseId: d.courseId,
+        refLessonIds: [d.lessonId],
+        subject: d.subject,
+        note: "from Ink",
+        orderIdx,
+        updatedAt: at,
+      }),
+    );
+  }
+  if (!fresh.length) return 0; // nothing to do: no undo entry either, so Undo still points at the last real change
+  snapshotUndo();
+  patchPlanner((s) => ({
+    ...s,
+    plans: s.plans.map((p) => {
+      if (p.id !== planId) return p;
+      const tasks = [...p.tasks, ...fresh];
+      const endDate = tasks.reduce((a, t) => (t.date > a ? t.date : a), p.endDate);
+      return stampPlan({ ...p, tasks, endDate }, at);
+    }),
+  }));
+  return fresh.length;
 }

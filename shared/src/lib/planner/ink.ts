@@ -13,9 +13,9 @@
  * the data the planner already keeps, not a claim about neuroscience.
  */
 import { addDaysKey, diffDays } from "./dates.ts";
-import { reviewGap } from "./scheduler/days.ts";
+import { isWorkDay, reviewGap } from "./scheduler/days.ts";
 import { subjectIdOf, type SubjectId } from "./subjects.ts";
-import { asLessons, liveTasks, type CoverageRange, type PlannerState, type ReviewRating, type StudyPlan, type WatchLog } from "./types.ts";
+import { asLessons, liveTasks, type CoverageRange, type PlannerPrefs, type PlannerState, type ReviewRating, type StudyPlan, type WatchLog } from "./types.ts";
 
 export type InkItem = {
   lessonId: string;
@@ -31,6 +31,8 @@ export type InkItem = {
   due: string | null;
   stage: number;
   rating: ReviewRating | null;
+  /** Learned per-lesson stability multiplier (1 = the schedule's own estimate). */
+  calibration: number;
   /** 0..1 share of the lesson actually watched; 1 when unknown. */
   coverage: number;
   /** First unwatched second, or null when fully covered / unknown. */
@@ -74,13 +76,41 @@ export function fadesOn(item: Pick<InkItem, "lastTouch" | "stability">, threshol
   return addDaysKey(item.lastTouch, days);
 }
 
-/** Stability in days for a lesson at a given review stage and last rating, from the plan's intervals. */
-export function stabilityFor(intervals: number[] | undefined, stage: number, rating: ReviewRating | null): number {
+/** Stability in days for a lesson at a given review stage and last rating, from the plan's intervals, scaled by its learned calibration. */
+export function stabilityFor(intervals: number[] | undefined, stage: number, rating: ReviewRating | null, calibration = 1): number {
   const list = intervals?.length ? intervals : DEFAULT_INTERVALS;
   const idx = Math.min(Math.max(0, stage), list.length - 1);
   const gap = list[idx] ?? 7;
   const effective = rating ? reviewGap(gap, rating, Math.max(1, stage)) : gap;
-  return Math.max(0.5, effective * STABILITY_PER_GAP);
+  return Math.max(0.5, effective * STABILITY_PER_GAP * clampCalibration(calibration));
+}
+
+export const CALIBRATION_MIN = 0.5;
+export const CALIBRATION_MAX = 2;
+
+export function clampCalibration(c: number | undefined | null): number {
+  if (c == null || !Number.isFinite(c)) return 1;
+  return Math.min(CALIBRATION_MAX, Math.max(CALIBRATION_MIN, c));
+}
+
+/**
+ * Calibration loop. When a member rates a lesson, compare what the model
+ * predicted (retention at that moment) with what they said:
+ *
+ *   model said crisp (R >= 0.7)  but rating "shaky"  -> the lesson fades faster than scheduled: x0.8
+ *   model said ghost (R <  0.35) but rating "solid"  -> it sticks better than scheduled:        x1.25
+ *   model said fading, or the rating agrees           -> no change
+ *
+ * Multiplicative, so repeated surprises compound, bounded to [0.5, 2] so one
+ * odd day cannot wreck the picture. Pure: returns the new multiplier.
+ */
+export function calibrate(prev: number | undefined | null, predictedRetention: number, rating: ReviewRating): number {
+  const base = clampCalibration(prev);
+  const band = inkBand(predictedRetention);
+  if (band === "crisp" && rating === "shaky") return clampCalibration(base * 0.8);
+  if (band === "ghost" && rating === "solid") return clampCalibration(base * 1.25);
+  if (band === "crisp" && rating === "solid" && base < 1) return clampCalibration(base * 1.1); // slow recovery toward 1 when the model is confirmed
+  return base;
 }
 
 /** First second not covered by any watched range, or null when the lesson is fully watched or length is unknown. */
@@ -153,6 +183,7 @@ export function inkItems(plan: StudyPlan, watchLogs: WatchLog[] = []): InkItem[]
     const lastTouch = touches.sort()[touches.length - 1]!;
     const stage = r?.stage ?? 0;
     const rating = r?.lastRating ?? null;
+    const calibration = clampCalibration(r?.calibration);
     const durationSec = m?.durationSec ?? 0;
     out.push({
       lessonId,
@@ -161,10 +192,11 @@ export function inkItems(plan: StudyPlan, watchLogs: WatchLog[] = []): InkItem[]
       courseTitle: m?.courseTitle ?? "",
       subject: m?.subject ?? "other",
       lastTouch,
-      stability: stabilityFor(intervals, stage, rating),
+      stability: stabilityFor(intervals, stage, rating, calibration),
       due: r?.dueDate ?? null,
       stage,
       rating,
+      calibration,
       coverage: coverageOf(log, durationSec),
       firstGapSec: firstGap(log?.ranges, durationSec),
       durationSec,
@@ -239,4 +271,72 @@ export function strokePath(seed: number, width: number, coverage = 1): string {
     d += ` C${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`;
   }
   return d;
+}
+
+/* ---------------- Ink -> Tasks bridge ---------------- */
+
+export type ReinkDraft = {
+  lessonId: string;
+  title: string;
+  courseId: string | null;
+  subject: SubjectId;
+  /** Day the re-ink is scheduled on (a work day on or after `from`). */
+  date: string;
+  durationMin: number;
+  /** Predicted retention on `until` if nothing is done. */
+  retentionAtUntil: number;
+};
+
+export type ReinkPlanOptions = {
+  /** First day tasks may land (usually today). */
+  from: string;
+  /** Deadline: pick the lessons that will have faded by this day (usually the exam or end of week). */
+  until: string;
+  prefs: PlannerPrefs;
+  /** How many lessons to schedule. */
+  limit?: number;
+  /** Minutes per re-ink. Default 15. */
+  minutesPerItem?: number;
+  /** Minutes of re-ink per day before spilling to the next day. Default: a third of dailyMinutes, at least one item. */
+  minutesPerDay?: number;
+  /** Lessons already scheduled for review between from and until; skipped. */
+  alreadyPlanned?: Iterable<string>;
+};
+
+/**
+ * Turn the ink board into a plan. Lessons that will be below "crisp" on
+ * `until` are taken worst-first and spread over the work days between `from`
+ * and `until`, earliest day first, so the most faded is re-inked soonest.
+ * Pure: the caller writes the drafts with `scheduleReinks`.
+ */
+export function planReinks(items: InkItem[], opts: ReinkPlanOptions): ReinkDraft[] {
+  const limit = Math.max(0, opts.limit ?? 5);
+  if (!limit) return [];
+  const minutes = Math.max(5, opts.minutesPerItem ?? 15);
+  const perDay = Math.max(minutes, opts.minutesPerDay ?? Math.round((opts.prefs.dailyMinutes || 90) / 3));
+  const skip = new Set(opts.alreadyPlanned ?? []);
+  const until = opts.until >= opts.from ? opts.until : opts.from;
+  const picked = [...items]
+    .filter((it) => !skip.has(it.lessonId))
+    .map((it) => ({ it, r: retentionAt(it, until) }))
+    .filter((x) => x.r < INK_BANDS.crisp.min)
+    .sort((a, b) => a.r - b.r || (a.it.due ?? "9999").localeCompare(b.it.due ?? "9999") || a.it.title.localeCompare(b.it.title))
+    .slice(0, limit);
+  if (!picked.length) return [];
+  // Work days in [from, until]; if none (holiday streak), fall back to `from`.
+  const days: string[] = [];
+  for (let d = opts.from; d <= until && days.length < 60; d = addDaysKey(d, 1)) if (isWorkDay(opts.prefs, d)) days.push(d);
+  if (!days.length) days.push(opts.from);
+  const out: ReinkDraft[] = [];
+  let dayIdx = 0;
+  let used = 0;
+  for (const { it, r } of picked) {
+    if (used + minutes > perDay && dayIdx < days.length - 1) {
+      dayIdx += 1;
+      used = 0;
+    }
+    out.push({ lessonId: it.lessonId, title: it.title, courseId: it.courseId, subject: it.subject, date: days[dayIdx]!, durationMin: minutes, retentionAtUntil: r });
+    used += minutes;
+  }
+  return out;
 }

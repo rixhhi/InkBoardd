@@ -144,6 +144,13 @@ export type LessonReviewState = {
   lastRating: ReviewRating | null;
   lectureDate: string;
   lectureCompletedOn: string | null;
+  /**
+   * Learned stability multiplier for this lesson (Fading Ink calibration).
+   * Starts at 1; drops when a lesson the model called crisp was rated shaky,
+   * rises when a ghost was rated solid. Bounded to [0.5, 2]. Optional so old
+   * states keep loading.
+   */
+  calibration?: number;
 };
 
 export type PlanTask = {

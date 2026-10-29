@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fc from "fast-check";
-import { fadesOn, firstGap, inkBand, inkItems, inkSeed, inkSummary, reinkQueue, retentionAt, stabilityFor, strokePath } from "./ink.ts";
+import { calibrate, fadesOn, firstGap, inkBand, inkItems, inkSeed, inkSummary, planReinks, reinkQueue, retentionAt, stabilityFor, strokePath, type InkItem } from "./ink.ts";
+import { fillPrefs } from "./types.ts";
 import { addDaysKey } from "./dates.ts";
 import type { PlanTask, StudyPlan } from "./types.ts";
 
@@ -166,7 +167,7 @@ test("summary bands add up and the re-ink queue is lowest retention first", () =
     { lastTouch: "2026-10-28", stability: 10 },
     { lastTouch: "2026-10-01", stability: 10 },
     { lastTouch: "2026-10-20", stability: 10 },
-  ].map((x, i) => ({ ...x, lessonId: `L${i}`, title: `L${i}`, courseId: null, courseTitle: "", subject: "other" as const, due: null, stage: 0, rating: null, coverage: 1, firstGapSec: null, durationSec: 0 }));
+  ].map((x, i) => ({ ...x, lessonId: `L${i}`, title: `L${i}`, courseId: null, courseTitle: "", subject: "other" as const, due: null, stage: 0, rating: null, calibration: 1, coverage: 1, firstGapSec: null, durationSec: 0 }));
   const s = inkSummary(items, DAY);
   assert.equal(s.crisp + s.fading + s.ghost, 3);
   assert.equal(s.total, 3);
@@ -186,4 +187,66 @@ test("strokes are deterministic per seed, scale with coverage, and are valid pat
   const lastX = (d: string) => Number(d.trim().split(" ").slice(-2)[0]);
   assert.ok(lastX(strokePath(1, 200, 0.5)) < lastX(strokePath(1, 200, 1)));
   assert.ok(lastX(strokePath(1, 200, 0)) >= 8, "coverage floor keeps a visible stub");
+});
+
+function item(over: Partial<InkItem> & { lessonId: string }): InkItem {
+  return { title: over.lessonId, courseId: null, courseTitle: "", subject: "other", lastTouch: "2026-10-01", stability: 10, due: null, stage: 0, rating: null, calibration: 1, coverage: 1, firstGapSec: null, durationSec: 0, ...over };
+}
+
+test("calibration: shaky on a crisp prediction lowers it, solid on a ghost raises it, bounded", () => {
+  assert.equal(calibrate(1, 0.9, "shaky"), 0.8);
+  assert.equal(calibrate(1, 0.2, "solid"), 1.25);
+  assert.equal(calibrate(1, 0.5, "shaky"), 1, "fading band: the model was not sure either way");
+  assert.equal(calibrate(1, 0.9, "solid"), 1, "agreement at 1 stays at 1");
+  assert.ok(calibrate(0.8, 0.9, "solid") > 0.8 && calibrate(0.8, 0.9, "solid") <= 1, "confirmed crisp recovers toward 1");
+  fc.assert(
+    fc.property(fc.double({ min: 0, max: 5, noNaN: true }), fc.double({ min: 0, max: 1, noNaN: true }), fc.constantFrom("shaky", "ok", "solid"), (prev, r, rating) => {
+      const c = calibrate(prev, r, rating as "shaky" | "ok" | "solid");
+      return c >= 0.5 && c <= 2;
+    }),
+  );
+  assert.equal(calibrate(Number.NaN, 0.9, "shaky"), 0.8, "garbage previous value is treated as 1");
+});
+
+test("calibration feeds stability: a 0.5 multiplier halves the e-folding time", () => {
+  const base = stabilityFor([1, 3, 7, 21], 2, "ok", 1);
+  assert.ok(Math.abs(stabilityFor([1, 3, 7, 21], 2, "ok", 0.5) - base / 2) < 1e-9);
+  assert.ok(Math.abs(stabilityFor([1, 3, 7, 21], 2, "ok", 2) - base * 2) < 1e-9);
+  assert.equal(stabilityFor([1, 3, 7, 21], 2, "ok", 99), base * 2, "clamped at 2");
+});
+
+test("planReinks: worst first, only what fades by the deadline, spread across work days within a daily budget", () => {
+  const prefs = fillPrefs({ dailyMinutes: 90, studyDays: [1, 2, 3, 4, 5], holidays: [], catchUpDay: null });
+  const items = [
+    item({ lessonId: "crisp", lastTouch: "2026-10-28", stability: 200 }),
+    item({ lessonId: "ghost", lastTouch: "2026-09-01", stability: 10 }),
+    item({ lessonId: "fading", lastTouch: "2026-10-20", stability: 12 }),
+    item({ lessonId: "planned", lastTouch: "2026-09-01", stability: 10 }),
+  ];
+  // 2026-10-29 is a Thursday; Sat/Sun are off in these prefs.
+  const drafts = planReinks(items, { from: "2026-10-29", until: "2026-11-04", prefs, limit: 5, minutesPerItem: 15, minutesPerDay: 15, alreadyPlanned: ["planned"] });
+  assert.deepEqual(
+    drafts.map((d) => d.lessonId),
+    ["ghost", "fading"],
+    "crisp is skipped, planned is skipped, ghost comes first",
+  );
+  assert.deepEqual(drafts.map((d) => d.date), ["2026-10-29", "2026-10-30"], "one per day at a 15-minute daily budget");
+  assert.ok(drafts.every((d) => d.durationMin === 15));
+  assert.ok(drafts[0]!.retentionAtUntil < drafts[1]!.retentionAtUntil);
+  // Deadline before `from` collapses to `from`; weekend-only window still lands on a day.
+  const weekend = planReinks(items, { from: "2026-10-31", until: "2026-11-01", prefs, limit: 2 });
+  assert.ok(weekend.length === 2 && weekend.every((d) => d.date === "2026-10-31"), "no work day in range -> everything on `from`");
+  assert.deepEqual(planReinks(items, { from: "2026-10-29", until: "2026-10-29", prefs, limit: 0 }), []);
+});
+
+test("planReinks: never schedules more than `limit`, never before `from`, dates ascend", () => {
+  const prefs = fillPrefs({ dailyMinutes: 60 });
+  fc.assert(
+    fc.property(fc.array(fc.record({ id: fc.uuid(), age: fc.integer({ min: 0, max: 120 }), s: fc.double({ min: 0.5, max: 60, noNaN: true }) }), { maxLength: 30 }), fc.integer({ min: 0, max: 10 }), fc.integer({ min: 0, max: 30 }), (rows, limit, span) => {
+      const items = rows.map((r) => item({ lessonId: r.id, lastTouch: addDaysKey(DAY, -r.age), stability: r.s }));
+      const drafts = planReinks(items, { from: DAY, until: addDaysKey(DAY, span), prefs, limit });
+      const dates = drafts.map((d) => d.date);
+      return drafts.length <= limit && dates.every((d) => d >= DAY) && dates.every((d, i) => i === 0 || d >= dates[i - 1]!) && new Set(drafts.map((d) => d.lessonId)).size === drafts.length;
+    }),
+  );
 });

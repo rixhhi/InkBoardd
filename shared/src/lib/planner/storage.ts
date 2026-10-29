@@ -52,6 +52,7 @@ export {
   patchTask,
   rateRevision,
   reinkLesson,
+  scheduleReinks,
   carryForward,
   logManualStudy,
   completeLessonInPlan,
