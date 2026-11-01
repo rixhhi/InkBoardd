@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { ArrowLeft, Bookmark, ChevronRight, KeyRound, LaptopMinimal, LogOut, Moon, Search, Settings, ShieldCheck, Sun, SunMoon } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/cn";
@@ -29,6 +29,7 @@ function useNavItems(): NavItem[] {
 function AccountMenu({ compact = false }: { compact?: boolean }) {
   const a = useAccess();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [pw, setPw] = useState(false);
   const [devices, setDevices] = useState(false);
   if (!a.user) return null;
@@ -47,7 +48,7 @@ function AccountMenu({ compact = false }: { compact?: boolean }) {
           </div>
         }
         items={[
-          ...(a.admin ? [{ id: "admin", label: "Admin dashboard", icon: ShieldCheck, onSelect: () => window.location.assign("/admin") }] : []),
+          ...(a.admin ? [{ id: "admin", label: "Admin dashboard", icon: ShieldCheck, onSelect: () => void navigate({ to: "/admin" }) }] : []),
           { id: "pw", label: "Change password", icon: KeyRound, onSelect: () => setPw(true) },
           { id: "devices", label: "Signed-in devices", icon: LaptopMinimal, onSelect: () => setDevices(true) },
           "separator" as const,

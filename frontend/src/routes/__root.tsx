@@ -1,6 +1,6 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { AuthProvider } from "@inkboard/shared/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { NotFoundPage } from "@/components/not-found";
@@ -30,6 +30,19 @@ const PlannerShortcuts = lazy(() =>
 
 const APP_NAME = "Inkboard";
 
+/**
+ * Absolute base for og:image. Scrapers (WhatsApp, Telegram, Slack) do not resolve a relative
+ * og:image, so a share preview showed no picture. VERCEL_PROJECT_PRODUCTION_URL is set by Vercel;
+ * SITE_URL is for PM2/Docker installs. Falls back to relative when neither is known.
+ */
+function siteOrigin(): string {
+  const explicit = typeof process !== "undefined" ? process.env?.SITE_URL?.trim() : "";
+  if (explicit) return explicit.replace(/\/$/, "");
+  const vercel = typeof process !== "undefined" ? process.env?.VERCEL_PROJECT_PRODUCTION_URL?.trim() : "";
+  if (vercel) return `https://${vercel.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+  return "";
+}
+
 export const Route = createRootRoute({
   notFoundComponent: NotFoundPage,
   errorComponent: AppErrorComponent,
@@ -42,7 +55,7 @@ export const Route = createRootRoute({
       { name: "description", content: site.description },
       { property: "og:title", content: site.title },
       { property: "og:description", content: site.description },
-      { property: "og:image", content: site.image },
+      { property: "og:image", content: `${siteOrigin()}${site.image}` },
       { property: "og:type", content: site.type },
       { name: "twitter:card", content: site.card },
     ],
@@ -50,7 +63,8 @@ export const Route = createRootRoute({
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "apple-touch-icon", href: "/favicon.svg" },
+      // iOS ignores SVG touch icons; it needs a raster.
+      { rel: "apple-touch-icon", href: "/icon-192.png" },
     ],
   }),
   component: Root,
@@ -126,10 +140,50 @@ function DeferredChrome() {
   );
 }
 
+/**
+ * Registers the service worker and, when a new build is waiting, offers a Reload
+ * instead of swapping workers under the page (which could mix two builds' chunks).
+ */
 function OfflineWorker() {
   useEffect(() => {
     if (!import.meta.env.PROD || !("serviceWorker" in navigator)) return;
-    void navigator.serviceWorker.register("/sw.js", { type: "module" });
+    let reloading = false;
+    const onControllerChange = () => {
+      if (reloading) return;
+      reloading = true;
+      window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+    const offer = (worker: ServiceWorker) => {
+      toast("Inkboard has an update", {
+        id: "sw-update",
+        duration: Number.POSITIVE_INFINITY,
+        action: { label: "Reload", onClick: () => worker.postMessage({ type: "SKIP_WAITING" }) },
+      });
+    };
+    void navigator.serviceWorker
+      .register("/sw.js", { type: "module" })
+      .then((reg) => {
+        // Already waiting (page was opened after a deploy) or arriving now.
+        if (reg.waiting && navigator.serviceWorker.controller) offer(reg.waiting);
+        reg.addEventListener("updatefound", () => {
+          const fresh = reg.installing;
+          if (!fresh) return;
+          fresh.addEventListener("statechange", () => {
+            if (fresh.state === "installed" && navigator.serviceWorker.controller) offer(fresh);
+          });
+        });
+        // Check for a new build when the tab comes back, at most once an hour.
+        let last = Date.now();
+        const onVisible = () => {
+          if (document.visibilityState !== "visible" || Date.now() - last < 60 * 60_000) return;
+          last = Date.now();
+          void reg.update().catch(() => {});
+        };
+        document.addEventListener("visibilitychange", onVisible);
+      })
+      .catch(() => {});
+    return () => navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
   }, []);
   return null;
 }

@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      tanstack:
+        patterns: ["@tanstack/*"]
+      radix:
+        patterns: ["@radix-ui/*"]
+      dev-tooling:
+        dependency-type: development
+        patterns: ["vite", "@vitejs/*", "typescript", "@biomejs/*", "jsdom", "axe-core", "lightningcss", "@types/*"]
+    ignore:
+      # Pinned beta; bump by hand when a stable 3.x ships.
+      - dependency-name: nitro
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

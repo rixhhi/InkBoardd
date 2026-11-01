@@ -13,8 +13,20 @@ import { rangeReply } from "./offline-range.js";
 const SHELL = "inkboard-shell-v1";
 const SHELL_PATHS = ["/", "/planner/today", "/planner", "/planner/ink", "/library", "/manifest.webmanifest", "/favicon.svg"];
 
+// Bump when the caching strategy changes; a new build does not need a bump
+// because hashed assets are keyed by URL.
+
+/**
+ * No skipWaiting() here: a new worker that takes over mid-session can serve a
+ * page whose hashed chunks belong to the previous build. The page shows an
+ * "Inkboard updated — Reload" toast and tells the waiting worker to activate
+ * only when the person agrees (see OfflineWorker in routes/__root.tsx).
+ */
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
+});
+
 self.addEventListener("install", (event) => {
-  self.skipWaiting();
   event.waitUntil(
     caches
       .open(SHELL)

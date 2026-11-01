@@ -205,7 +205,9 @@ export async function registerAuth(app: FastifyInstance) {
     return { state: await S.getUserState(req.user!.id), at: new Date().toISOString() };
   });
 
-  app.put("/api/me/state", async (req, reply) => {
+  // 2 MB here (the global cap is 1 MB): one synced value may be up to 600 KB and the
+  // browser batches by UTF-8 bytes, so a batch of Hindi-heavy notes needs the headroom.
+  app.put("/api/me/state", { bodyLimit: 2 * 1024 * 1024 }, async (req, reply) => {
     const b = body(req);
     const raw = b.entries;
     if (!raw || typeof raw !== "object") return fail(reply, req, 400, "BAD_STATE", "Nothing to save.");

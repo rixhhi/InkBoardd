@@ -16,7 +16,23 @@ import { hasMergeRule, mergeSynced } from "@/lib/account-sync-merge";
 import { notifyPlannerChanged } from "@inkboard/shared/planner/storage";
 
 const PUSH_EVERY_MS = 15_000;
-const MAX_BATCH_CHARS = 900_000;
+/**
+ * Per-request budget in UTF-8 *bytes*, not characters. The API accepts 2 MB on
+ * PUT /api/me/state; staying well under leaves room for JSON escaping. A value
+ * with Hindi text is up to 3 bytes per character, which is why chars were the
+ * wrong unit before.
+ */
+const MAX_BATCH_BYTES = 1_200_000;
+
+const encoder = typeof TextEncoder !== "undefined" ? new TextEncoder() : null;
+
+/** UTF-8 size of an entry as it will appear in the request body (approximate, always ≥ real for ASCII). */
+export function entryBytes(e: { key: string; value: string | null }): number {
+  const text = e.key + (e.value ?? "");
+  const raw = encoder ? encoder.encode(text).length : text.length * 3;
+  // Quotes, commas, the "base" stamp and JSON escapes for quotes/newlines.
+  return raw + 64;
+}
 
 type Status = "idle" | "syncing" | "synced" | "offline" | "error";
 let status: Status = "idle";
@@ -93,13 +109,13 @@ export function wipeLocalAccountData() {
   for (const k of keys) store.removeItem(k);
 }
 
-function batches<T extends { key: string; value: string | null }>(entries: T[]) {
+export function batches<T extends { key: string; value: string | null }>(entries: T[], limit = MAX_BATCH_BYTES) {
   const out: T[][] = [];
   let cur: T[] = [];
   let size = 0;
   for (const e of entries) {
-    const n = (e.value?.length ?? 0) + e.key.length + 16;
-    if (cur.length && size + n > MAX_BATCH_CHARS) {
+    const n = entryBytes(e);
+    if (cur.length && size + n > limit) {
       out.push(cur);
       cur = [];
       size = 0;
