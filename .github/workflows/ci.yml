@@ -63,10 +63,11 @@ jobs:
           curl -sf -b /tmp/a.jar -H "$H" -H 'sec-fetch-site: same-origin' -d '{"email":"member@ci.local","name":"Member","password":"ci-member-pass-1"}' http://127.0.0.1:3000/api/admin/members >/dev/null
       - name: lighthouse (against the real API + SSR stack; the sign-in page is public)
         run: npx --yes @lhci/cli@0.14.0 autorun
-      - name: e2e (1 retry per check; on final failure a screenshot, console log and trace land in e2e-shots)
+      - name: e2e (no retries — a flake fails the job so it gets fixed, not masked; on failure a screenshot, console log and trace land in e2e-shots)
         run: node scripts/e2e.mjs --shots e2e-shots
         env:
           PLAYWRIGHT_DIR: /tmp/pw
+          E2E_RETRIES: "0"
           E2E_TRACE: "1"
           E2E_BASE: http://127.0.0.1:3000
           E2E_ADMIN: owner@ci.local:ci-owner-pass-1
