@@ -19,6 +19,7 @@
  * Needs Playwright with Chromium (`npm i -D playwright && npx playwright install chromium`,
  * or point PLAYWRIGHT_DIR at a folder that has it installed). Exits 1 on any failure.
  */
+import { shotName } from "./lib/shot-name.mjs";
 import { createRequire } from "node:module";
 import { mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -116,7 +117,7 @@ async function settle(page) {
 
 async function shot(page, name) {
   if (!SHOTS) return;
-  await page.screenshot({ path: join(SHOTS, `${name}.png`), fullPage: true });
+  await page.screenshot({ path: join(SHOTS, `${shotName(name)}.png`), fullPage: true });
 }
 
 async function noOverflow(page, label) {
