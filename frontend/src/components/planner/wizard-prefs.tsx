@@ -137,7 +137,7 @@ export function WizardPrefs({
       </Section>
 
       <Section title="Study days">
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Study days">
+        <fieldset className="flex flex-wrap gap-1.5" aria-label="Study days">
           {WEEKDAYS.map((d) => {
             const on = prefs.studyDays.includes(d.id);
             return (
@@ -155,7 +155,7 @@ export function WizardPrefs({
               </button>
             );
           })}
-        </div>
+        </fieldset>
       </Section>
 
       {preview.summary.overlappingTopics?.length ? (
@@ -211,7 +211,7 @@ export function WizardPrefs({
           </Field>
           <Switch label="Spaced revision" description="Revisit each class a few days after you watch it." checked={prefs.includeRevision} onCheckedChange={(on) => onChange({ ...prefs, includeRevision: on })} />
           {prefs.includeRevision ? (
-            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Revision after">
+            <fieldset className="flex flex-wrap items-center gap-1.5" aria-label="Revision after">
               <HelpButton topic="revision-intervals" />
               {DEFAULT_REVISION_INTERVALS.map((n) => {
                 const on = prefs.revisionIntervals.includes(n);
@@ -227,7 +227,7 @@ export function WizardPrefs({
                   </button>
                 );
               })}
-            </div>
+            </fieldset>
           ) : null}
           <fieldset className="grid gap-2">
             <legend className="mb-1 text-sm font-medium text-fg">How courses mix</legend>

@@ -384,9 +384,9 @@ export function ExamHubView({
           </nav>
         ) : null}
         {faced && plates.length ? (
-          <div role="group" aria-label="Sections" className="mt-4 flex flex-wrap gap-1.5">
+          <fieldset aria-label="Sections" className="mt-4 flex flex-wrap gap-1.5">
             {plateChips}
-          </div>
+          </fieldset>
         ) : null}
       </header>
 

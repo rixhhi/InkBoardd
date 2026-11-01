@@ -27,7 +27,7 @@ export function MembersTab() {
       <div className="flex flex-wrap items-center gap-2">
         <Input aria-label="Filter members" placeholder="Filter by name or email" value={filter} onChange={(e) => setFilter(e.target.value)} className="max-w-xs flex-1" />
         {groups.data?.groups.length ? (
-          <div className="scroll-fade-x flex gap-1 overflow-x-auto" role="group" aria-label="Filter by group">
+          <fieldset className="scroll-fade-x flex gap-1 overflow-x-auto" aria-label="Filter by group">
             <button type="button" aria-pressed={group == null} onClick={() => setGroup(null)} className={chip(group == null)}>
               All
             </button>
@@ -36,7 +36,7 @@ export function MembersTab() {
                 {g.name}
               </button>
             ))}
-          </div>
+          </fieldset>
         ) : null}
         <Button icon={UserPlus} onClick={() => setAdding(true)} className="ml-auto">
           Add member

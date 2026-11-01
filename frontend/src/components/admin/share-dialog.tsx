@@ -31,7 +31,7 @@ function Picker<T extends { id: number }>({ items, picked, onChange, render, emp
   return (
     <div className="mt-1 grid gap-2 rounded-md bg-surface-raised p-2">
       {items.length > 6 ? <Input aria-label={`Filter ${label}`} placeholder="Filter" value={filter} onChange={(e) => setFilter(e.target.value)} className="h-9" /> : null}
-      <div role="group" aria-label={label} className="max-h-52 overflow-y-auto">
+      <fieldset aria-label={label} className="max-h-52 overflow-y-auto">
         {!items.length ? <p className="p-2 text-sm text-fg-muted">{empty}</p> : null}
         {shown.map((m) => (
           <label key={m.id} className="flex min-h-10 cursor-pointer items-center gap-2 rounded px-2 text-sm text-fg hover:bg-surface">
@@ -44,7 +44,7 @@ function Picker<T extends { id: number }>({ items, picked, onChange, render, emp
             {render(m)}
           </label>
         ))}
-      </div>
+      </fieldset>
       {picked.length ? <p className="px-2 text-xs text-fg-muted">{picked.length} selected</p> : null}
     </div>
   );
