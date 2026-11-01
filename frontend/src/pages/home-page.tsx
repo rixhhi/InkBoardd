@@ -12,6 +12,7 @@ import { readLater, type LaterItem } from "@inkboard/shared/library";
 import { readHistory, subscribeHistory, type WatchEntry } from "@inkboard/shared/watch-history";
 import { loadLiveFeed } from "@/lib/unacademy";
 import { SharedWithYou } from "@/components/shared-with-you";
+import { FirstRun } from "@/components/first-run";
 import { useAccess } from "@/lib/session";
 
 const HomeExams = lazy(() => import("@/components/home-exams").then((m) => ({ default: m.HomeExams })));
@@ -276,6 +277,7 @@ export default function Home() {
         }
       />
       <PageBody className="pb-20">
+        <FirstRun />
         <ContinueShelf />
         <SharedWithYou />
         {access.perms.live ? <LiveNow /> : null}

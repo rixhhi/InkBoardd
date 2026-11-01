@@ -18,8 +18,8 @@ describe("Phase 5 gates", () => {
 
   it("caps the built JavaScript", () => {
     const script = src("../../scripts/bundle-budget.mjs");
-    assert.match(script, /1_600_000/);
-    assert.match(script, /4_500_000/);
+    assert.match(script, /900_000/);
+    assert.match(script, /3_000_000/);
   });
 
   it("smokes home, today, the player, and offline by HTTP status", () => {

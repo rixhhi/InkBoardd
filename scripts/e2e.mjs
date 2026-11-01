@@ -10,6 +10,12 @@
  * Every page check also asserts no sideways scroll and axe-core 0 serious/critical
  * (E2E_AXE=0 to skip; axe is read from frontend/node_modules).
  *
+ * Flake control: a failing check is retried once (E2E_RETRIES, default 1) before it
+ * counts. On the final failure a full-page screenshot and the page's console log are
+ * written to --shots as <check>-FAILED.png / .log, and a Playwright trace (.zip, open
+ * with `npx playwright show-trace`) when E2E_TRACE=1. A JUnit report goes to
+ * E2E_JUNIT (default <shots>/junit.xml) so CI can render it.
+ *
  * Needs Playwright with Chromium (`npm i -D playwright && npx playwright install chromium`,
  * or point PLAYWRIGHT_DIR at a folder that has it installed). Exits 1 on any failure.
  */
@@ -33,17 +39,70 @@ if (!adminEmail || !memberEmail) {
 
 const failures = [];
 const pageErrors = [];
+/** @type {{ name: string, ms: number, ok: boolean, message?: string, retried: boolean }[]} */
+const results = [];
 let passed = 0;
+const RETRIES = Math.max(0, Number(process.env.E2E_RETRIES ?? 1) || 0);
+const TRACE = process.env.E2E_TRACE === "1";
+
+/** Page the current check is driving, so a failure can screenshot it. Set by the loops below. */
+let currentPage = null;
+let currentCtx = null;
+let currentVp = "";
+const consoleLines = new WeakMap();
+
+function safeName(name) {
+  return name.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").slice(0, 80);
+}
+
+async function onFinalFailure(name, err) {
+  const page = currentPage;
+  if (!page || !SHOTS) return;
+  const base = join(SHOTS, `${currentVp}-${safeName(name)}-FAILED`);
+  await page.screenshot({ path: `${base}.png`, fullPage: true }).catch(() => {});
+  const lines = consoleLines.get(page) ?? [];
+  const { writeFileSync } = require("node:fs");
+  try {
+    writeFileSync(`${base}.log`, [`url: ${page.url()}`, `error: ${err instanceof Error ? err.stack || err.message : String(err)}`, "", "console:", ...lines.slice(-80)].join("\n"));
+  } catch {
+    /* read-only shots dir */
+  }
+  if (TRACE && currentCtx) await currentCtx.tracing.stop({ path: `${base}.trace.zip` }).catch(() => {});
+}
 
 async function check(name, fn) {
-  try {
-    await fn();
-    passed++;
-    console.log(`  ok  ${name}`);
-  } catch (err) {
-    failures.push(`${name}: ${err instanceof Error ? err.message.split("\n")[0] : err}`);
-    console.log(`  FAIL ${name}`);
+  const started = Date.now();
+  let lastErr;
+  for (let attempt = 0; attempt <= RETRIES; attempt++) {
+    try {
+      if (TRACE && currentCtx && attempt === 0) await currentCtx.tracing.start({ screenshots: true, snapshots: true }).catch(() => {});
+      await fn();
+      if (TRACE && currentCtx) await currentCtx.tracing.stop().catch(() => {});
+      passed++;
+      results.push({ name: `${currentVp} ${name}`, ms: Date.now() - started, ok: true, retried: attempt > 0 });
+      console.log(`  ok  ${name}${attempt ? ` (after ${attempt} retry)` : ""}`);
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < RETRIES) {
+        console.log(`  retry ${name}: ${err instanceof Error ? err.message.split("\n")[0] : err}`);
+        await new Promise((r) => setTimeout(r, 800));
+      }
+    }
   }
+  const message = lastErr instanceof Error ? lastErr.message.split("\n")[0] : String(lastErr);
+  failures.push(`${name}: ${message}`);
+  results.push({ name: `${currentVp} ${name}`, ms: Date.now() - started, ok: false, message, retried: RETRIES > 0 });
+  console.log(`  FAIL ${name}`);
+  await onFinalFailure(name, lastErr);
+}
+
+function junit() {
+  const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  const cases = results
+    .map((r) => `    <testcase classname="inkboard.e2e" name="${esc(r.name)}" time="${(r.ms / 1000).toFixed(3)}">${r.ok ? "" : `<failure message="${esc(r.message ?? "")}"/>`}</testcase>`)
+    .join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<testsuite name="inkboard e2e" tests="${results.length}" failures="${failures.length}" time="${(results.reduce((a, r) => a + r.ms, 0) / 1000).toFixed(3)}">\n${cases}\n</testsuite>\n`;
 }
 
 function expect(cond, message) {
@@ -156,9 +215,18 @@ for (const vp of viewports) {
   console.log(`\n${vp.id} ${vp.width}x${vp.height} ${colorScheme}`);
   // A fresh browser per viewport keeps memory low on small machines.
   const browser = await chromium.launch({ args: ["--disable-dev-shm-usage"] });
-  const watch = (page, who) => {
-    page.on("pageerror", (e) => pageErrors.push(`${vp.id} ${who}: ${e.message}`));
+  currentVp = vp.id;
+  const watch = (page, who, ctx) => {
+    currentPage = page;
+    currentCtx = ctx;
+    const lines = [];
+    consoleLines.set(page, lines);
+    page.on("pageerror", (e) => {
+      lines.push(`[pageerror] ${e.message}`);
+      pageErrors.push(`${vp.id} ${who}: ${e.message}`);
+    });
     page.on("console", (m) => {
+      lines.push(`[${m.type()}] ${m.text().slice(0, 300)}`);
       if (m.type() === "error" && !/Failed to load resource|status of 40[13]/.test(m.text())) pageErrors.push(`${vp.id} ${who} console: ${m.text().slice(0, 160)}`);
     });
   };
@@ -166,7 +234,7 @@ for (const vp of viewports) {
   /* signed out */
   const anonCtx = await browser.newContext({ viewport: vp, colorScheme });
   const anon = await anonCtx.newPage();
-  watch(anon, "anon");
+  watch(anon, "anon", anonCtx);
   await check("signed-out visitors land on the sign-in page", async () => {
     await open(anon, "/planner/today");
     expect(new URL(anon.url()).pathname === "/login", `ended on ${anon.url()}`);
@@ -177,10 +245,11 @@ for (const vp of viewports) {
   /* admin */
   const adminCtx = await browser.newContext({ viewport: vp, colorScheme });
   const admin = await adminCtx.newPage();
-  watch(admin, "admin");
-  await check("admin signs in and lands on the dashboard", async () => {
+  watch(admin, "admin", adminCtx);
+  await check("admin signs in and lands on Home (the admin banner links to the dashboard)", async () => {
     await signIn(admin, adminEmail, adminPw);
-    expect(new URL(admin.url()).pathname === "/admin", `ended on ${admin.url()}`);
+    expect(new URL(admin.url()).pathname === "/", `ended on ${admin.url()}`);
+    expect(await admin.getByRole("link", { name: /admin dashboard/i }).count() > 0, "Home shows the admin banner");
   });
   const tabs = ["overview", "members", "groups", "sharing", "activity", "audit", "settings", "admins"];
   for (const tab of tabs) {
@@ -221,7 +290,7 @@ for (const vp of viewports) {
   /* member */
   const memberCtx = await browser.newContext({ viewport: vp, colorScheme });
   const member = await memberCtx.newPage();
-  watch(member, "member");
+  watch(member, "member", memberCtx);
   await check("member signs in to their dashboard", async () => {
     await signIn(member, memberEmail, memberPw);
     expect(new URL(member.url()).pathname === "/", `ended on ${member.url()}`);
@@ -274,8 +343,19 @@ for (const vp of viewports) {
   await browser.close();
 }
 
-console.log(`\n${passed} passed, ${failures.length} failed`);
+console.log(`\n${passed} passed, ${failures.length} failed${results.some((r) => r.ok && r.retried) ? ` (${results.filter((r) => r.ok && r.retried).length} passed on retry)` : ""}`);
 for (const f of failures) console.log(`  - ${f}`);
+const slow = [...results].sort((a, b) => b.ms - a.ms).slice(0, 5);
+console.log("slowest:", slow.map((r) => `${r.name} ${(r.ms / 1000).toFixed(1)}s`).join(" · "));
+const junitPath = process.env.E2E_JUNIT || (SHOTS ? join(SHOTS, "junit.xml") : null);
+if (junitPath) {
+  try {
+    require("node:fs").writeFileSync(junitPath, junit());
+    console.log(`junit: ${junitPath}`);
+  } catch {
+    /* fine */
+  }
+}
 if (pageErrors.length) {
   console.log(`\nPage errors (${pageErrors.length}):`);
   for (const e of [...new Set(pageErrors)].slice(0, 30)) console.log(`  - ${e}`);

@@ -6,7 +6,7 @@ import { KeyRound, LogIn, ShieldCheck } from "lucide-react";
 import { Button, Field, Input, Surface } from "@/components/ui";
 import { DeskSkip } from "@/components/folio/skip-link";
 import { describeError } from "@/lib/api-client";
-import { AUTH_KEY, ME_KEY, isStaffRole, sendJson, signOut, useAuthStatus, type SessionUser } from "@/lib/session";
+import { AUTH_KEY, ME_KEY, sendJson, signOut, useAuthStatus, type SessionUser } from "@/lib/session";
 
 /** Only same-site paths are followed after sign-in. */
 export function safeNext(raw: unknown): string {
@@ -52,8 +52,9 @@ function useFinish() {
   return async (user: SessionUser) => {
     qc.setQueryData(AUTH_KEY, { needsSetup: false, user });
     await qc.invalidateQueries({ queryKey: ME_KEY });
-    const next = safeNext(search.next);
-    void nav({ to: next === "/" && isStaffRole(user.role) ? "/admin" : next, replace: true });
+    // Everyone lands on Home. Admins used to be sent to /admin, which hid their own study desk;
+    // Home has a "You're the admin" banner with the dashboard one click away.
+    void nav({ to: safeNext(search.next), replace: true });
   };
 }
 
@@ -80,7 +81,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (status.data?.needsSetup) void nav({ to: "/setup", replace: true });
-    else if (status.data?.user) void nav({ to: isStaffRole(status.data.user.role) ? "/admin" : "/", replace: true });
+    else if (status.data?.user) void nav({ to: "/", replace: true });
   }, [status.data, nav]);
 
   async function submit(e: FormEvent) {
