@@ -61,6 +61,8 @@ jobs:
           H='content-type: application/json'
           curl -sf -c /tmp/a.jar -H "$H" -H 'sec-fetch-site: same-origin' -d '{"code":"CIE2E0001","email":"owner@ci.local","name":"Owner","password":"ci-owner-pass-1"}' http://127.0.0.1:3000/api/auth/setup >/dev/null
           curl -sf -b /tmp/a.jar -H "$H" -H 'sec-fetch-site: same-origin' -d '{"email":"member@ci.local","name":"Member","password":"ci-member-pass-1"}' http://127.0.0.1:3000/api/admin/members >/dev/null
+      - name: seed the member's planner (so e2e screenshots show real pages, not empty states)
+        run: node --experimental-strip-types scripts/seed-ink-demo.ts member@ci.local ci-member-pass-1 http://127.0.0.1:3000
       - name: lighthouse (against the real API + SSR stack; the sign-in page is public)
         run: npx --yes @lhci/cli@0.14.0 autorun
       - name: e2e (no retries — a flake fails the job so it gets fixed, not masked; on failure a screenshot, console log and trace land in e2e-shots)

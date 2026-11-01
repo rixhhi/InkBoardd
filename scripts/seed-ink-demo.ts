@@ -123,5 +123,7 @@ const login = await fetch(`${base}/api/auth/login`, { method: "POST", headers: h
 if (!login.ok) throw new Error(`login ${login.status}: ${await login.text()}`);
 for (const c of login.headers.getSetCookie?.() ?? []) jar.push(c.split(";")[0]!);
 const put = await fetch(`${base}/api/me/state`, { method: "PUT", headers: headers(), body: JSON.stringify({ entries: [{ key: PLANNER_KEY, value: JSON.stringify(state) }] }) });
-console.log("PUT /api/me/state", put.status, await put.text());
+const putBody = await put.text();
+console.log("PUT /api/me/state", put.status, putBody);
+if (!put.ok) throw new Error(`seed failed: PUT /api/me/state ${put.status}: ${putBody}`);
 console.log(`seeded ${tasks.length} tasks, ${reviews.size} reviewed lessons, ${tasks.filter((t) => t.status === "done" && t.type === "lesson").length} lectures done, exam ${exam}`);
