@@ -99,4 +99,16 @@ describe("phase 2 — functional bugs", () => {
     assert.match(shortcuts, /AlertDialog/);
     assert.match(src("../../../shared/src/lib/folio.ts"), /tag === "INPUT"/);
   });
+
+  it("the Ink page keeps its title and '?' when there is no plan yet", () => {
+    // A member without a plan is exactly who needs the explanation. The e2e signs in a
+    // fresh member and clicks "Help: Ink" on /planner/ink; with the header inside the
+    // plan-only branch that button never rendered and the click timed out.
+    const ink = src("../pages/planner-ink-page.tsx");
+    const headerAt = ink.indexOf("<HelpButton topic=\"ink\"");
+    const noPlanAt = ink.indexOf("if (!plan) {");
+    assert.ok(headerAt > 0 && noPlanAt > 0, "ink page lost its header or its no-plan branch");
+    assert.ok(headerAt < noPlanAt, "the Ink '?' must be built before the no-plan early return");
+    assert.match(ink.slice(noPlanAt), /\{header\}[\s\S]*No plan yet/);
+  });
 });
