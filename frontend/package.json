@@ -24,7 +24,7 @@
     "date-fns": "^4.0.0",
     "hls.js": "^1.7.3",
     "jszip": "^3.10.2",
-    "lucide-react": "^0.510.0",
+    "lucide-react": "^1.66.0",
     "pdfjs-dist": "^6.4.299",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
