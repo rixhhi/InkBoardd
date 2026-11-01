@@ -332,8 +332,10 @@ video.is-listen {
   border-bottom: 1px solid var(--color-line);
   padding: 0 12px;
 }
-.notes-reader-stage { min-height: 0; flex: 1; overflow: auto; background: #eceae4; }
-.notes-reader-stage canvas { display: block; width: 100%; height: auto; }
+.notes-reader-stage { min-height: 0; flex: 1; overflow: auto; background: #eceae4; overscroll-behavior: contain; }
+.notes-reader-page { padding: 12px 12px 0; }
+.notes-reader-page:last-child { padding-bottom: 12px; }
+.notes-reader-page canvas { display: block; margin: 0 auto; background: #fff; box-shadow: 0 1px 2px #0002, 0 0 0 1px #0000000d; }
 .notes-reader-frame { min-height: 0; flex: 1; width: 100%; border: 0; background: #eceae4; }
 @media (max-width: 639px) {
   .notes-reader {

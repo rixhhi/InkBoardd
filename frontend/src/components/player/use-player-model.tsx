@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { addBookmark, bookmarksFor } from "@inkboard/shared/planner/bookmarks";
 import { focusProgress, readFocusRun } from "@inkboard/shared/planner/focus";
 import { COPY } from "@inkboard/shared/copy";
@@ -50,10 +50,39 @@ export function usePlayerModel<T extends Record<string, any>>(p: T) {
   /** True when the most recent lantern gesture actually travelled — a click right after a drag must not also cycle sizes. */
   const lastGestureMoved = useRef(false);
 
+  /**
+   * The camera can be dragged and resized whenever it is drawn as the round lantern over
+   * the board, in either layout. It used to require layout === "pip"; with the saved pref
+   * at "side" (the default after one toggle) every drag was silently ignored while the
+   * cursor still said "grab" — the bug members reported as "can't move the teacher".
+   */
+  const lanternLive = round && !camOff && !listen;
+
+  /**
+   * True while this <video> floats in the browser's picture-in-picture window. The same
+   * element cannot paint in two places, so the in-page lantern went black and sat beside
+   * the floating copy — "two teachers". While floating, the lantern becomes a quiet
+   * placeholder that brings the picture back on tap.
+   */
+  const [pip, setPip] = useState(false);
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const on = () => setPip(true);
+    const off = () => setPip(false);
+    v.addEventListener("enterpictureinpicture", on);
+    v.addEventListener("leavepictureinpicture", off);
+    setPip(typeof document !== "undefined" && document.pictureInPictureElement === v);
+    return () => {
+      v.removeEventListener("enterpictureinpicture", on);
+      v.removeEventListener("leavepictureinpicture", off);
+    };
+  }, [videoRef]);
+
   /** Steps the camera through its preset sizes (small → large → small), keeping it inside the stage. */
   function cycleLanternSize() {
     const stage = stageRef.current;
-    if (!stage || layout !== "pip") return;
+    if (!stage || !lanternLive) return;
     const rect = stage.getBoundingClientRect();
     userBoxRef.current = true;
     setBox((b: { x: number; y: number; w: number; h: number }) => {
@@ -64,7 +93,9 @@ export function usePlayerModel<T extends Record<string, any>>(p: T) {
   }
 
   function onPointerDown(e: PointerEvent, mode: "move" | "resize") {
-    if (layout !== "pip") return;
+    if (!lanternLive) return;
+    // Only the primary button / first touch drags; a right-click must still open the context menu.
+    if (e.pointerType === "mouse" && e.button !== 0) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     userBoxRef.current = true;
     lastGestureMoved.current = false;
@@ -379,7 +410,7 @@ export function usePlayerModel<T extends Record<string, any>>(p: T) {
 
   return {
     ...p,
-    stampNow, onPointerDown, onPointerMove, onPointerUp, onBarPointer, hideChrome, shownTime, barMax, cycleLanternSize, lastGestureMoved,
+    stampNow, onPointerDown, onPointerMove, onPointerUp, onBarPointer, hideChrome, shownTime, barMax, cycleLanternSize, lastGestureMoved, pip,
     layers, glyph, showBuffer, clockLabel, previewing, pipW, pipH, focusRun,
     replayClass, stayOnClass, retryClass, chapters, studyMarks, chapterList, revisionNotes, runSummary,
     saveClip, directSrc, videoEl, lineUnder,

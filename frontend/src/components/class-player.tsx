@@ -7,7 +7,7 @@ import { PlayerTransport } from "@/components/player-transport";
 export const DOUBLE_TAP_MS = 250;
 import { LazyWhiteboard } from "@/components/whiteboard-lazy";
 import { MarkDoneButton } from "@/components/mark-done";
-import { ArrowLeft, Camera, CameraOff, Captions, Headphones, LogOut, Play, RotateCcw, SkipForward, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Camera, CameraOff, Captions, Headphones, LogOut, PictureInPicture2, Play, RotateCcw, SkipForward, TriangleAlert } from "lucide-react";
 import { Button, IconButton } from "@/components/ui";
 import { SlideStrip } from "@/components/slide-strip";
 import { slideAt, type Timeline } from "@inkboard/shared/dcn";
@@ -179,7 +179,7 @@ export function ClassPlayer({
 
   const playerModel = usePlayerModel({ ...core, placeVideo, ClassPlayer });
   const {
-    stampNow, onPointerDown, onPointerMove, onPointerUp, onBarPointer, hideChrome, shownTime, barMax, cycleLanternSize, lastGestureMoved,
+    stampNow, onPointerDown, onPointerMove, onPointerUp, onBarPointer, hideChrome, shownTime, barMax, cycleLanternSize, lastGestureMoved, pip,
     layers, glyph, showBuffer, clockLabel, previewing, pipW, pipH, focusRun,
     replayClass, stayOnClass, chapters, studyMarks, chapterList, revisionNotes, runSummary,
     saveClip, directSrc, videoEl, lineUnder,
@@ -349,7 +349,18 @@ export function ClassPlayer({
               />
             ) : null}
             <div className="lantern-face">{videoEl}</div>
-            {round && !camOff && layout === "pip" ? (
+            {pip && round && !camOff ? (
+              <button
+                type="button"
+                className="lantern-pip-note"
+                onClick={() => void document.exitPictureInPicture?.().catch(() => {})}
+                aria-label="The teacher is in a floating window. Bring the picture back."
+              >
+                <PictureInPicture2 aria-hidden="true" className="size-5" />
+                <span>Floating</span>
+              </button>
+            ) : null}
+            {round && !camOff ? (
               <button
                 type="button"
                 aria-label={COPY.resizeCamera}

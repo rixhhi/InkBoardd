@@ -132,6 +132,23 @@ export type PlayerTransportProps = {
  * Desktop: [play][−10][+10] time ──── [speed][mute+vol][cam][notes][later][pin][pip][fs][more]
  * Phone:   the row scrolls horizontally; secondary actions live in the ⋯ menu.
  */
+/**
+ * Bubble text while scrubbing. Hovering within ~1 % of a chapter tick names it
+ * ("Slide 4 · 0:02") instead of only the time, so the ticks explain themselves
+ * without waiting for a native tooltip.
+ */
+export function hoverLabel(t: number, chapters: readonly { t: number; label: string }[], barMax: number): string {
+  const time = formatTime(t);
+  if (!chapters.length || barMax <= 0) return time;
+  const tol = Math.max(2, barMax * 0.01);
+  let best: { t: number; label: string } | null = null;
+  for (const ch of chapters) {
+    const d = Math.abs(ch.t - t);
+    if (d <= tol && (!best || d < Math.abs(best.t - t))) best = ch;
+  }
+  return best ? `${best.label} · ${time}` : time;
+}
+
 export function PlayerTransport(props: PlayerTransportProps) {
   const {
     hideChrome, hoverT, scrubbing, onBarPointer, layers, sheet, timeline, waveform, setWaveform,
@@ -180,7 +197,7 @@ export function PlayerTransport(props: PlayerTransportProps) {
       ? [
           { id: "cam", label: camOff ? COPY.showCamera : COPY.hideCamera, icon: camOff ? Camera : CameraOff, onSelect: () => setCamOff((on) => !on), hint: "C" },
           { id: "layout", label: layout === "pip" ? COPY.sideLayout : COPY.lanternLayout, icon: PictureInPicture2, onSelect: () => setLayout((cur) => (cur === "pip" ? "side" : "pip")) },
-          ...(layout === "pip" && !camOff && cycleLanternSize ? [{ id: "cam-size", label: COPY.cameraSize, icon: Maximize2, onSelect: cycleLanternSize }] : []),
+          ...(!camOff && cycleLanternSize ? [{ id: "cam-size", label: COPY.cameraSize, icon: Maximize2, onSelect: cycleLanternSize }] : []),
         ]
       : []),
     ...(audioUrl || audioSrc
@@ -222,7 +239,7 @@ export function PlayerTransport(props: PlayerTransportProps) {
           {layers.hoverPct != null && hoverT != null ? (
             <SeekHover
               pct={layers.hoverPct}
-              label={formatTime(hoverT)}
+              label={hoverLabel(hoverT, chapters, barMax)}
               time={hoverT}
               sheet={sheet}
               slideUrl={slideUrl !== undefined ? slideUrl : sheet ? null : slideAt(timeline, hoverT * 1000).url}
