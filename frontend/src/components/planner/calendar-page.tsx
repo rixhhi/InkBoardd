@@ -249,22 +249,35 @@ export function PlannerPage() {
           force={catchUp || pace.status === "behind"}
         />
       </div>
-      {overdue.length ? (
-        <p className="mt-4 flex flex-wrap items-center gap-3 text-sm text-warn">
-          <span>{overdue.length} overdue class{overdue.length === 1 ? "" : "es"}.</span>
-          <Button size="sm" variant="secondary" onClick={() => setStrategy(true)}>
-            Reschedule
-          </Button>
+      {overdue.length || atRisk || savedByFreeze ? (
+        <ul className="plan-status mt-4" aria-label="Plan status">
+          {overdue.length ? (
+            <li className="is-warn">
+              <span>
+                {overdue.length} overdue class{overdue.length === 1 ? "" : "es"}
+              </span>
+              <Button size="sm" variant="secondary" onClick={() => setStrategy(true)}>
+                Reschedule
+              </Button>
+            </li>
+          ) : null}
+          {atRisk ? (
+            <li className="is-warn">
+              <span>Mark at risk — nothing logged today</span>
+            </li>
+          ) : null}
+          {savedByFreeze ? (
+            <li className="is-warn">
+              <span>Saved by freeze · {freezeLeft} left this week</span>
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
+      {!savedByFreeze ? (
+        <p className="mt-3 text-xs text-fg-muted">
+          {freezeLeft} freeze{freezeLeft === 1 ? "" : "s"} left this week
         </p>
       ) : null}
-      {atRisk ? <p className="mt-3 text-sm text-warn">Mark at risk — nothing logged today.</p> : null}
-      {savedByFreeze ? (
-        <p className="mt-3 text-xs text-warn">
-          Saved by freeze · {freezeLeft} freeze left this week
-        </p>
-      ) : (
-        <p className="mt-3 text-xs text-fg-muted">{freezeLeft} freeze left this week</p>
-      )}
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">

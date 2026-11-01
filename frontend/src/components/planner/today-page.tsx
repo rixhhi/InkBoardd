@@ -130,6 +130,11 @@ export function PlannerTodayPage() {
     toast.success(short.reason, { action: { label: "Undo", onClick: () => undoLast() } });
   }
 
+  const moveOverdueIn = () => {
+    moveTasks(planId, overdue.map((task) => task.id), today);
+    toast.success(overdue.length === 1 ? "1 class moved to today" : `${overdue.length} classes moved to today`);
+  };
+
   const dayActions = [
     { id: "add", label: "Write a task", onSelect: () => setAdding(true) },
     { id: "log", label: "Log study", onSelect: () => setLogOpen(true) },
@@ -217,7 +222,7 @@ export function PlannerTodayPage() {
             </Button>
           )}
         />
-        <span className="ml-auto text-xs text-fg-faint touch:hidden">[ and ] page days · T jumps to today</span>
+        <span className="ml-auto hidden text-xs text-fg-faint md:inline touch:hidden">[ and ] page days · T jumps to today</span>
       </div>
 
       {isToday ? (
@@ -226,7 +231,15 @@ export function PlannerTodayPage() {
         </div>
       ) : null}
 
-      {isToday && atRisk ? <p className="mt-3 text-xs text-warn">Mark at risk — nothing logged today.</p> : null}
+      {isToday && atRisk ? (
+        <div className="mt-3">
+          <InlineAlert
+            tone="warn"
+            title="Mark at risk"
+            body="Nothing logged today. Tick a class, run a focus block, or log study you already did to keep the streak."
+          />
+        </div>
+      ) : null}
       {sync === "error" ? (
         <div className="mt-4">
           <InlineAlert
@@ -241,15 +254,9 @@ export function PlannerTodayPage() {
         </div>
       ) : null}
       {reminder ? <p className="mt-3 text-xs text-fg-muted">{reminder}</p> : null}
-      {isToday && overdue.length ? (
+      {isToday && overdue.length && queue.length ? (
         <div className="mt-3">
-          <Button
-            type="button"
-            onClick={() => {
-              moveTasks(planId, overdue.map((task) => task.id), today);
-              toast.success(overdue.length === 1 ? "1 class moved to today" : `${overdue.length} classes moved to today`);
-            }}
-          >
+          <Button type="button" onClick={moveOverdueIn}>
             {action.label}
           </Button>
         </div>
@@ -347,9 +354,16 @@ export function PlannerTodayPage() {
               body={
                 isToday
                   ? overdue.length
-                    ? `${overdue.length} ${overdue.length === 1 ? "class" : "classes"} from earlier days ${overdue.length === 1 ? "is" : "are"} still waiting. Move them in above, or write a task.`
+                    ? `${overdue.length} ${overdue.length === 1 ? "class" : "classes"} from earlier days ${overdue.length === 1 ? "is" : "are"} still waiting.`
                     : "Rest, or log study you already did."
                   : "Write a task for this day, or move one here from another day."
+              }
+              action={
+                isToday && overdue.length ? (
+                  <Button type="button" onClick={moveOverdueIn}>
+                    {action.label}
+                  </Button>
+                ) : null
               }
             />
           </li>

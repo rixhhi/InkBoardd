@@ -1104,3 +1104,28 @@ li:first-child>.chalk-row {
 .pace-figures .is-warn dd {
   color: var(--color-warn);
 }
+
+/* Month header: overdue / at-risk / freeze as one strip, not loose lines */
+.plan-status {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md, 10px);
+  background: var(--color-line);
+}
+.plan-status li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.875rem;
+  background: var(--color-surface);
+  font-size: 0.875rem;
+  color: var(--color-fg-muted);
+}
+.plan-status li.is-warn {
+  color: var(--color-fg);
+  box-shadow: inset 3px 0 0 var(--color-warn);
+}
