@@ -7,7 +7,7 @@ export { Card, Surface } from "./surface";
 export { Input, Field, SearchInput } from "./input";
 export { Badge, Chip, type BadgeTone } from "./badge";
 export { Kbd, Keys } from "./kbd";
-export { Toast, toast, Skeleton, EmptyState, ErrorState, errorKind, Progress, Ring, type ErrorKind } from "./feedback";
+export { Toast, toast, Skeleton, SkeletonRows, EmptyState, ErrorState, errorKind, Progress, Ring, type ErrorKind } from "./feedback";
 export { Dialog, ConfirmDialog, Sheet, useIsPhone } from "./overlay";
 export { Tabs, TabPanel, Switch, Select, Tooltip, Menu, Segmented, Check2 as Checkbox, type TabDef, type MenuItem } from "./controls";
 export { Avatar } from "./avatar";

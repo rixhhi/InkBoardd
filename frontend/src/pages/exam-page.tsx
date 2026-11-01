@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { ExamHubView } from "@/components/exam-hub";
-import { Button, ErrorState, PageBody, PageHeader, Skeleton } from "@/components/ui";
+import { Button, ErrorState, PageBody, PageHeader, Skeleton, SkeletonRows } from "@/components/ui";
 import { softFailure } from "@/components/failure-notice";
 import { writeExamId } from "@inkboard/shared/exam-pref";
 import { getExam } from "@inkboard/shared/exams";
@@ -123,14 +123,10 @@ export default function ExamPage() {
         <PageBody>
           <div role="status" aria-label="Fetching this exam" className="grid gap-2">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: 8 }, (_, i) => (
-                <Skeleton key={i} className="h-[4.5rem] w-full" />
-              ))}
+              <SkeletonRows count={8} className="h-[4.5rem] w-full" />
             </div>
             <Skeleton className="mt-6 h-5 w-32" />
-            {Array.from({ length: 5 }, (_, i) => (
-              <Skeleton key={`r${i}`} className="h-14 w-full" />
-            ))}
+            <SkeletonRows count={5} className="h-14 w-full" />
           </div>
         </PageBody>
       </AppShell>

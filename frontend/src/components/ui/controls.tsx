@@ -77,6 +77,7 @@ export function Tabs({
 export function TabPanel({ id, active, children, className }: { id: string; active: boolean; children: ReactNode; className?: string }) {
   if (!active) return null;
   return (
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: APG tabs pattern — the panel is focusable so Tab from the tab list lands on the content
     <div role="tabpanel" id={`panel-${id}`} aria-labelledby={`tab-${id}`} tabIndex={0} className={cn("outline-none", className)}>
       {children}
     </div>
@@ -327,15 +328,15 @@ export function Menu({
         >
           {header ? <div className="px-2.5 py-2">{header}</div> : null}
           {items.map((item, i) => {
-            if (item === "separator") return <div key={`sep-${i}`} role="separator" className="my-1 h-px bg-line" />;
+            // biome-ignore lint/suspicious/noArrayIndexKey: a separator's position is its identity
+            if (item === "separator") return <hr key={`sep-${i}`} className="my-1 h-px border-0 bg-line" />;
             const Icon = item.icon;
             const idx = selectable.indexOf(item);
             return (
               <button
                 key={item.id}
                 type="button"
-                role={item.checked != null ? "menuitemcheckbox" : "menuitem"}
-                aria-checked={item.checked}
+                {...(item.checked != null ? { role: "menuitemcheckbox" as const, "aria-checked": item.checked } : { role: "menuitem" as const })}
                 tabIndex={idx === active ? 0 : -1}
                 onClick={() => {
                   item.onSelect();
@@ -385,13 +386,10 @@ export function Segmented<T extends string>({
   size?: "sm" | "md";
   className?: string;
 }) {
-  const id = useId();
   return (
-    <div className={cn("grid gap-1.5", className)}>
-      <span id={id} className={hideLabel ? "sr-only" : "text-sm font-medium text-fg"}>
-        {label}
-      </span>
-      <div role="group" aria-labelledby={id} className="inline-flex w-full flex-wrap gap-1 rounded-lg bg-surface-raised p-1 sm:w-auto">
+    <fieldset className={cn("grid gap-1.5", className)}>
+      <legend className={hideLabel ? "sr-only" : "mb-1.5 text-sm font-medium text-fg"}>{label}</legend>
+      <div className="inline-flex w-full flex-wrap gap-1 rounded-lg bg-surface-raised p-1 sm:w-auto">
         {options.map((o) => {
           const on = o.value === value;
           return (
@@ -413,7 +411,7 @@ export function Segmented<T extends string>({
           );
         })}
       </div>
-    </div>
+    </fieldset>
   );
 }
 

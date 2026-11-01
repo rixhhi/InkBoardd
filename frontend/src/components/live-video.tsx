@@ -112,6 +112,13 @@ export function LiveVideo({
     else void el.requestFullscreen();
   }
 
+  function togglePlay() {
+    const v = ref.current;
+    if (!v) return;
+    if (v.paused) void v.play();
+    else v.pause();
+  }
+
   if (err) {
     return (
       <div className="grid h-full place-items-center bg-bg p-6 text-center">
@@ -131,38 +138,20 @@ export function LiveVideo({
   }
 
   return (
-    <div
-      ref={wrapRef}
-      className="relative h-full w-full bg-bg"
-      role="button"
-      tabIndex={0}
-      aria-label="Play or pause"
-      onKeyDown={(e) => {
-        if (e.key !== "Enter" && e.key !== " ") return;
-        e.preventDefault();
-        const v = ref.current;
-        if (!v) return;
-        if (v.paused) void v.play();
-        else v.pause();
-      }}
-      onClick={(e) => {
-        if ((e.target as HTMLElement).closest("button, input")) return;
-        const v = ref.current;
-        if (!v) return;
-        if (v.paused) void v.play();
-        else v.pause();
-      }}
-    >
-      <video ref={ref} className="h-full w-full bg-bg object-contain" controls={false} playsInline muted>
-        <track kind="captions" srcLang="en" label="Captions" />
-      </video>
-      {playing ? null : (
-        <span className="pointer-events-none absolute inset-0 grid place-items-center text-fg" aria-hidden="true">
-          <svg viewBox="0 0 24 24" className="size-8" fill="none" stroke="currentColor" strokeWidth="1.6">
-            <path d="M8 6v12l11-6Z" />
-          </svg>
-        </span>
-      )}
+    <div ref={wrapRef} className="relative h-full w-full bg-bg">
+      {/* The picture itself is the play/pause control, as on every video player. A real button, so Enter/Space and a screen reader both work without a hand-rolled role. */}
+      <button type="button" className="relative block h-full w-full cursor-pointer" aria-label={playing ? "Pause" : "Play"} onClick={togglePlay}>
+        <video ref={ref} className="h-full w-full bg-bg object-contain" controls={false} playsInline muted>
+          <track kind="captions" srcLang="en" label="Captions" />
+        </video>
+        {playing ? null : (
+          <span className="pointer-events-none absolute inset-0 grid place-items-center text-fg" aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="size-8" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+              <path d="M8 6v12l11-6Z" />
+            </svg>
+          </span>
+        )}
+      </button>
       <div className="live-rail">
         {muted ? (
           <button

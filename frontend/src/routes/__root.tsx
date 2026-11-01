@@ -203,9 +203,9 @@ function Root() {
         <HeadContent />
       </head>
       <body className="bg-bg text-fg">
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
-        <script dangerouslySetInnerHTML={{ __html: COMFORT_BOOTSTRAP }} />
-        <script dangerouslySetInnerHTML={{ __html: FOLIO_BOOTSTRAP }} />
+        <InlineScript code={THEME_BOOTSTRAP} />
+        <InlineScript code={COMFORT_BOOTSTRAP} />
+        <InlineScript code={FOLIO_BOOTSTRAP} />
         <PreviewHostBridge />
         <AuthProvider>
           <QueryClientProvider client={client}>
@@ -227,4 +227,14 @@ function Root() {
       </body>
     </html>
   );
+}
+
+/**
+ * Render-blocking bootstraps (theme, comfort, folio) that must run before first paint so
+ * the page never flashes the wrong scheme. The sources are compile-time constants from
+ * this repo, never user input.
+ */
+function InlineScript({ code }: { code: string }) {
+  // biome-ignore lint/security/noDangerouslySetInnerHtml: constant bootstrap source, see above
+  return <script dangerouslySetInnerHTML={{ __html: code }} />;
 }

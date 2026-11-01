@@ -32,6 +32,18 @@ export function Skeleton({ className = "h-4 w-full" }: { className?: string }) {
   );
 }
 
+/** N identical placeholders. Position is the only identity a placeholder has, so the index key is the right one here. */
+export function SkeletonRows({ count, className }: { count: number; className?: string }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: identical placeholders that never reorder
+        <Skeleton key={i} className={className} />
+      ))}
+    </>
+  );
+}
+
 export function EmptyState({
   title,
   body,

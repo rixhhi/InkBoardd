@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { Button, Dialog } from "@/components/ui";
 import { lectureScore, readChecks, setChecks, subscribeFavourites, type LectureChecks } from "@inkboard/shared/favourites";
 
 const ITEMS: { key: keyof LectureChecks; label: string; hint: string }[] = [
@@ -51,56 +51,46 @@ function MarkDoneDialog({ lessonId, title, onClose }: { lessonId: string; title:
   void tick;
   const checks = readChecks(lessonId);
   const score = donePercent(checks);
-  useEffect(() => {
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
-  return createPortal(
-    <div className="ui-dialog-backdrop" style={{ zIndex: 80 }} onClick={onClose}>
-      <div
-        className="ui-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="mark-done-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <p id="mark-done-title" className="font-serif text-xl">
-          {title}
-        </p>
-        <p className="mt-2 text-xs text-fg-muted">Tick what you finished. Each one is a quarter of this class.</p>
-        <ul className="mt-4 divide-y divide-line border-y border-line">
-          {ITEMS.map((item) => {
-            const on = checks[item.key];
-            return (
-              <li key={item.key}>
-                <button
-                  type="button"
-                  aria-pressed={on}
-                  className="flex w-full items-baseline justify-between gap-3 py-3 text-left"
-                  onClick={() => setChecks(lessonId, { [item.key]: !on })}
-                >
-                  <span>
-                    <span className="block text-sm">{item.label}</span>
-                    <span className="mt-0.5 block text-xs text-fg-muted">{item.hint}</span>
-                  </span>
-                  <span className={`text-sm ${on ? "text-accent" : "text-fg-faint"}`}>{on ? "Done" : "Not yet"}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-        <div className="mt-4 flex items-baseline justify-between gap-3">
-          <p className="text-sm">{score}% done</p>
-          <button type="button" className="text-sm text-accent" onClick={onClose}>
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={title}
+      description="Tick what you finished. Each one is a quarter of this class."
+      size="sm"
+      footer={
+        <>
+          <span className="mr-auto self-center text-sm">{score}% done</span>
+          <Button variant="ghost" size="sm" onClick={onClose}>
             Close
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
+          </Button>
+        </>
+      }
+    >
+      <ul className="divide-y divide-line border-y border-line">
+        {ITEMS.map((item) => {
+          const on = checks[item.key];
+          return (
+            <li key={item.key}>
+              <button
+                type="button"
+                aria-pressed={on}
+                className="flex w-full items-baseline justify-between gap-3 py-3 text-left"
+                onClick={() => setChecks(lessonId, { [item.key]: !on })}
+              >
+                <span>
+                  <span className="block text-sm">{item.label}</span>
+                  <span className="mt-0.5 block text-xs text-fg-muted">{item.hint}</span>
+                </span>
+                <span className={`text-sm ${on ? "text-accent" : "text-fg-faint"}`}>{on ? "Done" : "Not yet"}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </Dialog>
   );
 }

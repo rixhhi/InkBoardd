@@ -229,6 +229,7 @@ function ContextBar({ onLibrary }: { onLibrary: () => void }) {
       {trail.length ? (
         <nav aria-label="You are here" className="hidden min-w-0 items-center gap-1 text-sm text-fg-muted md:flex">
           {trail.map((t, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: a breadcrumb's position is its identity
             <span key={`${t}-${i}`} className="flex items-center gap-1">
               {i > 0 ? <ChevronRight aria-hidden="true" className="size-3.5 text-fg-faint" /> : null}
               <span className={cn("truncate", i === trail.length - 1 && "text-fg")}>{t}</span>

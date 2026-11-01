@@ -201,6 +201,7 @@ export default function SearchPage() {
 
   return (
     <AppShell>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: keyboard delegation only — arrow keys move focus between result links and the field; the wrapper is never a target itself */}
       <div onKeyDown={onResultKeys}>
         <PageHeader
           compact

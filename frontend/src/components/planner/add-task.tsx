@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button, Input } from "@/components/ui";
 import { addCustomTask, addVacation, undoLast } from "@inkboard/shared/planner/storage";
@@ -23,6 +23,7 @@ export function AddTaskForm({
   onDone?: () => void;
 }) {
   const titleRef = useRef<HTMLInputElement>(null);
+  const kindName = useId();
   const [kind, setKind] = useState<EventKind>("study");
   const [title, setTitle] = useState("");
   const [when, setWhen] = useState(date);
@@ -60,25 +61,33 @@ export function AddTaskForm({
 
   return (
     <form onSubmit={submit} className="space-y-3 text-sm" aria-label="Write a task">
-      <div role="radiogroup" aria-label="Kind" className="flex flex-wrap gap-1.5">
-        {KINDS.map((k) => (
-          <button
-            key={k.id}
-            type="button"
-            role="radio"
-            aria-checked={kind === k.id}
-            className={`h-8 rounded-full px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-              kind === k.id ? "bg-fg text-bg" : "bg-surface-raised text-fg-muted hover:text-fg"
-            }`}
-            onClick={() => {
-              setKind(k.id);
-              setMinutes(k.minutes || 40);
-            }}
-          >
-            {k.label}
-          </button>
-        ))}
-      </div>
+      <fieldset className="flex flex-wrap gap-1.5">
+        <legend className="sr-only">Kind</legend>
+        {KINDS.map((k) => {
+          const on = kind === k.id;
+          return (
+            <label
+              key={k.id}
+              className={`inline-flex h-8 cursor-pointer items-center rounded-full px-3 text-sm transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring ${
+                on ? "bg-fg text-bg" : "bg-surface-raised text-fg-muted hover:text-fg"
+              }`}
+            >
+              <input
+                type="radio"
+                name={kindName}
+                value={k.id}
+                checked={on}
+                className="sr-only"
+                onChange={() => {
+                  setKind(k.id);
+                  setMinutes(k.minutes || 40);
+                }}
+              />
+              {k.label}
+            </label>
+          );
+        })}
+      </fieldset>
       {kind !== "holiday" ? (
         <Input ref={titleRef} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Write a task" aria-label="Task title" />
       ) : null}

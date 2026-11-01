@@ -104,6 +104,7 @@ export function MetaLine({ parts }: { parts: ReactNode[] }) {
   return (
     <>
       {kept.map((p, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: meta parts are positional ReactNodes with no identity of their own
         <span key={i} className="contents">
           {i > 0 ? <Dot /> : null}
           {typeof p === "string" ? <span>{p}</span> : p}

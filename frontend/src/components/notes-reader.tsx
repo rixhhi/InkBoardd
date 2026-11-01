@@ -130,7 +130,10 @@ export function NotesReader({ url, title, onClose }: { url: string; title: strin
             </div>
           ) : null}
           {doc && pages > 0
-            ? Array.from({ length: pages }, (_, i) => <NotesPage key={`${viewUrl}#${i + 1}`} doc={doc} n={i + 1} zoom={ZOOMS[zoomIdx] ?? 1} />)
+            ? Array.from({ length: pages }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: the page number is the page's identity
+                <NotesPage key={`${viewUrl}#${i + 1}`} doc={doc} n={i + 1} zoom={ZOOMS[zoomIdx] ?? 1} />
+              ))
             : null}
         </div>
       )}

@@ -382,6 +382,7 @@ export function OfflineApp({ embedded: _embedded = false }: { embedded?: boolean
 
   return (
     <AppShell>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: drag-and-drop is a pointer convenience; the file pickers below are the accessible path */}
       <div
         className="mx-auto w-full max-w-3xl px-4 pb-24 pt-6"
         onDragOver={(e) => e.preventDefault()}
