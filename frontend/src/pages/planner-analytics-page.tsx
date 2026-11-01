@@ -1,4 +1,6 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
+import { Link } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { RevisionHealthPanel } from "@/components/planner/revision-panel.tsx";
 import { BarChart, LineChart, SegmentedControl } from "@/components/ui/planner/kit.tsx";
@@ -69,6 +71,7 @@ export default function AnalyticsPage() {
   }, [report, hour12]);
   const splitMax = Math.max(1, ...report.subjectSplit.map((s) => s.minutes));
   const deltaPct = report.prevMinutes > 0 ? Math.round((report.minutesDelta / report.prevMinutes) * 100) : null;
+  const quiet = report.sessions === 0 && report.minutes === 0;
 
   return (
     <div className="max-w-[80ch] py-6">
@@ -79,9 +82,11 @@ export default function AnalyticsPage() {
       <h1 className="chalk-draw mt-1 font-serif text-display">{insight}</h1>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm tabular text-fg-muted">
-          {report.minutes} min this range · {report.minutesDelta >= 0 ? "+" : ""}
-          {report.minutesDelta}
-          {deltaPct != null ? ` (${deltaPct >= 0 ? "+" : ""}${deltaPct}%)` : ""} vs previous · {Math.round(report.completionRate * 100)}% struck
+          {quiet
+            ? `No study logged in the last ${rangeId.replace("d", " days")}`
+            : `${report.minutes} min this range · ${report.minutesDelta >= 0 ? "+" : ""}${report.minutesDelta}${
+                deltaPct != null ? ` (${deltaPct >= 0 ? "+" : ""}${deltaPct}%)` : ""
+              } vs previous${report.lecturesPlanned ? ` · ${Math.round(report.completionRate * 100)}% struck` : ""}`}
         </p>
         <SegmentedControl
           ariaLabel="Range"
@@ -95,42 +100,68 @@ export default function AnalyticsPage() {
         />
       </div>
 
-      {report.sessions === 0 && report.minutes === 0 ? (
-        <div role="status" className="mt-6 rounded-lg border border-dashed border-line p-4 text-sm text-fg-muted">
-          <p className="font-medium text-fg">Nothing to measure yet.</p>
-          <p className="mt-1">
+      {quiet ? (
+        <div role="status" className="mt-6 rounded-lg border border-dashed border-line p-5 text-sm text-fg-muted">
+          <p className="font-serif text-lg text-fg">Nothing to measure yet.</p>
+          <p className="mt-1 max-w-prose">
             Finish a class, run a focus block, or log study from the Tasks page. Completion, goal hits and session length fill in from there.
           </p>
+          <Link to="/planner/today" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-fg underline-offset-2 hover:underline">
+            Go to Tasks
+            <ArrowRight aria-hidden="true" className="size-3.5" />
+          </Link>
         </div>
       ) : null}
 
       {/* Figures */}
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Figure label="Struck" value={`${Math.round(report.completionRate * 100)}%`} ring={report.completionRate * 100} hint={`${report.lecturesDone}/${report.lecturesPlanned} lectures`} />
-        <Figure label="Goal hit" value={`${Math.round(report.goalHitRate * 100)}%`} ring={report.goalHitRate * 100} hint="days at or over the daily minutes" />
-        <Figure label="Sessions" value={String(report.sessions)} hint={`${sourceTotal} min across sources`} />
-        <Figure label="Late finishes" value={`${Math.round(report.procrastinationIndex * 100)}%`} hint="done after the planned day" tone={report.procrastinationIndex > 0.3 ? "warn" : undefined} />
+        <Figure
+          label="Struck"
+          value={report.lecturesPlanned ? `${Math.round(report.completionRate * 100)}%` : "—"}
+          ring={report.lecturesPlanned ? report.completionRate * 100 : undefined}
+          hint={report.lecturesPlanned ? `${report.lecturesDone}/${report.lecturesPlanned} lectures` : "no lectures in range"}
+        />
+        <Figure
+          label="Goal hit"
+          value={quiet ? "—" : `${Math.round(report.goalHitRate * 100)}%`}
+          ring={quiet ? undefined : report.goalHitRate * 100}
+          hint="days at or over the daily minutes"
+        />
+        <Figure label="Sessions" value={String(report.sessions)} hint={quiet ? "none logged yet" : `${sourceTotal} min across sources`} />
+        <Figure
+          label="Late finishes"
+          value={report.lecturesDone ? `${Math.round(report.procrastinationIndex * 100)}%` : "—"}
+          hint="done after the planned day"
+          tone={report.procrastinationIndex > 0.3 ? "warn" : undefined}
+        />
       </div>
 
-      <section className="mt-8">
-        <p className="text-sm text-fg-muted">
-          {report.weeklyReview.hours}h · {report.weeklyReview.done}/{report.weeklyReview.planned} tasks
-          {report.weeklyReview.bestDay ? ` · best ${formatDay(report.weeklyReview.bestDay)}` : ""}
-        </p>
-        <p className="mt-2 text-sm">{report.weeklyReview.suggestion}</p>
-        {plan ? <WeeklyApplyButton plan={plan} suggestion={report.weeklyReview.suggestion} today={today} /> : null}
-      </section>
+      {!quiet ? (
+        <section className="mt-8 rounded-lg border border-line bg-surface p-4" aria-labelledby="week-review">
+          <h2 id="week-review" className="text-xs font-semibold tracking-wide text-fg-faint uppercase">
+            This week
+          </h2>
+          <p className="mt-2 text-sm tabular text-fg-muted">
+            {report.weeklyReview.hours}h · {report.weeklyReview.done}/{report.weeklyReview.planned} tasks
+            {report.weeklyReview.bestDay ? ` · best ${formatDay(report.weeklyReview.bestDay)}` : ""}
+          </p>
+          {report.weeklyReview.suggestion !== insight ? <p className="mt-2 text-sm text-fg">{report.weeklyReview.suggestion}</p> : null}
+          {plan ? <WeeklyApplyButton plan={plan} suggestion={report.weeklyReview.suggestion} today={today} /> : null}
+        </section>
+      ) : null}
 
-      <section className="mt-10" aria-labelledby="chart-minutes">
-        <h2 id="chart-minutes" className="text-xs font-semibold tracking-wide text-fg-faint uppercase">Minutes per day</h2>
-        <div className="mt-4">
-          <LineChart
-            values={report.minutesPerDay.map((d) => d.minutes)}
-            goal={report.minutesPerDay[0]?.goal}
-            labels={report.minutesPerDay.map((d) => d.date)}
-          />
-        </div>
-      </section>
+      {!quiet ? (
+        <section className="mt-10" aria-labelledby="chart-minutes">
+          <h2 id="chart-minutes" className="text-xs font-semibold tracking-wide text-fg-faint uppercase">Minutes per day</h2>
+          <div className="mt-4">
+            <LineChart
+              values={report.minutesPerDay.map((d) => d.minutes)}
+              goal={report.minutesPerDay[0]?.goal}
+              labels={report.minutesPerDay.map((d) => d.date)}
+            />
+          </div>
+        </section>
+      ) : null}
 
       <div className="mt-10 grid gap-10 md:grid-cols-2">
         {report.dayOfWeek.some((d) => d.minutes) ? (
@@ -195,7 +226,7 @@ export default function AnalyticsPage() {
 
       {plan ? (
         <div className="mt-10">
-          <a href="#revision-health" className="text-xs text-fg-muted hover:text-fg">
+          <a href="#revision-health" className="text-xs font-semibold tracking-wide text-fg-faint uppercase hover:text-fg">
             Revision health
           </a>
           <div className="mt-4">

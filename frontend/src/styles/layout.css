@@ -572,6 +572,79 @@ li:first-child>.chalk-row {
 
 .mini-board.is-today {
   border-color: var(--color-fg);
+  background: var(--color-accent-subtle);
+}
+
+/* Subject-coloured marks: one per task, struck ones fade. The count alone made every cell look the same. */
+.mini-board .day-marks {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  margin-top: auto;
+  padding-bottom: 2px;
+}
+.mini-board .day-marks i {
+  display: block;
+  flex: 1 1 0;
+  height: 6px;
+  border-radius: 999px;
+}
+/* Done stays visible, just quieter: at 0.35 a finished day read as an empty one. */
+.mini-board .day-marks i.is-struck {
+  opacity: 0.55;
+}
+.mini-board .day-marks i.is-skipped {
+  opacity: 0.45;
+  background-image: repeating-linear-gradient(90deg, transparent 0 2px, var(--color-bg) 2px 4px);
+}
+.mini-board .day-marks b {
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--color-fg-faint);
+}
+.mini-board .day-count {
+  position: relative;
+}
+.mini-board:not(:has(.day-marks)) .day-count {
+  margin-top: auto;
+}
+
+/* Week view has room for words. */
+.mini-board .day-titles {
+  position: relative;
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  color: var(--color-fg);
+}
+.mini-board .day-titles > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mini-board .day-titles > span.is-struck {
+  color: var(--color-fg-faint);
+  text-decoration: line-through;
+}
+
+/* A 1:1 cell at desktop widths is a wall of empty paper; 4:3 keeps the grid on one screen. */
+@media (min-width: 640px) {
+  .mini-board {
+    aspect-ratio: 4 / 3;
+  }
+}
+/* Week view on a phone stacks one day per row; a square cell there is a 360px box. */
+@media (max-width: 639px) {
+  .mini-board.is-week {
+    aspect-ratio: auto;
+    min-height: 4.25rem;
+  }
 }
 
 .mini-board.is-today .day-num {
@@ -992,3 +1065,42 @@ li:first-child>.chalk-row {
   padding-right: 0;
 }
 
+
+/* Dashboard key figures under the pace sentence */
+.pace-figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+@media (min-width: 640px) {
+  .pace-figures {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.pace-figures > div {
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md, 10px);
+  background: var(--color-surface);
+}
+.pace-figures dt {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-fg-faint);
+}
+.pace-figures dd {
+  margin-top: 0.25rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 1.375rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-fg);
+}
+.pace-figures dd small {
+  font-size: 0.75rem;
+  color: var(--color-fg-muted);
+}
+.pace-figures .is-warn dd {
+  color: var(--color-warn);
+}

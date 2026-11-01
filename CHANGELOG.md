@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-11-01 — the planner pages, looked at with real data
+
+### Changed
+- **Guide** (`/planner/guide`) is no longer nineteen fully-expanded sections in one column. Topics are grouped into chapters by where you meet them (Tasks, Month, Ink, Dashboard, Analytics & Badges, Settings & everywhere, Admin); each topic is a closed card showing its one-line answer, and opens to the steps, the why, the tips and the FAQ. A filter box (`/` to focus) narrows the deck by any word in any topic; chapter nav is a sticky sidebar on desktop and a chip row on phones. Deep links from the "?" sheets still open and scroll to the right card.
+- **Month / Week / Agenda** cells show what is in them: a per-subject mark row (struck lessons dimmed, skipped ones dashed), lesson titles in week view, and a count; today is tinted; the kicker names the view; the legend hides in agenda, where it meant nothing.
+- **Tasks** no longer says "Board clear" above ten missed classes — the subtitle and empty state name the overdue count, the progress ring hides when there is nothing to ring, and the keyboard hint hides on touch devices.
+- **Dashboard** carries a figures row under the pace sentence — struck / total lectures, hours in, streak, days to exam — so the headline has something concrete under it. "exam in 1 days" is now "1 day".
+- **Analytics** stops reporting "100% struck" and "0% goal hit" over an empty range; the figures show a dash until there is something to count, the headline says how long the range has been quiet, and the empty state links back to Tasks.
+
+### CI
+- Lighthouse gates are hard: accessibility 1.0, best practices 0.95, SEO 0.9, CLS 0.05 (perf stays a warning at 0.9); `E2E_RETRIES=0` so a flaky spec cannot pass by luck.
+- The e2e job seeds the member planner (`scripts/seed-ink-demo.ts`, fails loudly on a PUT error) so screenshots show populated pages instead of empty states; member screenshots now include Dashboard and Analytics.
+- Login and setup pages import their components statically; `lucide-react` is split into its own chunk (simulated LCP 1744 → 1606 ms, 55 → 41 requests on the login route).
+
 ## 2026-11-01 — lint to zero, real semantics where ARIA was faking them
 
 ### Changed

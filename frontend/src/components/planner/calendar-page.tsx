@@ -37,6 +37,7 @@ import {
   undoLast,
 } from "@inkboard/shared/planner/storage";
 import type { PlanTask } from "@inkboard/shared/planner/types";
+import { subjectIdOf, subjectVar } from "@inkboard/shared/planner/subjects";
 import { usePlanner } from "@inkboard/shared/planner/use-planner";
 
 const plannerRoute = getRouteApi("/planner/");
@@ -171,16 +172,33 @@ export function PlannerPage() {
           const id = e.dataTransfer.getData("text/task-id");
           if (id) moveTask(livePlan.id, id, date);
         }}
-        className={`mini-board${date === today ? " is-today" : ""}${open === date ? " is-open" : ""}${hasExam ? " is-exam" : ""}${overdueDay ? " is-overdue" : ""}${view === "month" && !inMonth ? " is-out" : ""}`}
+        className={`mini-board${date === today ? " is-today" : ""}${open === date ? " is-open" : ""}${hasExam ? " is-exam" : ""}${overdueDay ? " is-overdue" : ""}${view === "month" && !inMonth ? " is-out" : ""}${view === "week" ? " is-week" : ""}`}
         style={{ ["--dust" as string]: String(dust) }}
       >
         <span className="dust" aria-hidden="true" />
-        <span className="day-num tabular">{date.slice(8)}</span>{" "}
-        <span className="mt-auto text-xs text-fg-muted">
+        <span className="day-num tabular">{date.slice(8)}</span>
+        {view === "week" && list.length ? (
+          <span className="day-titles" aria-hidden="true">
+            {list.slice(0, 3).map((t) => (
+              <span key={t.id} className={t.status === "done" ? "is-struck" : undefined}>
+                {t.title}
+              </span>
+            ))}
+          </span>
+        ) : null}
+        {list.length ? (
+          <span className="day-marks" aria-hidden="true">
+            {list.slice(0, 4).map((t) => (
+              <i key={t.id} className={t.status === "done" ? "is-struck" : t.status === "skipped" ? "is-skipped" : undefined} style={{ background: subjectVar(subjectIdOf(t.subject)) }} />
+            ))}
+            {list.length > 4 ? <b>+{list.length - 4}</b> : null}
+          </span>
+        ) : null}
+        <span className="day-count text-xs text-fg-muted">
           {list.length ? `${struck}/${list.length}` : hasHoliday ? "rest" : ""}
         </span>
         <span className="sr-only">
-          {`, ${formatDay(date, "EEEE d MMMM")}, ${list.length} classes, ${struck} done${hasExam ? ", exam" : ""}${hasHoliday ? ", holiday" : ""}`}
+          {`, ${formatDay(date, "EEEE d MMMM")}, ${list.length ? `${list.length} ${list.length === 1 ? "class" : "classes"}, ${struck} done` : "nothing planned"}${hasExam ? ", exam" : ""}${hasHoliday ? ", holiday" : ""}`}
         </span>
       </button>
     );
@@ -190,7 +208,7 @@ export function PlannerPage() {
     <div className="py-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-wide text-fg-faint uppercase">{COPY.month}</p>
+          <p className="text-xs font-semibold tracking-wide text-fg-faint uppercase">{view === "month" ? COPY.month : view === "week" ? "Week" : "Agenda"}</p>
           <div className="flex items-center gap-1">
             <h1 className="font-serif text-2xl font-semibold sm:text-3xl">{monthTitle}</h1>
             <HelpButton topic="month" size="md" />
@@ -279,28 +297,30 @@ export function PlannerPage() {
         </div>
       </div>
 
-      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-fg-muted" aria-label="Calendar legend">
-        <li className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="mini-board inline-block size-4 rounded-[3px]" style={{ "--dust": 0.9 } as never}>
-            <span className="dust" />
-          </span>
-          Hatched · minutes studied
-        </li>
-        <li className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="inline-block border-b-2 border-warn px-0.5 font-mono text-[10px] leading-none text-fg">
-            12
-          </span>
-          Underlined · overdue
-        </li>
-        <li className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="mini-board is-exam inline-block size-4 rounded-[3px]" />
-          Ringed · exam day
-        </li>
-        <li className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="mini-board is-today inline-block size-4 rounded-[3px]" />
-          Bold edge · today
-        </li>
-      </ul>
+      {view !== "agenda" ? (
+        <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-fg-muted" aria-label="Calendar legend">
+          <li className="flex items-center gap-1.5">
+            <span aria-hidden="true" className="mini-board inline-block size-4 rounded-[3px]" style={{ "--dust": 0.9 } as never}>
+              <span className="dust" />
+            </span>
+            Hatched · minutes studied
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span aria-hidden="true" className="inline-block border-b-2 border-warn px-0.5 font-mono text-[10px] leading-none text-fg">
+              12
+            </span>
+            Underlined · overdue
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span aria-hidden="true" className="mini-board is-exam inline-block size-4 rounded-[3px]" />
+            Ringed · exam day
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span aria-hidden="true" className="mini-board is-today inline-block size-4 rounded-[3px]" />
+            Bold edge · today
+          </li>
+        </ul>
+      ) : null}
 
       {view === "agenda" ? (
         <ol className="mt-4">
@@ -310,7 +330,7 @@ export function PlannerPage() {
               <li key={date} className="border-b border-line py-3">
                 <button type="button" className="text-left" onClick={() => setOpen(date)}>
                   <p className="font-serif text-base font-semibold">{formatDay(date, "EEEE d MMM")}</p>
-                  <p className="text-xs text-fg-muted">{list.length} classes</p>
+                  <p className="text-xs text-fg-muted">{list.length ? `${list.length} ${list.length === 1 ? "class" : "classes"}` : "Nothing planned"}</p>
                 </button>
                 <ul className="mt-2 space-y-1">
                   {list.slice(0, 4).map((t) => (

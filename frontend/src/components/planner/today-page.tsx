@@ -161,12 +161,20 @@ export function PlannerTodayPage() {
             <h1 className="font-serif text-2xl font-semibold sm:text-3xl">{formatDay(date, "EEEE d MMMM")}</h1>
             <HelpButton topic="today" size="md" />
           </div>
-          <p className="mt-2 text-sm text-fg-muted tabular-nums">{isToday ? dayRemainCopy(remaining.pending, remaining.minutes) : dayPlanCopy(queue, date, today)}</p>
+          <p className="mt-2 text-sm text-fg-muted tabular-nums">
+            {isToday
+              ? !pending.length && overdue.length
+                ? `Nothing left today · ${overdue.length} missed ${overdue.length === 1 ? "class" : "classes"} waiting`
+                : dayRemainCopy(remaining.pending, remaining.minutes)
+              : dayPlanCopy(queue, date, today)}
+          </p>
           {isToday && streak.current ? <Badge tone="ok" className="mt-2">{streakDaysCopy(streak.current)}</Badge> : null}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Ring value={dayPct} label={`${label.relative ?? formatDay(date)} ${dayPct}% done`} size={48} />
-        </div>
+        {queue.length ? (
+          <div className="flex shrink-0 items-center gap-2">
+            <Ring value={dayPct} label={`${label.relative ?? formatDay(date)} ${dayPct}% done`} size={48} />
+          </div>
+        ) : null}
       </header>
 
       <nav aria-label="Day" className="mt-4 flex items-center gap-2">
@@ -209,7 +217,7 @@ export function PlannerTodayPage() {
             </Button>
           )}
         />
-        <span className="ml-auto text-xs text-fg-faint">[ and ] page days · T jumps to today</span>
+        <span className="ml-auto text-xs text-fg-faint touch:hidden">[ and ] page days · T jumps to today</span>
       </div>
 
       {isToday ? (
@@ -335,8 +343,14 @@ export function PlannerTodayPage() {
         ) : (
           <li>
             <EmptyState
-              title={isToday ? "Queue clear" : dayPlanCopy(queue, date, today)}
-              body={isToday ? "Rest, or log study you already did." : "Write a task for this day, or move one here from another day."}
+              title={isToday ? (overdue.length ? "Nothing scheduled today" : "Queue clear") : dayPlanCopy(queue, date, today)}
+              body={
+                isToday
+                  ? overdue.length
+                    ? `${overdue.length} ${overdue.length === 1 ? "class" : "classes"} from earlier days ${overdue.length === 1 ? "is" : "are"} still waiting. Move them in above, or write a task.`
+                    : "Rest, or log study you already did."
+                  : "Write a task for this day, or move one here from another day."
+              }
             />
           </li>
         )}
