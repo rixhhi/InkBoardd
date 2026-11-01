@@ -49,7 +49,7 @@ describe("Phase 4 accessibility and loading", () => {
     assert.match(src("../src/styles.css"), /\.rail-keys/);
   });
 
-  it("holds a 90 lighthouse budget for home and today", () => {
+  it("holds a 90 lighthouse budget against the real stack", () => {
     const budget = JSON.parse(src("../../lighthouserc.json")) as {
       ci: {
         assert: { assertions: Record<string, [string, { minScore?: number; maxNumericValue?: number }]> };
@@ -59,8 +59,11 @@ describe("Phase 4 accessibility and loading", () => {
     assert.equal(budget.ci.assert.assertions["categories:performance"]?.[1]?.minScore, 0.9);
     assert.equal(budget.ci.assert.assertions["categories:accessibility"]?.[1]?.minScore, 0.95);
     assert.equal(budget.ci.assert.assertions["cumulative-layout-shift"]?.[1]?.maxNumericValue, 0.1);
-    assert.ok(budget.ci.collect.url.includes("http://127.0.0.1:4173/"));
-    assert.ok(budget.ci.collect.url.includes("http://127.0.0.1:4173/planner/today"));
+    // Lighthouse runs in the CI e2e job against the real API + SSR + edge on :3000, not a
+    // bare `vite preview` (which had no API and scored an error page). /login is the one
+    // public page, so it is the one audited unauthenticated.
+    assert.ok(budget.ci.collect.url.includes("http://127.0.0.1:3000/login"));
+    assert.ok(!budget.ci.collect.startServerCommand, "the e2e job starts the stack; LHCI must not start its own");
   });
 
   it("axe finds no name or landmark violations on the desk shell", async () => {
