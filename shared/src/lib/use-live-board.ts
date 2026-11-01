@@ -29,6 +29,7 @@ export function useLiveBoard(session: LiveSession | undefined, ingestRef?: { cur
   const [connected, setConnected] = useState(false);
   const snapshotSrc = "";
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one socket per classId; `session` is a fresh object per render and `ingestRef` is a RefObject — re-keying on either would tear down and reconnect the live stream every render
   useEffect(() => {
     if (!session?.classId) return;
     const live = session;

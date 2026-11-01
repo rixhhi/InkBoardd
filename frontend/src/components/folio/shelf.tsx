@@ -1,17 +1,18 @@
 import { catalogMetaClass, catalogTitleClass } from "@/components/catalog-row";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { initialsFrom } from "@inkboard/shared/initials";
 import { subjectHatchClassFor } from "@inkboard/shared/planner/subjects";
 import { setShelfLedger, type ShelfLedgerPayload } from "@inkboard/shared/shelf";
 
 export function useShelfLedger(payload: ShelfLedgerPayload) {
-  const key = useMemo(() => JSON.stringify(payload), [payload]);
+  // Callers pass a fresh object literal every render; keying the effect on the
+  // serialised value is what stops the ledger flickering null → value each time.
+  const key = JSON.stringify(payload);
+  // biome-ignore lint/correctness/useExhaustiveDependencies(payload): mirrored by key
   useEffect(() => {
     setShelfLedger(payload);
     return () => setShelfLedger(null);
-    // payload is mirrored by key
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 }
 

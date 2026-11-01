@@ -42,7 +42,12 @@
         "noUselessEscapeInRegex": "warn"
       },
       "correctness": {
-        "useExhaustiveDependencies": "warn",
+        "useExhaustiveDependencies": {
+          "level": "warn",
+          "options": {
+            "reportUnnecessaryDependencies": false
+          }
+        },
         "noUnusedVariables": "warn",
         "noUnusedImports": "error",
         "noUnusedFunctionParameters": "warn"

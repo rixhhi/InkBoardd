@@ -85,7 +85,7 @@ describe("phase B media plan", () => {
     ];
     for (const args of bags) {
       assert.equal(args.includes("-i") || args[0] === "-y" || args[0] === "-hide_banner", true);
-      assert.doesNotMatch(args.filter((a, i) => args[i - 1] !== "-i").join(" "), /delogo/i);
+      assert.doesNotMatch(args.filter((_a, i) => args[i - 1] !== "-i").join(" "), /delogo/i);
       assertNoDelogo(args);
     }
   });

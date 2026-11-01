@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, Check } from "lucide-react";
@@ -214,11 +214,14 @@ export function Menu({
 }) {
   const [openState, setOpenState] = useState(false);
   const open = openProp ?? openState;
-  const setOpen = (next: boolean | ((v: boolean) => boolean)) => {
-    const value = typeof next === "function" ? next(open) : next;
-    if (openProp === undefined) setOpenState(value);
-    onOpenChange?.(value);
-  };
+  const setOpen = useCallback(
+    (next: boolean | ((v: boolean) => boolean)) => {
+      const value = typeof next === "function" ? next(open) : next;
+      if (openProp === undefined) setOpenState(value);
+      onOpenChange?.(value);
+    },
+    [open, openProp, onOpenChange],
+  );
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -281,7 +284,7 @@ export function Menu({
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, setOpen]);
 
   useEffect(() => {
     if (!open) return;

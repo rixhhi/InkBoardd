@@ -49,10 +49,10 @@ export function PlannerSyncProvider({ children }: { children: ReactNode }) {
     mergeFreezeWeeks(missing);
   }, [freezeKey, state.freezeWeeks]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `today` is a fresh array every store tick and `plan` a fresh object; the reminder must fire only when the plan id, the pending count or the reminder prefs change
   useEffect(() => {
     if (!plan) return;
     maybeNotify(plan.prefs, today);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan?.id, pendingToday, plan?.prefs.reminders, plan?.prefs.timeSlot]);
 
   const account = useSyncExternalStore(subscribeSync, readSync, () => SERVER_SYNC);

@@ -158,7 +158,7 @@ export function PlayerTransport(props: PlayerTransportProps) {
     saved, setSaved, title, teacherSlug, courseId, moreOpen, setMoreOpen, camOff, setCamOff, layout,
     setLayout, cycleLanternSize, isBoard, stripOn, setStripOn, sleepUntil, setSleepUntil, prevLesson, nextLesson,
     openLesson, setKeepOpen, setChaptersOpen, runSummary, silenceOn, setSilenceOn, silence, clipIn,
-    clipOut, clipBusy, clipHref, clipNote, setClipIn, setClipOut, setClipHref, setClipNote, saveClip,
+    clipOut, clipBusy, clipHref, setClipIn, setClipOut, setClipHref, setClipNote, saveClip,
     slideUrl, listenLabel = COPY.listen, dataSaverLabel = COPY.dataSaver, audioSrc,
   } = props;
 

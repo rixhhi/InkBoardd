@@ -79,6 +79,8 @@ function examCourseToUa(c: {
   };
 }
 
+const STEPS = ["Exam", "Courses", "Pace", "Preview"] as const;
+
 export function PlannerNew() {
   const search = useSearch({ from: "/planner/new" });
   const nav = useNavigate();
@@ -129,6 +131,7 @@ export function PlannerNew() {
   const studyDaysKey = prefs.studyDays.join(",");
   const holidaysKey = prefs.holidays.join(",");
   const intervalsKey = prefs.revisionIntervals.join(",");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `prefs` and `selected` are rebuilt on every keystroke; the memo keys on the scalar fields the scheduler reads plus joined keys for the arrays, so typing a holiday does not regenerate the plan twice
   const preview = useMemo(
     () => generatePlan(prefs, selected, { id: makeIdFactory("p") }),
     [
@@ -159,6 +162,7 @@ export function PlannerNew() {
   const suggestions = hubQ.data ? suggestCourses(hubQ.data.courses) : [];
   const balance = playlistBalance(selected, prefs.speed);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies(toggleCourse): one-shot prefill guarded by `prefilled`; toggleCourse closes over the latest state on every render and only runs once the queries land
   useEffect(() => {
     if (prefilled.current || !search.course || !openTeacher || !eduQ.data) return;
     const course = eduQ.data.courses.find((c) => c.uid === search.course);
@@ -336,7 +340,7 @@ export function PlannerNew() {
     void nav({ to: "/planner", search: { day: undefined } });
   }
 
-  const steps = ["Exam", "Courses", "Pace", "Preview"];
+  const steps = STEPS;
   const finish = preview.summary.finishDate;
   const perDay = prefs.lecturesPerDay;
 

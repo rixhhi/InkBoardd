@@ -94,6 +94,7 @@ export function useClassCore(props: {
   const session = usePlayerSession(timeline.id, sprites, videoRef);
   const [pinRev, setPinRev] = useState(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the six session.set* are useState setters from usePlayerSession — stable by React contract; `session` itself is a fresh object each render and must not re-run the restore
   useEffect(() => {
     const saved = readPrepared(timeline.id);
     if (!saved) return;

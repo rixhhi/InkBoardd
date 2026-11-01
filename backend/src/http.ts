@@ -132,7 +132,8 @@ export async function sendWebResponse(reply: FastifyReply, res: Response): Promi
   }
 }
 
-export function jsonError(status: number, error: string, code: string, requestId?: string) {
+/** `status` is kept positional for the 29 call sites; the HTTP status is set on the reply, not the body. */
+export function jsonError(_status: number, error: string, code: string, requestId?: string) {
   return { error, code, requestId };
 }
 

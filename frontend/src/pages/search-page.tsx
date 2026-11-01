@@ -148,8 +148,8 @@ export default function SearchPage() {
   function onResultKeys(e: { key: string; preventDefault: () => void }) {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
     const hits = [...document.querySelectorAll<HTMLElement>("[data-search-hit]")];
-    const active = document.activeElement;
-    const index = hits.indexOf(active);
+    // indexOf returns -1 when focus is elsewhere, which searchHitTarget treats as "start from the field".
+    const index = hits.indexOf(document.activeElement as HTMLElement);
     const next = searchHitTarget(hits.length, index, e.key);
     if (next === "stay") return;
     e.preventDefault();

@@ -31,9 +31,6 @@ export function vttClock(sec: number): string {
   const safe = Number.isFinite(sec) && sec > 0 ? sec : 0;
   const whole = Math.floor(safe);
   const ms = Math.round((safe - whole) * 1000);
-  const h = Math.floor(whole / 3600);
-  const m = Math.floor((whole % 3600) / 60);
-  const s = whole % 60;
   const carry = ms === 1000 ? 1 : 0;
   const adj = whole + carry;
   const hh = Math.floor(adj / 3600);

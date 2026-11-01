@@ -120,6 +120,7 @@ export default function CoursePage() {
     setBootNext(live.data.nextOffset ?? null);
   }, [courseId, live.data, bootNext]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the drain restarts on courseId / bootNext / restTry only; live.data fields are read at call time so a refetch does not abort an in-flight drain
   useEffect(() => {
     const start = failedAt.current ?? bootNext;
     if (start == null) return;
