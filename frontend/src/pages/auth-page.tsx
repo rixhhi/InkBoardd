@@ -119,11 +119,18 @@ export function LoginPage() {
               type="button"
               onClick={askForReset}
               disabled={!email || reset === "sending"}
-              title={!email ? "Type your email first" : undefined}
+              aria-describedby={!email ? "reset-hint" : undefined}
               className="font-medium text-accent underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               {reset === "sending" ? "Telling your admin…" : "Ask your admin to reset it"}
             </button>
+            {/* Inline, not a title= tooltip: tooltips never show on touch screens. */}
+            {!email ? (
+              <span id="reset-hint" className="text-fg-faint">
+                {" "}
+                — type your email first
+              </span>
+            ) : null}
           </p>
         )}
       </div>

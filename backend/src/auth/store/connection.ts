@@ -136,6 +136,23 @@ export const MIGRATIONS: readonly Migration[] = [
     // it clears when they reset the password.
     sql: "alter table ib_users add column if not exists reset_requested_at timestamptz",
   },
+  {
+    id: "0003_notifications",
+    // In-app bell: one row per person per event (new share, password set by admin,
+    // reset asked, first sign-in). Swept after 60 days; capped per person.
+    sql: `create table if not exists ib_notifications (
+      id serial primary key,
+      user_id integer not null references ib_users(id) on delete cascade,
+      kind text not null,
+      title text not null,
+      body text,
+      href text,
+      created_at timestamptz not null default now(),
+      read_at timestamptz
+    );
+    create index if not exists ib_notifications_user_id_desc on ib_notifications (user_id, id desc);
+    create index if not exists ib_notifications_unread on ib_notifications (user_id) where read_at is null`,
+  },
 ];
 
 export async function appliedMigrations(db: Db): Promise<Set<string>> {
