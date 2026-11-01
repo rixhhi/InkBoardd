@@ -63,7 +63,17 @@
         "useSemanticElements": "warn",
         "noStaticElementInteractions": "warn",
         "useKeyWithClickEvents": "warn",
-        "noLabelWithoutControl": "warn",
+        "noLabelWithoutControl": {
+          "level": "warn",
+          "options": {
+            "inputComponents": [
+              "Input",
+              "Select",
+              "Switch",
+              "Textarea"
+            ]
+          }
+        },
         "useAriaPropsSupportedByRole": "warn",
         "noSvgWithoutTitle": "warn",
         "noNoninteractiveTabindex": "warn"
