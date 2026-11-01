@@ -1,3 +1,5 @@
+> **Superseded (2026-11-01).** This was a from-code audit written before a browser was available. The CI `e2e` job (`scripts/e2e.mjs`) now measures every page in a real Chromium — overflow, axe, both themes, both roles, desktop and phone — and Lighthouse runs against the same stack. Kept for history.
+
 # UI audit
 
 Every row is **from code, not seen**. No browser ran in this environment, so widths (320, 360, 768, 1280, 1920) were not measured on a real layout. Horizontal scroll is constrained in CSS (`overflow-x: clip` on `html`/`body`, planner sub-nav scrolls inside itself) but that is not a pixel check.
