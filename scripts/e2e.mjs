@@ -11,6 +11,7 @@
  * (E2E_AXE=0 to skip; axe is read from frontend/node_modules).
  *
  * Flake control: a failing check is retried once (E2E_RETRIES, default 1) before it
+ * counts. CI sets E2E_RETRIES=0 on purpose: a flake there fails the job so it gets fixed.
  * counts. On the final failure a full-page screenshot and the page's console log are
  * written to --shots as <check>-FAILED.png / .log, and a Playwright trace (.zip, open
  * with `npx playwright show-trace`) when E2E_TRACE=1. A JUnit report goes to
