@@ -11,9 +11,16 @@ describe("Phase 5 gates", () => {
     const budget = JSON.parse(src("../../lighthouserc.json")) as {
       ci: { assert: { assertions: Record<string, [string, { minScore?: number; maxNumericValue?: number }]> } };
     };
-    assert.equal(budget.ci.assert.assertions["categories:performance"]?.[1]?.minScore, 0.9);
-    assert.equal(budget.ci.assert.assertions["categories:accessibility"]?.[1]?.minScore, 0.95);
-    assert.equal(budget.ci.assert.assertions["cumulative-layout-shift"]?.[1]?.maxNumericValue, 0.1);
+    const a = budget.ci.assert.assertions;
+    assert.equal(a["categories:performance"]?.[1]?.minScore, 0.9);
+    assert.equal(a["categories:accessibility"]?.[1]?.minScore, 1);
+    assert.equal(a["categories:best-practices"]?.[1]?.minScore, 0.95);
+    assert.equal(a["categories:seo"]?.[1]?.minScore, 0.9);
+    assert.equal(a["cumulative-layout-shift"]?.[1]?.maxNumericValue, 0.05);
+    // Everything except performance is fatal.
+    for (const k of ["categories:accessibility", "categories:best-practices", "categories:seo", "cumulative-layout-shift"]) {
+      assert.equal(a[k]?.[0], "error", `${k} must be a hard gate`);
+    }
   });
 
   it("caps the built JavaScript", () => {

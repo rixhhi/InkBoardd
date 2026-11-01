@@ -56,9 +56,14 @@ describe("Phase 4 accessibility and loading", () => {
         collect: { url: string[]; startServerCommand?: string };
       };
     };
-    assert.equal(budget.ci.assert.assertions["categories:performance"]?.[1]?.minScore, 0.9);
-    assert.equal(budget.ci.assert.assertions["categories:accessibility"]?.[1]?.minScore, 0.95);
-    assert.equal(budget.ci.assert.assertions["cumulative-layout-shift"]?.[1]?.maxNumericValue, 0.1);
+    // Ratchet: these only move on purpose, with a green run on main as the evidence.
+    // fd810d5 measured a11y 1.00, best-practices 1.00, SEO 1.00, CLS 0, performance 0.92.
+    const a = budget.ci.assert.assertions;
+    assert.deepEqual(a["categories:performance"], ["warn", { minScore: 0.9 }], "performance stays a warning until LCP has headroom");
+    assert.deepEqual(a["categories:accessibility"], ["error", { minScore: 1 }]);
+    assert.deepEqual(a["categories:best-practices"], ["error", { minScore: 0.95 }]);
+    assert.deepEqual(a["categories:seo"], ["error", { minScore: 0.9 }]);
+    assert.deepEqual(a["cumulative-layout-shift"], ["error", { maxNumericValue: 0.05 }]);
     // Lighthouse runs in the CI e2e job against the real API + SSR + edge on :3000, not a
     // bare `vite preview` (which had no API and scored an error page). /login is the one
     // public page, so it is the one audited unauthenticated.
