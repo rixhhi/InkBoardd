@@ -14,6 +14,7 @@ import { COPY } from "@inkboard/shared/copy";
 import { LEDGER_EVENT, LEDGER_FOCUS_EVENT, folioMode, isTypingTarget, type LedgerFocus } from "@inkboard/shared/folio";
 import { nextThemeMode } from "@inkboard/shared/theme";
 import { usePlannerTodayProgress } from "@inkboard/shared/planner/use-planner";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 const SavedSheet = lazy(() => import("@/components/folio/saved-sheet").then((m) => ({ default: m.SavedSheet })));
 const PasswordDialog = lazy(() => import("@/components/password-dialog").then((m) => ({ default: m.PasswordDialog })));
@@ -251,6 +252,7 @@ function ContextBar({ onLibrary }: { onLibrary: () => void }) {
         <IconButton label={`${COPY.search} (Control or Command K)`} icon={Search} onClick={() => openCommandPalette()} className="sm:hidden" />
         </>
         ) : null}
+        <NotificationsBell />
         <IconButton label="Library panel (Control or Command B)" icon={Bookmark} onClick={onLibrary} />
         <span className="md:hidden">
           <AccountMenu compact />

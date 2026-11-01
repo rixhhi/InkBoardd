@@ -21,7 +21,7 @@ import {
   sessionCookie,
   setupCodeMatches,
 } from "../auth/guard.ts";
-import { body, fail, publicUser, sharesView, startSession, str } from "./auth-common.ts";
+import { body, fail, idParam, publicUser, sharesView, startSession, str } from "./auth-common.ts";
 import { registerAdmin } from "./admin.ts";
 
 export { parseShareRef } from "./auth-common.ts";
@@ -105,6 +105,25 @@ export async function registerAuth(app: FastifyInstance) {
     const { passwordHash: _hash, ...user } = found;
     // Store the short device name ("Chrome on Linux"), not the 120-char user-agent: this label is shown in admin feeds.
     if (user.role === "member") void S.logActivity(user.id, { kind: "login", label: deviceName(String(req.headers["user-agent"] ?? "")).name }).catch(() => {});
+    // First sign-in ever (last_seen_at is still null): welcome the member, tell the admins.
+    if (user.role === "member" && !user.lastSeenAt) {
+      void Promise.all([
+        S.notify([user.id], {
+          kind: "member.welcome",
+          title: `Welcome, ${user.name || "there"}`,
+          body: "Home shows what your admin shared with you. The Planner turns it into a study plan with a calendar and a memory board. This bell will tell you when something new is shared.",
+          href: "/",
+        }),
+        S.staffIds().then((staff) =>
+          S.notify(staff, {
+            kind: "member.joined",
+            title: `${user.name || user.email} signed in for the first time`,
+            body: `Signed in from ${deviceName(String(req.headers["user-agent"] ?? "")).name}.`,
+            href: `/admin?tab=members&member=${user.id}`,
+          }),
+        ),
+      ]).catch(() => {});
+    }
     await startSession(req, reply, user);
     return { user: publicUser(user) };
   });
@@ -128,6 +147,13 @@ export async function registerAuth(app: FastifyInstance) {
       if (flagged) {
         const user = await S.findUserByEmail(email);
         await S.audit(user?.id ?? null, "password.reset_requested", email, `from ${ip}`).catch(() => {});
+        // Bell for every admin: this is the only channel a member has to reach them.
+        void S.notify(await S.staffIds(), {
+          kind: "reset.requested",
+          title: `${user?.name || email} asked for a password reset`,
+          body: "Open the member, set a new password and share it with them. The badge clears when you do.",
+          href: user ? `/admin?tab=members&member=${user.id}` : "/admin?tab=members",
+        }).catch(() => {});
       }
     }
     return { ok: true, message: "If that account exists, your admin has been told. They will set a new password and share it with you." };
@@ -222,6 +248,33 @@ export async function registerAuth(app: FastifyInstance) {
       if (err instanceof Error && err.message === "STATE_TOO_LARGE") return fail(reply, req, 413, "STATE_TOO_LARGE", "Your saved data is over the 4 MB limit.");
       throw err;
     }
+  });
+
+  /* ---------------- notifications (the bell) ---------------- */
+
+  /** Polled by the header bell: unread count + the newest rows. Cheap on a quiet account (count is cached). */
+  app.get("/api/me/notifications", async (req, reply) => {
+    reply.header("cache-control", "no-store");
+    const userId = req.user!.id;
+    const query = req.query as { before?: string; limit?: string };
+    const before = Number(query.before) || undefined;
+    const limit = Number(query.limit) || undefined;
+    const [unread, items] = await Promise.all([S.unreadCount(userId), S.listNotifications(userId, { before, limit })]);
+    return { unread, items };
+  });
+
+  /** Body `{ ids?: number[] }` — some, or everything when omitted. */
+  app.post("/api/me/notifications/read", async (req) => {
+    const b = body(req);
+    const ids = Array.isArray(b.ids) ? b.ids.map(Number).filter((x) => Number.isInteger(x) && x > 0).slice(0, 200) : undefined;
+    const changed = await S.markRead(req.user!.id, ids);
+    return { ok: true, changed, unread: await S.unreadCount(req.user!.id) };
+  });
+
+  app.delete("/api/me/notifications/:id", async (req, reply) => {
+    const id = idParam(req);
+    if (!(await S.deleteNotification(req.user!.id, id))) return fail(reply, req, 404, "NOT_FOUND", "That notification is gone already.");
+    return { ok: true };
   });
 
   app.post("/api/activity", async (req) => {

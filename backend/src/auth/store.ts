@@ -29,3 +29,4 @@ export * from "./store/shares.ts";
 export * from "./store/activity.ts";
 export * from "./store/state.ts";
 export * from "./store/retention.ts";
+export * from "./store/notifications.ts";

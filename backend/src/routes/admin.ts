@@ -198,6 +198,17 @@ export async function registerAdmin(app: FastifyInstance) {
     if (patch.password) await S.revokeUserSessions(id);
     if (Array.isArray(b.groupIds)) await S.setUserGroups(id, ids(b.groupIds));
     await S.audit(req.user!.id, "member.edit", user.email, describe(patch) + (Array.isArray(b.groupIds) ? ", groups" : ""));
+    // Bell: the member sees why they were signed out everywhere when they sign back in.
+    if (patch.password) {
+      void S.notify([id], {
+        kind: "password.reset",
+        title: "Your admin set a new password",
+        body: patch.mustChange
+          ? "Every other device was signed out. You will be asked to choose your own password now."
+          : "Every other device was signed out. You can change it any time from the account menu.",
+        href: "/",
+      }).catch((err) => req.log.warn({ err }, "password notification failed"));
+    }
     return { member: next ? publicUser(next) : null };
   });
 
@@ -310,6 +321,21 @@ export async function registerAdmin(app: FastifyInstance) {
       who = `groups: ${[...new Set(groupIds)].map((id) => names.get(id) ?? `#${id}`).join(", ")}`;
     }
     await S.audit(req.user!.id, "share.add", `${kind} ${label || ref}`, who);
+    // Bell: tell the members this reaches. A scheduled share (startsAt in the future) waits —
+    // nobody should be told about something they cannot open yet.
+    if (!startsAt || Date.parse(startsAt) <= Date.now()) {
+      const reached = new Set<number>();
+      for (const s of created) for (const id of await S.audienceOf(s)) reached.add(id);
+      const what = label || ref;
+      const noun = kind === "exam" ? "exam" : kind === "teacher" ? "teacher" : kind === "course" ? "course" : kind === "batch" ? "batch" : "class";
+      const href = kind === "exam" ? `/exam/${ref}` : kind === "teacher" ? `/teacher/${ref}` : kind === "course" ? `/course/${ref}` : kind === "batch" ? `/batch/${ref}` : `/play/${ref}`;
+      void S.notify(reached, {
+        kind: "share.new",
+        title: `New ${noun} shared with you: ${what}`,
+        body: str(b.note, 400) || `Your admin opened this ${noun} for you. It is on your Home under "Shared with you".`,
+        href,
+      }).catch((err) => req.log.warn({ err }, "share notification failed"));
+    }
     return reply.status(201).send({ shares: sharesView(created) });
   });
 
