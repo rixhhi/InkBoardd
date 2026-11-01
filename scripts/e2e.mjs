@@ -330,7 +330,7 @@ for (const vp of viewports) {
     await shot(member, `${vp.id}-member-help-sheet`);
     await member.keyboard.press("Escape");
   });
-  for (const path of ["/planner/today", "/planner", "/planner/ink", "/planner/guide", "/library", "/settings"]) {
+  for (const path of ["/planner/today", "/planner", "/planner/ink", "/planner/dashboard", "/planner/analytics", "/planner/guide", "/library", "/settings"]) {
     await check(`member page renders: ${path}`, async () => {
       await open(member, path);
       await pageIsSound(member, `member ${path}`);

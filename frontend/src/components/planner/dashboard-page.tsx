@@ -62,10 +62,39 @@ export function PlannerDashboard() {
       </div>
       <p className="mt-2 text-sm text-fg-muted">
         {slotCopy(plan.prefs.timeSlot)}
-        {examLeft == null ? "" : ` · exam in ${examLeft} days`}
+        {examLeft == null ? "" : ` · exam in ${examLeft} ${examLeft === 1 ? "day" : "days"}`}
         {atRisk ? " · mark at risk" : ""}
         {savedByFreeze ? " · freeze used" : ""}
       </p>
+      <dl className="pace-figures mt-5">
+        <div>
+          <dt>Struck</dt>
+          <dd>
+            {card.lecturesDone}
+            <small>/{card.lecturesTotal}</small>
+          </dd>
+        </div>
+        <div>
+          <dt>Hours in</dt>
+          <dd>{card.hours}</dd>
+        </div>
+        <div className={atRisk ? "is-warn" : undefined}>
+          <dt>Streak</dt>
+          <dd>
+            {streak.current}
+            <small>{streak.current === 1 ? " day" : " days"}</small>
+          </dd>
+        </div>
+        {examLeft != null ? (
+          <div className={examLeft <= 14 ? "is-warn" : undefined}>
+            <dt>Exam in</dt>
+            <dd>
+              {examLeft}
+              <small>{examLeft === 1 ? " day" : " days"}</small>
+            </dd>
+          </div>
+        ) : null}
+      </dl>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         {pace.status === "behind" ? (
           <PaceCatchUpButton label={paceSentence(pace)} warn onOpen={() => setCatchUp(true)} />
