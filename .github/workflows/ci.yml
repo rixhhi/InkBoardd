@@ -23,6 +23,8 @@ jobs:
         run: npm run build
         env:
           BUDGET_STRICT: "1"
+      - name: lighthouse
+        run: npx --yes @lhci/cli@0.14.0 autorun
 
   e2e:
     # Browser run of scripts/e2e.mjs against a real API + SSR site: sign-in, every admin tab,
@@ -61,8 +63,6 @@ jobs:
           H='content-type: application/json'
           curl -sf -c /tmp/a.jar -H "$H" -H 'sec-fetch-site: same-origin' -d '{"code":"CIE2E0001","email":"owner@ci.local","name":"Owner","password":"ci-owner-pass-1"}' http://127.0.0.1:3000/api/auth/setup >/dev/null
           curl -sf -b /tmp/a.jar -H "$H" -H 'sec-fetch-site: same-origin' -d '{"email":"member@ci.local","name":"Member","password":"ci-member-pass-1"}' http://127.0.0.1:3000/api/admin/members >/dev/null
-      - name: lighthouse (against the real API + SSR stack; the sign-in page is public)
-        run: npx --yes @lhci/cli@0.14.0 autorun
       - name: e2e
         run: node scripts/e2e.mjs --shots e2e-shots
         env:
