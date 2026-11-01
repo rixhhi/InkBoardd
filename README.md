@@ -56,7 +56,7 @@ browser ──► Vercel (Nitro SSR) ──/api/*──► Render (Fastify API) 
 
 - **Typecheck** clean in all three packages. **Lint** (Biome) 0 errors.
 - **Tests**: 1,109 passing (76 shared, 731 backend, 302 frontend) plus `scripts/e2e.mjs` — a browser run across admin and member, desktop and phone, light and dark, asserting no sideways scroll and axe 0 serious/critical on every page. CI runs the e2e job against a real API + SSR build and Lighthouse against the same stack.
-- **Build** passes the bundle budget (first load 753 KB / 1,563 KB cap).
+- **Build** passes the bundle budget: first load 767 KB raw / **246 KB gzip** across 37 files (cap 900 KB), total 2,587 KB (cap 3,000 KB). The caps sit ~15 % above measured so a stray static import of hls.js, pdf.js or jszip into the shell fails CI instead of shipping.
 - **Dependencies**: `npm audit` 0 vulnerabilities; Dependabot opens grouped weekly PRs.
 
 ## Accounts, sharing and activity

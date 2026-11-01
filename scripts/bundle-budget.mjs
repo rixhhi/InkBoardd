@@ -2,8 +2,11 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, join } from "node:path";
 
-const FIRST_LOAD = 1_600_000;
-const TOTAL = 4_500_000;
+// Measured 2026-11-01: first load 767 KB raw / 246 KB gzip (37 files; the 389 KB index chunk is
+// react-dom + router + query, the floor), total 2,587 KB. Caps sit ~15% above that so a stray
+// static import of hls.js / pdf.js / jszip into the shell fails CI instead of shipping.
+const FIRST_LOAD = 900_000;
+const TOTAL = 3_000_000;
 
 export { FIRST_LOAD, TOTAL };
 
