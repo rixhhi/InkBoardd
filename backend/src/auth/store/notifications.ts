@@ -107,6 +107,7 @@ export async function unreadCount(userId: number): Promise<number> {
   const row = await one<{ c: unknown }>("select count(*) as c from ib_notifications where user_id = $1 and read_at is null", [userId]);
   const count = n(row?.c);
   unreadCache.set(userId, { count, at: now });
+  if (unreadCache.size > 5_000) unreadCache.clear();
   return count;
 }
 

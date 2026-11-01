@@ -23,9 +23,12 @@ export interface Db {
 }
 
 function pgDb(url: string): Db {
+  // PG_POOL_MAX: Neon's free tier allows ~100 connections; two pools (accounts + catalog)
+  // at the default 6 + 8 leave room for a second API process. Raise with more members.
+  const max = Math.min(50, Math.max(2, Number(process.env.PG_POOL_MAX) || 6));
   const pool = new pg.Pool({
     connectionString: url,
-    max: 6,
+    max,
     connectionTimeoutMillis: 5_000,
     idleTimeoutMillis: 30_000,
     statement_timeout: 8_000,
