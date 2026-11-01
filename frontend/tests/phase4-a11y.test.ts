@@ -53,7 +53,7 @@ describe("Phase 4 accessibility and loading", () => {
     const budget = JSON.parse(src("../../lighthouserc.json")) as {
       ci: {
         assert: { assertions: Record<string, [string, { minScore?: number; maxNumericValue?: number }]> };
-        collect: { url: string[] };
+        collect: { url: string[]; startServerCommand?: string };
       };
     };
     assert.equal(budget.ci.assert.assertions["categories:performance"]?.[1]?.minScore, 0.9);

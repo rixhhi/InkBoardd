@@ -178,9 +178,10 @@ for (const vp of viewports) {
   const adminCtx = await browser.newContext({ viewport: vp, colorScheme });
   const admin = await adminCtx.newPage();
   watch(admin, "admin");
-  await check("admin signs in and lands on the dashboard", async () => {
+  await check("admin signs in and lands on Home (the admin banner links to the dashboard)", async () => {
     await signIn(admin, adminEmail, adminPw);
-    expect(new URL(admin.url()).pathname === "/admin", `ended on ${admin.url()}`);
+    expect(new URL(admin.url()).pathname === "/", `ended on ${admin.url()}`);
+    expect(await admin.getByRole("link", { name: /admin dashboard/i }).count() > 0, "Home shows the admin banner");
   });
   const tabs = ["overview", "members", "groups", "sharing", "activity", "audit", "settings", "admins"];
   for (const tab of tabs) {

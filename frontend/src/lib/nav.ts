@@ -61,16 +61,17 @@ export function isImmersive(pathname: string): boolean {
   return pathname.startsWith("/play/") || /^\/live\/[^/]+/.test(pathname);
 }
 
-/** Breadcrumb trail for the context bar. Pages can override via PageHeader crumbs. */
+/**
+ * Breadcrumb trail for the context bar — just the section name.
+ *
+ * Catalogue pages (exam, teacher, course, batch, search) draw their own named
+ * crumbs in PageHeader ("Browse › IIT JEE › Physics by Mohit Sir"). The bar used
+ * to show a generic twin above it ("Browse › Course"), so a visitor saw two
+ * breadcrumb rows that disagreed. Those pages now get an empty trail.
+ */
 export function navTrail(pathname: string): string[] {
   const id = navActive(pathname);
   if (!id) return [];
-  const root = NAV_ITEMS.find((i) => i.id === id)!.label;
-  if (pathname.startsWith("/exam/")) return [root, "Exam"];
-  if (pathname.startsWith("/teacher/")) return [root, "Teacher"];
-  if (pathname.startsWith("/course/")) return [root, "Course"];
-  if (pathname.startsWith("/batch/")) return [root, "Batch"];
-  if (pathname.startsWith("/search")) return [root, "Search"];
-  if (pathname.startsWith("/admin")) return [root];
-  return [root];
+  if (/^\/(exam|teacher|course|batch|search)(\/|$)/.test(pathname)) return [];
+  return [NAV_ITEMS.find((i) => i.id === id)!.label];
 }
