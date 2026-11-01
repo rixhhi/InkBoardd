@@ -149,7 +149,7 @@ export default function SearchPage() {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
     const hits = [...document.querySelectorAll<HTMLElement>("[data-search-hit]")];
     const active = document.activeElement;
-    const index = hits.findIndex((el) => el === active);
+    const index = hits.indexOf(active);
     const next = searchHitTarget(hits.length, index, e.key);
     if (next === "stay") return;
     e.preventDefault();
