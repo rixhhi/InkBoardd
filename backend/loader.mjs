@@ -69,30 +69,34 @@ export async function resolve(specifier, context, nextResolve) {
   }
 }
 
-let typescript;
-async function tsCompiler() {
-  if (!typescript) {
-    // Hoisted to the root by npm workspaces; older per-package installs keep it in frontend/.
-    const here = dirname(fileURLToPath(import.meta.url));
-    const file = [join(here, "../node_modules/typescript/lib/typescript.js"), join(here, "../frontend/node_modules/typescript/lib/typescript.js"), join(here, "node_modules/typescript/lib/typescript.js")].find((f) => existsSync(f));
-    if (!file) throw new Error("typescript is not installed (run npm install at the repo root)");
-    typescript = await import(pathToFileURL(file).href);
+let oxc;
+async function tsxCompiler() {
+  if (!oxc) {
+    // TypeScript 7 is the native port and no longer ships a JS `transpileModule`, so
+    // JSX is stripped with oxc-transform — the same transformer Vite 8 uses for the
+    // real build, so tests and the bundle see identical output.
+    try {
+      oxc = await import("oxc-transform");
+    } catch {
+      throw new Error("oxc-transform is not installed (run npm install at the repo root)");
+    }
   }
-  return typescript;
+  return oxc;
 }
 
 /** Node strips `.ts` but not JSX. Tests that render a component need this. */
 export async function load(url, context, nextLoad) {
   if (!url.endsWith(".tsx")) return nextLoad(url, context);
-  const ts = await tsCompiler();
-  const source = readFileSync(fileURLToPath(url), "utf8");
-  const out = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.ESNext,
-      target: ts.ScriptTarget.ES2022,
-      jsx: ts.JsxEmit.ReactJSX,
-    },
-    fileName: url,
+  const { transformSync } = await tsxCompiler();
+  const file = fileURLToPath(url);
+  const source = readFileSync(file, "utf8");
+  const out = transformSync(file, source, {
+    jsx: { runtime: "automatic" },
+    target: "es2022",
   });
-  return { format: "module", source: out.outputText, shortCircuit: true };
+  const fatal = out.errors.filter((e) => e.severity === "Error");
+  if (fatal.length) {
+    throw new Error(`${file}: ${fatal.map((e) => e.message).join("; ")}`);
+  }
+  return { format: "module", source: out.code, shortCircuit: true };
 }
