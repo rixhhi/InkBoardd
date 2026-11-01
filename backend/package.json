@@ -13,8 +13,8 @@
     "test": "node --experimental-strip-types --import ./register.mjs --test --test-force-exit 'src/**/*.test.ts' 'tests/**/*.test.ts' 'tests/**/*.test.mjs'"
   },
   "dependencies": {
-    "@electric-sql/pglite": "^0.3.16",
-    "@fastify/compress": "^8.3.1",
+    "@electric-sql/pglite": "^0.5.14",
+    "@fastify/compress": "^9.3.0",
     "@fastify/cors": "^11.3.0",
     "@fastify/helmet": "^13.1.1",
     "@inkboard/shared": "*",
@@ -24,9 +24,9 @@
     "zod": "^4.4.0"
   },
   "devDependencies": {
-    "@napi-rs/canvas": "^0.1.80",
-    "@types/node": "^22.16.5",
+    "@napi-rs/canvas": "^1.1.0",
+    "@types/node": "^26.6.6",
     "@types/pg": "^8.11.10",
-    "typescript": "^5.7.0"
+    "typescript": "^7.0.2"
   }
 }

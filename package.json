@@ -12,7 +12,8 @@
     "lint:all": "biome lint"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.3"
+    "@biomejs/biome": "^2.6.4",
+    "oxc-transform": "^0.156.0"
   },
   "workspaces": [
     "shared",

@@ -12,7 +12,6 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "types": ["node"],
-    "baseUrl": ".",
     "paths": {
       "@inkboard/shared/*": ["./src/lib/*"]
     }
