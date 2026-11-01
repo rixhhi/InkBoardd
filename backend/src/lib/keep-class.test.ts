@@ -14,9 +14,10 @@ describe("Keep this class is reachable", () => {
     const ledger = src("../../../frontend/src/components/folio/ledger.tsx");
     const palette = src("../../../shared/src/lib/command-palette.ts");
     const locker = src("../../../frontend/src/components/notes-locker.tsx");
-    assert.match(player, /onKeepClass/);
+    // The tray row in the transport opens the dialog the player renders.
+    assert.match(more, /id: "keep", label: COPY\.keepThisClass[\s\S]{0,80}onSelect: \(\) => setKeepOpen\(true\)/);
     assert.match(player, /SaveClassDialog/);
-    assert.match(more, /COPY\.keepThisClass/);
+    assert.match(player, /onClose=\{\(\) => setKeepOpen\(false\)\}/);
     assert.match(course, /SaveClassButton/);
     assert.match(course, /variant="line"/);
     assert.match(ledger, /COPY\.savedClasses/);

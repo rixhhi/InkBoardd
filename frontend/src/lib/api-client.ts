@@ -114,7 +114,7 @@ export async function apiJson<T>(path: string, init: RequestInit = {}, timeoutMs
   let res: Response;
   try {
     res = await fetch(path, { ...init, headers, signal: ctrl.signal });
-  } catch (err) {
+  } catch {
     if (init.signal?.aborted) throw abortError();
     if (ctrl.signal.aborted) {
       noteCatalog(path, false, 0, "TIMEOUT");

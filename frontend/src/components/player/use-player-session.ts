@@ -6,7 +6,7 @@ import type { SpriteSheet } from "@/lib/sprite-sheet";
 
 /** Late player state: clips, summaries, prepared media, and the HLS attach. */
 export function usePlayerSession(
-  lessonId: string,
+  _lessonId: string,
   sprites: SpriteSheet | null | undefined,
   videoRef: RefObject<HTMLVideoElement | null>,
 ) {

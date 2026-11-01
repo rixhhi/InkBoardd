@@ -130,6 +130,7 @@ export function OfflinePlayer({
     v.muted = muted;
   }, [speed, volume, muted]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: resume + position-save is per lesson; `timeline` is a fresh object per render and only its id matters here
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;

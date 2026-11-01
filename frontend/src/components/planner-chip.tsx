@@ -23,10 +23,10 @@ export function PlannerPlayerChip({
   const nav = useNavigate();
   const planId = plan?.id ?? null;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies(watchedSec): seeds the per-lesson baseline once; re-running on every tick would erase the progress it measures
   useEffect(() => {
     lastT.current = watchedSec;
     toasted.current = false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId]);
 
   useEffect(() => {

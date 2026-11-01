@@ -28,7 +28,6 @@ import { StudyTray } from "@/components/study-tray";
 import { NotesReader } from "@/components/notes-reader";
 import type { PreparedMedia, SpriteSheet } from "@/lib/sprite-sheet";
 
-type VideoLayout = "pip" | "side";
 
 export function ClassPlayer({
   timeline,
@@ -61,9 +60,9 @@ export function ClassPlayer({
     timeline, title, educator, teacherSlug, courseId, courseSlug, fromCourse, backTo, notesUrl, startAt, focus, sprites,
   });
   const {
-    videoRef, wrapRef, stageRef, dragRef, userBoxRef, setLayout, camOff, setCamOff, box, setBox, boardBox, setBoardBox,
+    videoRef, wrapRef, stageRef, userBoxRef, setLayout, camOff, setCamOff, box, setBox, boardBox, setBoardBox,
     setSideStrip, setCanPlay, stripOn, setStripOn, layout, fs, playing, setPlaying, breakNudge, setBreakNudge,
-    playedMs, lastTick, setEnded, setErr, tapTimer, resolvedNotes, setMoreOpen, setKeepOpen,
+    playedMs, lastTick, setEnded, setErr, tapTimer, resolvedNotes, setKeepOpen,
     seek, toggleFs, jumpSlide, time, duration, listen, audioUrl, hoverT, sheet,
     nav, sleepUntil, setSleepUntil, sleepLeft, help, isBoard, timeMs, ended, canPlay, err,
     wantPlay, round, nextLesson, holdEnd, openLesson, advanceLeft, slide, pins,
@@ -172,17 +171,11 @@ export function ClassPlayer({
     void v.play().catch(() => setErr(COPY.slateSlipped));
   }
 
-  function onKeepClass() {
-    setMoreOpen(false);
-    setKeepOpen(true);
-  }
-
   const playerModel = usePlayerModel({ ...core, placeVideo, ClassPlayer });
   const {
-    stampNow, onPointerDown, onPointerMove, onPointerUp, onBarPointer, hideChrome, shownTime, barMax, cycleLanternSize, lastGestureMoved, pip,
-    layers, glyph, showBuffer, clockLabel, previewing, pipW, pipH, focusRun,
-    replayClass, stayOnClass, chapters, studyMarks, chapterList, revisionNotes, runSummary,
-    saveClip, directSrc, videoEl, lineUnder,
+    onPointerDown, onPointerMove, onPointerUp, hideChrome, cycleLanternSize, lastGestureMoved, pip,
+    showBuffer, pipW, pipH, focusRun, replayClass, stayOnClass, chapterList, revisionNotes, runSummary,
+    directSrc, videoEl, lineUnder,
   } = playerModel;
   chromeOpenRef.current = !hideChrome;
   useEffect(() => {

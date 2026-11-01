@@ -35,6 +35,7 @@ export default function ExamPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(false);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: resets paging state per exam; `exam` is derived from goalId via getExam, so goalId is the only real input
   useEffect(() => {
     setTeachersMore(blankMore());
     setCoursesMore(blankMore());

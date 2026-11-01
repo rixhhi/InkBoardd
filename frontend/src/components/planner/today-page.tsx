@@ -1,5 +1,5 @@
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { LogStudyDialog } from "@/components/planner/log-study.tsx";
 import { PlannerOnboarding } from "@/components/planner/onboarding.tsx";
@@ -75,9 +75,12 @@ export function PlannerTodayPage() {
     setSelected([]);
   }, [date]);
 
-  function goTo(key: string) {
-    void nav({ to: "/planner/today", search: { add: undefined, day: key === today ? undefined : key }, replace: true });
-  }
+  const goTo = useCallback(
+    (key: string) => {
+      void nav({ to: "/planner/today", search: { add: undefined, day: key === today ? undefined : key }, replace: true });
+    },
+    [nav, today],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -90,8 +93,7 @@ export function PlannerTodayPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, today, isToday, plan]);
+  }, [date, today, isToday, plan, goTo]);
 
   if ((sync === "syncing" || sync === "offline") && !plan) {
     return (

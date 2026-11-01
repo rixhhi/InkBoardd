@@ -38,7 +38,6 @@ export function LiveVideo({
     video.addEventListener("play", onPlay);
     video.addEventListener("pause", onPause);
     video.muted = true;
-    video.volume = volume;
 
     const source = choosePlaybackSource({
       hlsUrl: src,
@@ -97,8 +96,7 @@ export function LiveVideo({
       video.removeEventListener("play", onPlay);
       video.removeEventListener("pause", onPause);
     };
-    // volume is applied below; retry remounts the stream
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // biome-ignore lint/correctness/useExhaustiveDependencies(retry): retry is the remount trigger
   }, [src, retry]);
 
   useEffect(() => {

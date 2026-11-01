@@ -137,12 +137,12 @@ export function NotesLocker({ lessons, courseName }: { lessons: UaLesson[]; cour
     }
   }
 
-  function openSheet() {
+  const openSheet = useCallback(() => {
     if (busy || !files.length) return;
     setResult(null);
     setErr("");
     setOpen(true);
-  }
+  }, [busy, files.length]);
 
   async function downloadPartial() {
     if (!result?.saved.length) return;
@@ -159,8 +159,7 @@ export function NotesLocker({ lessons, courseName }: { lessons: UaLesson[]; cour
     const onTake = () => openSheet();
     window.addEventListener(TAKE_SHEETS_EVENT, onTake);
     return () => window.removeEventListener(TAKE_SHEETS_EVENT, onTake);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [files, busy]);
+  }, [openSheet]);
 
   if (files.length === 0 && !err && !open) return null;
 

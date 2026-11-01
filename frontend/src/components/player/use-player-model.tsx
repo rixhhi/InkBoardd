@@ -18,29 +18,16 @@ import { DOUBLE_TAP_MS } from "@/components/class-player";
 import { boardChapters, chapterHits, chaptersToVtt } from "@/lib/study";
 import { bindMediaSession } from "@/components/player/media-session";
 
+// biome-ignore lint/suspicious/noExplicitAny: p is the whole useClassCore bag (60+ props) spread back out of this hook; a nominal type here would be a 400-line duplicate of that hook's return.
 export function usePlayerModel<T extends Record<string, any>>(p: T) {
   const {
-    ClassPlayer, advanceLeft, audioUrl, backTo, barDrag, boardBox, box, breakNudge,
-    bufPct, bufferTimer, buffering, camOff, canPlay, chapterQuery, chapterTrack,
-    chaptersOpen, chromeHidden, clipBusy, clipHref, clipIn, clipNote, clipOut, courseId,
-    courseQ, dragRef, duration, educator, ended, err,
-    flashT, flashTimer, focus, fromCourse, fs, help,
-    hinted, hlsUrl, holdEnd, holdPlace, hoverT, idleTimer, introSec,
-    isBoard, jobId, jumpSlide, keepOpen, lastTap, lastTick, layout,
-    listen, liveCourse, moreOpen, muted, nav, nextLesson, notesOpen,
-    notesUrl, openLesson, pinRev, pins, placeVideo, playIndex, playedMs,
-    playing, playlist, prefs, prevLesson, qc,
-    ready, resolvedNotes, resumeAt, resumed, round, saved, saver,
-    scrubbing, seek, seekLock, seekLockAt, seekingUi, setAdvanceLeft, setAudioUrl, setBoardBox,
-    setBox, setBreakNudge, setBufPct, setBuffering, setCamOff, setCanPlay, setChapterQuery, setChapterTrack,
-    setChaptersOpen, setChromeHidden, setClipBusy, setClipHref, setClipIn, setClipNote, setClipOut, setDuration,
-    setEnded, setErr, setFlashT, setFs, setHelp, setHlsUrl, setHoverT, setJobId,
-    setKeepOpen, setLayout, setListen, setMoreOpen, setMuted, setNotesOpen, setPinRev, setPlaying,
-    setReady, setResolvedNotes, setSaved, setSaver, setScrubbing, setSeekingUi, setSheet, setSilence,
-    setSilenceOn, setSleepLeft, setSleepUntil, setSpeed, setStripOn, setSummary, setSummaryBusy, setSummaryNote,
-    setTime, setVolume, setWaveform, sheet, silence, silenceOn, silenceOnRef, silenceRef,
-    sleepLeft, sleepUntil, slide, slideCount, speed, sprites, stageRef, startAt, stripOn, summary, summaryBusy, summaryNote, tapTimer, teacherSlug,
-    time, timeMs, timeSaved, timeline, title, toggleFs, userBoxRef, videoRef, volume, wantPlay, waveform, wrapRef,
+    audioUrl, barDrag, box, breakNudge, buffering, camOff, canPlay, chapterQuery, chapterTrack, chromeHidden,
+    clipIn, clipOut, dragRef, duration, educator, ended, flashT, focus, fromCourse, help, holdEnd, hoverT,
+    isBoard, jobId, lastTap, listen, moreOpen, nextLesson, openLesson, pinRev, playing, ready, round, saver,
+    scrubbing, seek, seekingUi, setAdvanceLeft, setBox, setCamOff, setChapterTrack, setChaptersOpen,
+    setClipBusy, setClipHref, setClipNote, setEnded, setErr, setHoverT, setLayout, setPinRev, setPlaying,
+    setScrubbing, setSummary, setSummaryBusy, setSummaryNote, sleepLeft, sleepUntil, slide, slideCount, speed,
+    stageRef, tapTimer, time, timeSaved, timeline, title, userBoxRef, videoRef, wantPlay,
   } = p;
   function stampNow() {
     addBookmark({ lessonId: timeline.id, title, seconds: time, note: "" });
@@ -167,7 +154,7 @@ export function usePlayerModel<T extends Record<string, any>>(p: T) {
 
   const hideChrome = chromeHidden && playing && !help && !moreOpen;
   const shownTime = time;
-  const barMax = duration > 1 ? duration : 1;
+  const barMax = Math.max(duration, 1);
   const layers = seekBarLayers({
     played: shownTime,
     hover: hoverT ?? flashT,
@@ -243,7 +230,7 @@ export function usePlayerModel<T extends Record<string, any>>(p: T) {
       });
     }, 1000);
     return () => window.clearInterval(id);
-  }, [ended, nextLesson, openLesson]);
+  }, [ended, nextLesson, openLesson, holdEnd, setAdvanceLeft]);
 
   function replayClass() {
     const v = videoRef.current;
@@ -271,6 +258,7 @@ export function usePlayerModel<T extends Record<string, any>>(p: T) {
   }
 
   const chapters = useMemo(() => boardChapters(timeline), [timeline]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies(pinRev): bookmarksFor reads localStorage; pinRev is the revision counter stampNow bumps so the memo re-reads after a new pin.
   const studyMarks = useMemo(() => {
     const pins = bookmarksFor(timeline.id).map((b) => ({
       t: b.seconds,
@@ -289,7 +277,7 @@ export function usePlayerModel<T extends Record<string, any>>(p: T) {
     const url = URL.createObjectURL(new Blob([chaptersToVtt(chapters)], { type: "text/vtt" }));
     setChapterTrack(url);
     return () => URL.revokeObjectURL(url);
-  }, [chapters]);
+  }, [chapters, setChapterTrack]);
 
   function revisionNotes() {
     return bookmarksFor(timeline.id).map((b) => ({ seconds: b.seconds, note: b.note }));
@@ -354,7 +342,7 @@ export function usePlayerModel<T extends Record<string, any>>(p: T) {
     const video = videoRef.current;
     if (!video) return;
     return bindMediaSession(video, { title: title || "Class", artist: educator });
-  }, [audioUrl, educator, listen, title, videoRef]);
+  }, [educator, title, videoRef]);
 
   const videoEl = (
     <video

@@ -338,9 +338,11 @@ describe("player controls", () => {
   });
 
   it("opens Keep this class from the more tray", () => {
-    const src = readFileSync(new URL("./class-player.tsx", import.meta.url), "utf8");
-    assert.match(src, /onKeepClass/);
-    assert.match(src, /SaveClassDialog/);
-    assert.match(src, /setKeepOpen\(true\)/);
+    // The tray row lives in the transport; the dialog it opens lives in the player.
+    const transport = readFileSync(new URL("./player-transport.tsx", import.meta.url), "utf8");
+    assert.match(transport, /id: "keep", label: COPY\.keepThisClass[\s\S]{0,80}onSelect: \(\) => setKeepOpen\(true\)/);
+    const player = readFileSync(new URL("./class-player.tsx", import.meta.url), "utf8");
+    assert.match(player, /SaveClassDialog/);
+    assert.match(player, /onClose=\{\(\) => setKeepOpen\(false\)\}/);
   });
 });

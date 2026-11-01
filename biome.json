@@ -37,12 +37,17 @@
       "complexity": {
         "useLiteralKeys": "off",
         "useOptionalChain": "warn",
-        "useMathMinMax": "warn",
+        "useMathMinMax": "off",
         "useIndexOf": "warn",
         "noUselessEscapeInRegex": "warn"
       },
       "correctness": {
-        "useExhaustiveDependencies": "warn",
+        "useExhaustiveDependencies": {
+          "level": "warn",
+          "options": {
+            "reportUnnecessaryDependencies": false
+          }
+        },
         "noUnusedVariables": "warn",
         "noUnusedImports": "error",
         "noUnusedFunctionParameters": "warn"

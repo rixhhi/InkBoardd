@@ -86,6 +86,7 @@ export function OfflineApp({ embedded: _embedded = false }: { embedded?: boolean
     setLectures(c);
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot mount load; refresh closes over setters only
   useEffect(() => {
     void refresh();
   }, []);

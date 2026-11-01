@@ -41,7 +41,6 @@ export function BatchBoard({
   range,
   setRange,
   setWeekStart,
-  weekStart,
   weekLabel,
   isThisWeek,
   weekDays,

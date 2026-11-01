@@ -72,7 +72,7 @@ export function rateIdentity(req: Pick<FastifyRequest, "headers" | "ip">, bucket
   const raw = req.headers.cookie;
   if (!raw) return `ip:${ip}`;
   const m = /(?:^|;\s*)ib_session=([^;]+)/.exec(raw);
-  if (!m || !m[1]) return `ip:${ip}`;
+  if (!m?.[1]) return `ip:${ip}`;
   return `s:${createHash("sha256").update(m[1]).digest("base64url").slice(0, 22)}`;
 }
 

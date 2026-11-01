@@ -1,3 +1,12 @@
+/*
+ * biome-ignore-all lint/correctness/useExhaustiveDependencies: this hook binds the
+ * <video> element's events once per source. Every name the rule wants listed is a
+ * RefObject or a useState setter from useClassCore — stable for the component's
+ * lifetime by React contract — and the two it wants removed (timeline.videoUrl,
+ * isBoard) are the deliberate "source changed, re-bind" triggers. Listing
+ * `ref.current` in a deps array would read refs during render, which is the bug
+ * this rule exists to prevent.
+ */
 import { useCallback, useEffect, useRef, } from "react";
 import { shouldNudgeBreak } from "@inkboard/shared/planner/focus";
 import { writePlayerPrefs } from "@inkboard/shared/player-prefs";
