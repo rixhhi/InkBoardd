@@ -8,6 +8,7 @@ import {
   PageBody,
   PageHeader,
   Skeleton,
+  SkeletonRows,
 } from "@/components/ui";
 import { Fetching } from "@/components/fetching";
 import { softFailure } from "@/components/failure-notice";
@@ -94,9 +95,7 @@ export default function BatchPage() {
         <PageHeader eyebrow={<Skeleton className="h-3 w-24" />} title={<Skeleton className="h-8 w-80" />} subline={<Skeleton className="h-4 w-56" />} />
         <PageBody className="grid gap-2">
           <Fetching label="Fetching this batch" compact />
-          {Array.from({ length: 6 }, (_, i) => (
-            <Skeleton key={i} className="h-14" />
-          ))}
+          <SkeletonRows count={6} className="h-14" />
         </PageBody>
       </AppShell>
     );

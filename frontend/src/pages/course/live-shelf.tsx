@@ -232,7 +232,7 @@ export function LiveShelf({
       ) : null}
 
       <Toolbar trailing={<SearchInput label="Find a class" placeholder="Find a class" value={q} onChange={setQ} className="w-52" resultCount={q.trim() ? filtered.length : null} />}>
-        <div role="group" aria-label="Show" className="flex items-center gap-1">
+        <fieldset aria-label="Show" className="flex items-center gap-1">
           {(
             [
               ["all", "All"],
@@ -245,7 +245,7 @@ export function LiveShelf({
               {label}
             </Chip>
           ))}
-        </div>
+        </fieldset>
       </Toolbar>
 
       <PageBody>

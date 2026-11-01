@@ -201,6 +201,7 @@ export default function SearchPage() {
 
   return (
     <AppShell>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: keyboard delegation only — arrow keys move focus between result links and the field; the wrapper is never a target itself */}
       <div onKeyDown={onResultKeys}>
         <PageHeader
           compact
@@ -323,14 +324,14 @@ function BlankSearch({ onPick }: { onPick: (q: string) => void }) {
             </Button>
           }
         >
-          <div role="group" aria-label="Recent searches" className="flex flex-wrap gap-1.5">
+          <fieldset aria-label="Recent searches" className="flex flex-wrap gap-1.5">
             {recents.map((r) => (
               <Chip key={r.q} onClick={() => onPick(r.q)}>
                 <History aria-hidden="true" className="size-3.5 text-fg-faint" />
                 {r.q}
               </Chip>
             ))}
-          </div>
+          </fieldset>
         </Section>
       ) : null}
       <Section title="Try" level={2}>

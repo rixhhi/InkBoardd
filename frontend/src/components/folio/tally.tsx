@@ -51,6 +51,7 @@ export function Tally({ count }: { count: number }) {
         const start = seen;
         seen += g;
         const local = tick != null && tick >= start && tick < start + g ? tick - start : null;
+        // biome-ignore lint/suspicious/noArrayIndexKey: tally groups are positional marks in a decorative, aria-hidden strip
         return <Group key={i} n={g} tickAt={local} />;
       })}
     </span>

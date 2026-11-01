@@ -128,8 +128,9 @@ export function PomodoroCard({ tasks, planId, compact = false }: { tasks: PlanTa
         <div className="flex flex-wrap items-center gap-4">
           <Ring value={clock.pct} label={`${phaseLabel(state.phase)} ${clock.pct}% through`} size={compact ? 44 : 56} className={working ? "text-bg" : ""} />
           <div className="min-w-0 flex-1">
-            <p className={`font-mono text-3xl leading-none tabular-nums ${compact ? "" : "sm:text-4xl"}`} aria-label={`${formatClock(clock.leftSec)} left`}>
-              {formatClock(clock.leftSec)}
+            <p className={`font-mono text-3xl leading-none tabular-nums ${compact ? "" : "sm:text-4xl"}`}>
+              <span aria-hidden="true">{formatClock(clock.leftSec)}</span>
+              <span className="sr-only">{`${formatClock(clock.leftSec)} left`}</span>
             </p>
             <p className={`mt-1 truncate text-sm ${working ? "text-bg/80" : "text-fg-muted"}`}>
               {paused ? "Paused · " : ""}

@@ -159,7 +159,8 @@ describe("live session", () => {
     const stage = readFileSync(new URL("../components/live-stage.tsx", import.meta.url), "utf8");
     assert.ok(stage.includes("liveFillCamera"));
     assert.ok(stage.includes("Resize teacher"));
-    assert.ok(stage.includes("Move teacher"));
+    // The drag surface is pointer-only (aria-hidden); the lantern menu is the accessible path to place the camera.
+    assert.ok(stage.includes("cursor-grab touch-none"));
     assert.ok(stage.includes("196"));
     const board = readFileSync(new URL("../../../backend/src/routes/http/live-board.ts", import.meta.url), "utf8");
     assert.ok(board.includes("pullProxyHistoryPages"));

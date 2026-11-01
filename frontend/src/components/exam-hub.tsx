@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { ArrowLeft, GraduationCap, ListChecks } from "lucide-react";
 import { InfiniteTrigger } from "@/components/infinite-trigger";
 import { ShareButton } from "@/components/admin/share-dialog";
-import { Badge, Button, Chip, EmptyState, ListRow, SearchInput, Section, Skeleton } from "@/components/ui";
+import { Badge, Button, Chip, EmptyState, ListRow, SearchInput, Section, SkeletonRows } from "@/components/ui";
 import {
   CourseIndex,
   CrashDoor,
@@ -45,9 +45,7 @@ function Ordinal({ n }: { n: number | string }) {
 function ShelfSkeleton({ rows = 4, label }: { rows?: number; label: string }) {
   return (
     <div role="status" aria-label={label} className="grid gap-2">
-      {Array.from({ length: rows }, (_, i) => (
-        <Skeleton key={i} className="h-14 w-full" />
-      ))}
+      <SkeletonRows count={rows} className="h-14 w-full" />
     </div>
   );
 }
@@ -384,9 +382,9 @@ export function ExamHubView({
           </nav>
         ) : null}
         {faced && plates.length ? (
-          <div role="group" aria-label="Sections" className="mt-4 flex flex-wrap gap-1.5">
+          <fieldset aria-label="Sections" className="mt-4 flex flex-wrap gap-1.5">
             {plateChips}
-          </div>
+          </fieldset>
         ) : null}
       </header>
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-01 — lint to zero, real semantics where ARIA was faking them
+
+### Changed
+- **Accessibility pass** (`biome lint` 341 → 0 across three PRs, no rule disabled). 16 chip rows and filter bars were `<div role="group">` → `<fieldset>`/`<legend>`; the add-task kind picker is real radios; the live-video picture is a real play/pause `<button>`; the mark-done sheet uses the shared Radix `Dialog` (focus trap, Escape, scrim) instead of a hand-rolled backdrop; menu separators are `<hr>`; decorative SVGs and pointer-only drag surfaces are `aria-hidden`. Every remaining `biome-ignore` names its reason and, for pointer shortcuts, the accessible alternative.
+- Hook dependency warnings resolved per site (stable setters, refs, derived values) rather than suppressed; dead code removed (unused `VideoLayout`, `onKeepClass`, `dragRef`, `clipNote`, stray locals).
+- `SkeletonRows` helper for placeholder loops; chart bars/points key on their x coordinate.
+
+### Fixed
+- Ink page kept its title and `?` behind the "make a plan first" early return, so a new member had no way to open help — and the e2e help-sheet spec had been red on `main` since it landed.
+- Player: camera drag/resize works in both layouts; right-click no longer starts a drag; browser PiP shows a "Floating" placeholder instead of a black second lantern; chapter ticks have a tap target and name themselves on hover.
+
 ## 2026-11-01 — review pass: security, the bell, scale, docs
 
 ### Added

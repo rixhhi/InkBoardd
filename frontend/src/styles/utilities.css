@@ -52,10 +52,6 @@
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
 }
-@media (min-width: 1024px) {
-  .ui-dialog { width: min(100%, 32rem); }
-}
-
 /* ================================================================
    A1: Custom scrollbar styling
    ================================================================ */
@@ -101,23 +97,6 @@ html {
 .ui-search-field {
   -webkit-appearance: none;
   appearance: none;
-}
-
-/* ================================================================
-   A2: Dialog entry animation
-   ================================================================ */
-.ui-dialog {
-  animation: dialog-enter var(--duration-base) var(--ease-out) both;
-}
-.ui-dialog-backdrop {
-  animation: fade-in var(--duration-fast) var(--ease-out) both;
-}
-
-@keyframes dialog-enter {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.97);
-  }
 }
 
 /* ================================================================

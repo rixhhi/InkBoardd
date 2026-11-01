@@ -15,6 +15,7 @@ export function WizardSampleWeek({ tasks, compact }: { tasks: PlanTask[]; compac
           <p className="text-xs font-semibold tracking-[0.1em] text-fg-muted uppercase">{d.label}</p>
           <ul className="m-0 mt-1 list-none p-0">
             {d.items.slice(0, compact ? 3 : 5).map((item, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: a static preview of the day's slots; items carry no id and titles can repeat
               <li key={`${d.date}-${i}`} className="truncate py-0.5 text-sm text-fg">
                 {item.title}
               </li>

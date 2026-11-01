@@ -24,7 +24,8 @@ describe("Phase 3 UX and a11y", () => {
     assert.match(transport, /"Mute"/);
     // Menu rows: Escape closes, items are real menuitems, and rows reach the touch minimum on coarse pointers.
     assert.match(menu, /e\.key === "Escape"/);
-    assert.match(menu, /role=\{item\.checked != null \? "menuitemcheckbox" : "menuitem"\}/);
+    assert.match(menu, /role: "menuitemcheckbox" as const, "aria-checked": item\.checked/);
+    assert.match(menu, /role: "menuitem" as const/);
     assert.match(menu, /touch:min-h-\[var\(--hit-min\)\]/);
     const css = src("../styles.css");
     assert.match(css, /--hit-min:\s*44px/);

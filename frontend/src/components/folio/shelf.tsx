@@ -213,6 +213,7 @@ export function LineSkel({ n = 8 }: { n?: number }) {
   return (
     <div className="mt-6" aria-hidden="true">
       {Array.from({ length: n }).map((_, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: identical placeholders that never reorder
         <div key={i} className="line-skel" />
       ))}
     </div>

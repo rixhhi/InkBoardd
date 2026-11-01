@@ -77,7 +77,7 @@ export function SharingTab() {
         <div className="grid gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <Input aria-label="Filter shares" placeholder="Filter by name or note" value={text} onChange={(e) => setText(e.target.value)} className="h-9 max-w-xs flex-1" />
-            <div className="scroll-fade-x flex gap-1 overflow-x-auto" role="group" aria-label="Show">
+            <fieldset className="scroll-fade-x flex gap-1 overflow-x-auto" aria-label="Show">
               {(
                 [
                   ["any", `All ${all.length}`],
@@ -90,9 +90,9 @@ export function SharingTab() {
                   {label}
                 </button>
               ))}
-            </div>
+            </fieldset>
           </div>
-          <div className="scroll-fade-x flex gap-1 overflow-x-auto" role="group" aria-label="Kind">
+          <fieldset className="scroll-fade-x flex gap-1 overflow-x-auto" aria-label="Kind">
             <button type="button" aria-pressed={kind === "all"} onClick={() => setKind("all")} className={chip(kind === "all")}>
               Every kind
             </button>
@@ -101,7 +101,7 @@ export function SharingTab() {
                 {SHARE_KIND_LABEL[k]}
               </button>
             ))}
-          </div>
+          </fieldset>
         </div>
       ) : null}
 

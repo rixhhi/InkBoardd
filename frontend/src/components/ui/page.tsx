@@ -38,6 +38,7 @@ export function PageHeader({
         <nav aria-label="Breadcrumb" className="mb-3">
           <ol className="flex flex-wrap items-center gap-1 text-sm text-fg-muted">
             {crumbs.map((c, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: a breadcrumb's position is its identity
               <li key={`${c.label}-${i}`} className="flex items-center gap-1">
                 {i > 0 ? <ChevronRight aria-hidden="true" className="size-3.5 text-fg-faint" /> : null}
                 {c.to ? (

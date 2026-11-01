@@ -310,13 +310,13 @@ export function EducatorCatalog({
         <>
           <Toolbar
             trailing={
-              <div className="flex items-center gap-1" role="group" aria-label="Sort">
+              <fieldset className="flex items-center gap-1" aria-label="Sort">
                 {(["latest", "popular"] as const).map((s) => (
                   <Chip key={s} pressed={sort === s} onClick={() => onSort?.(s)}>
                     {s === "latest" ? "Latest" : "Popular"}
                   </Chip>
                 ))}
-              </div>
+              </fieldset>
             }
           >
             <SearchInput label="Filter courses" placeholder="Filter courses" value={courseFilter} onChange={setCourseFilter} className="w-56 shrink-0" resultCount={needle ? visible.length : null} />

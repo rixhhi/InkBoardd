@@ -14,6 +14,11 @@
 }
 
 @layer base {
+  /* Chip rows and segmented controls are <fieldset>s for the group semantics. The UA default
+     min-inline-size: min-content would stop them shrinking inside a scrolling toolbar. */
+  fieldset {
+    min-inline-size: 0;
+  }
   html {
     background: var(--color-bg);
     color: var(--color-fg);

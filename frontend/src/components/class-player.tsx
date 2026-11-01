@@ -263,6 +263,7 @@ export function ClassPlayer({
 
       <PlannerPlayerChip lessonId={timeline.id} watchedSec={time} durationSec={duration} focus={focus} />
 
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: double-click is a pointer shortcut for fullscreen; the transport's fullscreen button and the F key are the accessible path */}
       <div
         ref={stageRef}
         className="slate-stage"

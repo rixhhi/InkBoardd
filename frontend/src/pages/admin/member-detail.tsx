@@ -204,7 +204,7 @@ export function MemberDetailView({ id }: { id: number }) {
           <div>
             <Section title="Groups">
               {groups.data?.groups.length ? (
-                <div className="flex flex-wrap gap-1.5" role="group" aria-label="Groups">
+                <fieldset className="flex flex-wrap gap-1.5" aria-label="Groups">
                   {groups.data.groups.map((g) => {
                     const on = memberGroups.has(g.id);
                     return (
@@ -220,7 +220,7 @@ export function MemberDetailView({ id }: { id: number }) {
                       </button>
                     );
                   })}
-                </div>
+                </fieldset>
               ) : (
                 <p className="text-sm text-fg-muted">
                   No groups yet.{" "}

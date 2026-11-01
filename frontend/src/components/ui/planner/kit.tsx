@@ -280,6 +280,7 @@ export function ChartTable({
       </thead>
       <tbody>
         {rows.map((r, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: one row per bar; short labels repeat (two Mondays), so the column index is the identity
           <tr key={`${r.label}-${i}`}>
             <td>{r.label}</td>
             <td>{r.value}</td>
@@ -341,10 +342,11 @@ export function BarChart({
               </g>
             ) : null}
             <g className="text-accent">
-              {layout.bars.map((b, i) =>
+              {layout.bars.map((b) =>
                 b.h > 0 ? (
+                  // biome-ignore lint/a11y/noStaticElementInteractions: hover tooltip over a role="img" chart; the sr-only table beneath carries the data
                   <rect
-                    key={i}
+                    key={b.x}
                     x={b.x}
                     y={b.y}
                     width={b.w}
@@ -361,7 +363,7 @@ export function BarChart({
                     <title>{chartTip(b, layout.goal)}</title>
                   </rect>
                 ) : (
-                  <rect key={`z-${i}`} x={b.x} y={99} width={b.w} height={0.4} fill="currentColor" className="text-line" />
+                  <rect key={b.x} x={b.x} y={99} width={b.w} height={0.4} fill="currentColor" className="text-line" />
                 ),
               )}
             </g>
@@ -369,6 +371,7 @@ export function BarChart({
           {xLabels.length ? (
             <div className="mt-1 flex text-xs tabular text-fg-faint" aria-hidden="true">
               {xLabels.map((lab, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: axis labels are positional and the strip is aria-hidden
                 <span key={i} className="min-w-0 flex-1 truncate text-center">
                   {lab ?? ""}
                 </span>
@@ -459,9 +462,10 @@ export function LineChart({
               />
             ) : null}
             <path d={layout.d} fill="none" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-            {layout.points.map((p, i) => (
+            {layout.points.map((p) => (
+              // biome-ignore lint/a11y/noStaticElementInteractions: hover tooltip over a role="img" chart; the sr-only table beneath carries the data
               <circle
-                key={i}
+                key={p.x}
                 cx={p.x}
                 cy={p.y}
                 r="1.2"
@@ -480,6 +484,7 @@ export function LineChart({
           {xLabels.length ? (
             <div className="mt-1 flex text-xs tabular text-fg-faint" aria-hidden="true">
               {xLabels.map((lab, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: axis labels are positional and the strip is aria-hidden
                 <span key={i} className="min-w-0 flex-1 truncate text-center">
                   {lab ?? ""}
                 </span>

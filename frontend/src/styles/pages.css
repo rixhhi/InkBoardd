@@ -247,25 +247,6 @@ html[data-theme="light"] .stamp-initials {
   border-color: var(--color-line-strong);
   box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
 }
-.ui-dialog-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  background: var(--color-overlay);
-  padding: 1rem;
-}
-.ui-dialog-backdrop.is-end { place-items: end center; }
-.ui-dialog {
-  position: relative;
-  z-index: 1;
-  width: min(100%, 28rem);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  padding: 1.25rem;
-}
 @media (width <= 719px) {
   html {
     scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));

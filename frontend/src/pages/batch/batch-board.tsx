@@ -182,7 +182,7 @@ export function BatchBoard({
       />
 
       <Toolbar trailing={<SearchInput label="Find a class" placeholder="Find a class" value={classQ} onChange={setClassQ} className="w-52" resultCount={classQ.trim() ? filtered.length : null} />}>
-        <div role="group" aria-label="View" className="flex items-center gap-1">
+        <fieldset aria-label="View" className="flex items-center gap-1">
           <Chip pressed={view === "list"} onClick={() => setView("list")}>
             <ListIcon aria-hidden="true" className="size-3.5" />
             List
@@ -191,9 +191,9 @@ export function BatchBoard({
             <CalendarDays aria-hidden="true" className="size-3.5" />
             Week
           </Chip>
-        </div>
+        </fieldset>
         <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />
-        <div role="group" aria-label="When" className="flex items-center gap-1">
+        <fieldset aria-label="When" className="flex items-center gap-1">
           {(
             [
               ["all", "All"],
@@ -212,11 +212,11 @@ export function BatchBoard({
               {label}
             </Chip>
           ))}
-        </div>
+        </fieldset>
         {authors.length > 1 ? (
           <>
             <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />
-            <div role="group" aria-label="Teacher" className="flex items-center gap-1">
+            <fieldset aria-label="Teacher" className="flex items-center gap-1">
               <Chip pressed={teacherFilter === "all"} onClick={() => setTeacherFilter("all")}>
                 All teachers
               </Chip>
@@ -225,7 +225,7 @@ export function BatchBoard({
                   {a.name}
                 </Chip>
               ))}
-            </div>
+            </fieldset>
           </>
         ) : null}
       </Toolbar>
