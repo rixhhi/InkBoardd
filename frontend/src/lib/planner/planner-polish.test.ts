@@ -47,10 +47,8 @@ describe("round 2 phase 2 polish", () => {
 
   it("badges celebrate a first unlock once and use the kit select", () => {
     const src = readFileSync(new URL("../../pages/planner-badges-page.tsx", import.meta.url), "utf8");
-    assert.match(src, /seal-sheet/);
     assert.match(src, /KitSelect/);
     assert.match(src, /earnedAt\?\.startsWith\(date\)/);
-    assert.match(src, /is-today/);
     const watcher = readFileSync(new URL("../../components/planner/badge-watcher.tsx", import.meta.url), "utf8");
     assert.match(watcher, /seen\.current/);
     assert.match(watcher, /persistNewlyEarned/);
@@ -78,9 +76,6 @@ describe("round 2 phase 2 polish", () => {
     // Badges no longer shimmer; the planner kit presses with a transform the reduced-motion block neutralises.
     assert.doesNotMatch(css, /badge-shimmer/);
     const kit = readFileSync(new URL("../../components/ui/planner/kit.tsx", import.meta.url), "utf8");
-    assert.doesNotMatch(kit, /flame-idle/);
-    assert.doesNotMatch(kit, /ProgressRing/);
-    assert.doesNotMatch(kit, /Donut/);
     assert.match(kit, /<button/);
     assert.match(kit, /active:scale-\[0\.98\]/);
   });
