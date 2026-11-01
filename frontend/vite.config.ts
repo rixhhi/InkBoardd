@@ -83,6 +83,24 @@ function apiProxy(): Plugin {
 
 export default defineConfig({
   root,
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              // Every Lucide icon was its own ~1 KB chunk: 30 in the build, 14 on the sign-in
+              // page alone. One icons chunk (~32 KB) turns 14 round-trips into one; Lighthouse's
+              // simulated LCP on /login was paying for the fan-out, not the bytes.
+              name: "icons",
+              test: /node_modules[\\/]lucide-react[\\/]/,
+              priority: 10,
+            },
+          ],
+        },
+      },
+    },
+  },
   server: {
     host: process.env.INKBOARD_WEB_HOST || "127.0.0.1",
     port: Number(process.env.INKBOARD_WEB_PORT || 5173),
