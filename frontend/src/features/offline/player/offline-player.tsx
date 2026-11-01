@@ -361,11 +361,8 @@ export function OfflinePlayer({
             </video>
           </div>
           {isBoard && !camOff ? (
-            <div
-              className="absolute inset-0 z-10 cursor-grab touch-none"
-              onPointerDown={onPointerDown}
-              aria-label="Drag teacher camera"
-            />
+            // Pointer-only drag surface; the camera can also be placed from the transport menu.
+            <div className="absolute inset-0 z-10 cursor-grab touch-none" onPointerDown={onPointerDown} aria-hidden="true" />
           ) : null}
         </div>
 

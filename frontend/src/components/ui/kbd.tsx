@@ -18,8 +18,10 @@ export function Kbd({ children, className }: { children: ReactNode; className?: 
 /** Space-separated keys: <Keys combo="Ctrl K" /> renders two Kbd chips. */
 export function Keys({ combo, className }: { combo: string; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1", className)} aria-label={combo}>
+    <span className={cn("inline-flex items-center gap-1", className)}>
       {combo.split(" ").map((k, i) => (
+        // Keys can repeat in a chord ("Ctrl Shift Ctrl" never, but "Shift Shift" is conceivable); the slot number keeps the key unique.
+        // biome-ignore lint/suspicious/noArrayIndexKey: the chord is static text with no reordering
         <Kbd key={`${k}-${i}`}>{k}</Kbd>
       ))}
     </span>

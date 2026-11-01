@@ -174,9 +174,10 @@ export function LiveStage({
               <div className={asLantern && !camOff ? "lantern-face" : "h-full w-full"}>{videoEl}</div>
               {asLantern && !camOff ? (
                 <>
+                  {/* Pointer-only drag surface over the camera; double-click re-docks it. The lantern menu offers the same moves to keyboard users. */}
                   <div
                     className="absolute inset-0 z-10 cursor-grab touch-none"
-                    aria-label="Move teacher"
+                    aria-hidden="true"
                     onDoubleClick={() => {
                       userBox.current = false;
                       place();

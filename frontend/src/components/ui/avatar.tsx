@@ -22,9 +22,7 @@ export function Avatar({
   const show = src && !broken;
   return (
     <span
-      role={decorative ? undefined : "img"}
-      aria-label={decorative ? undefined : name}
-      aria-hidden={decorative || undefined}
+      {...(decorative ? { "aria-hidden": true } : { role: "img" as const, "aria-label": name })}
       className={cn("inline-grid shrink-0 place-items-center overflow-hidden rounded-full bg-surface-raised font-semibold text-fg-muted select-none", SIZE[size], className)}
     >
       {show ? (

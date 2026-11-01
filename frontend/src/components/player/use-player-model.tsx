@@ -258,7 +258,6 @@ export function usePlayerModel<T extends Record<string, any>>(p: T) {
   }
 
   const chapters = useMemo(() => boardChapters(timeline), [timeline]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies(pinRev): bookmarksFor reads localStorage; pinRev is the revision counter stampNow bumps so the memo re-reads after a new pin.
   const studyMarks = useMemo(() => {
     const pins = bookmarksFor(timeline.id).map((b) => ({
       t: b.seconds,

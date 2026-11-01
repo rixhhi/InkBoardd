@@ -96,7 +96,6 @@ export function LiveVideo({
       video.removeEventListener("play", onPlay);
       video.removeEventListener("pause", onPause);
     };
-    // biome-ignore lint/correctness/useExhaustiveDependencies(retry): retry is the remount trigger
   }, [src, retry]);
 
   useEffect(() => {
