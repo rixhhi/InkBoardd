@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { constants as zlibConstants } from "node:zlib";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
@@ -57,6 +57,23 @@ function rateBucket(method: string, path: string): "skip" | "media" | "expensive
   if (path.startsWith("/api/study")) return "generous";
   if (path.startsWith("/api/")) return "catalog";
   return "skip";
+}
+
+/**
+ * Rate-limit identity. Signed-in traffic is keyed by session, not IP: students on one
+ * coaching-centre Wi-Fi or behind a carrier's CGNAT share an IP, and 20 of them would
+ * otherwise share one 120-req/min bucket. The cookie is hashed (never stored or logged).
+ * Sign-in, setup and reset stay per IP, so rotating cookies cannot widen the brute-force
+ * budget; anonymous requests to everything else also fall back to IP.
+ */
+export function rateIdentity(req: Pick<FastifyRequest, "headers" | "ip">, bucket: string): string {
+  const ip = req.ip || "local";
+  if (bucket === "expensive") return `ip:${ip}`;
+  const raw = req.headers.cookie;
+  if (!raw) return `ip:${ip}`;
+  const m = /(?:^|;\s*)ib_session=([^;]+)/.exec(raw);
+  if (!m || !m[1]) return `ip:${ip}`;
+  return `s:${createHash("sha256").update(m[1]).digest("base64url").slice(0, 22)}`;
 }
 
 /** Hop count from TRUST_PROXY. "1" is 1, "2" is 2. Anything else does not trust the header. */
@@ -216,8 +233,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     if (bucket === "skip") return;
     const { limit, windowMs } = rateConfig();
     const cap = bucket === "generous" ? Math.max(limit, 300) : bucket === "media" ? Math.max(limit, 600) : bucket === "expensive" ? Math.min(limit, 30) : limit;
-    const ip = req.ip || "local";
-    if (!(await allowRate(`${bucket}:${ip}`, cap, windowMs))) {
+    if (!(await allowRate(`${bucket}:${rateIdentity(req, bucket)}`, cap, windowMs))) {
       return reply
         .header("retry-after", String(Math.ceil(windowMs / 1000)))
         .status(429)
