@@ -15,7 +15,6 @@
     "jsx": "react-jsx",
     "types": ["node"],
     "allowJs": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@inkboard/shared/*": ["../shared/src/lib/*"]

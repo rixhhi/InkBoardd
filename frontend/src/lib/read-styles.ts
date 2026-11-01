@@ -13,8 +13,10 @@ function asPath(file: fs.PathOrFileDescriptor): string {
 
 function layered(entryPath: string): string {
   const dir = entryPath.replace(/styles\.css$/, "styles/");
-  const head = original.call(fs, entryPath, "utf8");
-  const body = LAYERS.map((name) => original.call(fs, dir + name, "utf8"));
+  // Options object rather than a bare "utf8": calling through `.call` loses overload
+  // resolution under @types/node 26, and this form types as `string` either way.
+  const head = original.call(fs, entryPath, { encoding: "utf8" });
+  const body = LAYERS.map((name) => original.call(fs, dir + name, { encoding: "utf8" }));
   return [head, ...body].join("\n");
 }
 
