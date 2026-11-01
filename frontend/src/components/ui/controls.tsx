@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -220,14 +221,53 @@ export function Menu({
   };
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const selectable = items.filter((i): i is MenuItem => i !== "separator");
+
+  /**
+   * The panel is portalled to <body> and positioned from the trigger's rect. Inside
+   * the player, `.slate { overflow: hidden }` plus the film strip's stacking context
+   * clipped and covered an in-place panel: the "\u22ef" menu opened but nothing could be
+   * seen or clicked. A portal escapes every ancestor's overflow and z-index.
+   */
+  const [pos, setPos] = useState<CSSProperties | null>(null);
+  useLayoutEffect(() => {
+    if (!open) {
+      setPos(null);
+      return;
+    }
+    const place = () => {
+      const t = triggerRef.current;
+      if (!t) return;
+      const r = t.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const gap = 4;
+      const next: CSSProperties = { position: "fixed" };
+      if (side === "top") next.bottom = Math.max(8, vh - r.top + gap);
+      else next.top = Math.min(vh - 8, r.bottom + gap);
+      if (align === "end") next.right = Math.max(8, vw - r.right);
+      else next.left = Math.max(8, r.left);
+      // Never taller than the room above/below the trigger; scroll inside instead.
+      next.maxHeight = side === "top" ? Math.max(160, r.top - gap - 8) : Math.max(160, vh - r.bottom - gap - 8);
+      setPos(next);
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, side, align]);
 
   useEffect(() => {
     if (!open) return;
     setActive(0);
     const onDoc = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (!rootRef.current?.contains(t) && !menuRef.current?.contains(t)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -245,7 +285,7 @@ export function Menu({
 
   useEffect(() => {
     if (!open) return;
-    rootRef.current?.querySelectorAll<HTMLElement>("[role=menuitem],[role=menuitemcheckbox]")[active]?.focus();
+    menuRef.current?.querySelectorAll<HTMLElement>("[role=menuitem],[role=menuitemcheckbox]")[active]?.focus();
   }, [open, active]);
 
   return (
@@ -258,15 +298,14 @@ export function Menu({
           triggerRef.current = el;
         },
       })}
-      {open ? (
+      {open && pos
+        ? createPortal(
         <div
+          ref={menuRef}
           role="menu"
           aria-label={label}
-          className={cn(
-            "absolute z-[var(--z-sheet)] min-w-52 rounded-md bg-surface p-1 shadow-3 [animation:ui-fade-in_var(--dur-fast)_var(--ease-out)]",
-            side === "top" ? "bottom-full mb-1" : "top-full mt-1",
-            align === "end" ? "right-0" : "left-0",
-          )}
+          style={pos}
+          className="z-[var(--z-sheet)] min-w-52 overflow-y-auto rounded-md bg-surface p-1 shadow-3 [animation:ui-fade-in_var(--dur-fast)_var(--ease-out)]"
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
               e.preventDefault();
@@ -312,8 +351,10 @@ export function Menu({
               </button>
             );
           })}
-        </div>
-      ) : null}
+        </div>,
+        document.body,
+      )
+        : null}
     </div>
   );
 }

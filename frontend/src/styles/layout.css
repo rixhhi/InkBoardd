@@ -813,6 +813,27 @@ li:first-child>.chalk-row {
   transform: translateZ(0);
 }
 
+/* While the camera floats in the browser's picture-in-picture window the <video> paints nothing here.
+   Show a quiet placeholder that says so and brings it back on tap, instead of a black disc. */
+.lantern-pip-note {
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.25rem;
+  border: 0;
+  border-radius: inherit;
+  background: color-mix(in oklab, var(--color-surface-raised) 85%, transparent);
+  color: var(--color-fg-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.lantern:not(.is-docked) .lantern-pip-note { clip-path: circle(50%); }
+.lantern-pip-note:hover, .lantern-pip-note:focus-visible { color: var(--color-fg); outline: none; }
+
 /* Resize grip: a 28px hit target in the lantern's lower-right, drawn as a small paper chip with two diagonal rules.
    Quiet until the lantern is hovered/focused so the camera stays uncluttered. */
 .lantern-resize {

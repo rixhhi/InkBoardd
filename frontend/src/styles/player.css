@@ -116,6 +116,12 @@
   transform: translate(-50%, -50%);
   cursor: pointer;
 }
+/* The tick is 3px wide; the hit area is not. A 16x24 invisible pad makes it tappable. */
+.seek-chapter::before {
+  content: "";
+  position: absolute;
+  inset: -8px -7px;
+}
 .seek-chapter:hover,
 .seek-chapter:focus-visible {
   opacity: 1;
