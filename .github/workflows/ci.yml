@@ -77,6 +77,19 @@ jobs:
       - name: logs on failure
         if: failure()
         run: tail -n 80 /tmp/api.log /tmp/web.log /tmp/edge.log || true
+      - name: visual diff vs main's last green e2e (warn-only; which pages moved, and by how much, lands in the job summary)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN=$(gh run list --repo "$GITHUB_REPOSITORY" --branch main --workflow ci.yml --status success --limit 1 --json databaseId -q '.[0].databaseId' 2>/dev/null || true)
+          if [ -z "$RUN" ]; then echo "no green run on main yet; nothing to compare" >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          mkdir -p baseline-shots
+          if ! gh run download "$RUN" --repo "$GITHUB_REPOSITORY" -n e2e-shots -D baseline-shots 2>/dev/null; then
+            echo "main run $RUN has no e2e-shots artifact (expired?); nothing to compare" >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          echo "baseline: main run $RUN"
+          node scripts/visual-diff.mjs baseline-shots e2e-shots e2e-shots/visual
       - uses: actions/upload-artifact@v7
         if: always()
         with:

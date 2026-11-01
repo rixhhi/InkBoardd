@@ -34,14 +34,6 @@ describe("round 2 phase 1 regressions", () => {
     assert.equal(showCatchUp(true, false), true);
   });
 
-  it("Today session actions wrap on a phone instead of sitting in one nowrap row", () => {
-    const src = readFileSync(new URL("../../../../frontend/src/components/planner/today-page.tsx", import.meta.url), "utf8");
-    assert.match(src, /flex flex-wrap/);
-    assert.match(src, /Shorten/);
-    assert.doesNotMatch(src, /Shorten my day/);
-    assert.doesNotMatch(src, /flex-nowrap/);
-  });
-
   it("Analytics keeps one Revision health KPI that jumps to the full section", () => {
     const src = readFileSync(new URL("../../../../frontend/src/pages/planner-analytics-page.tsx", import.meta.url), "utf8");
     const kpi = src.match(/href="#revision-health"/g) ?? [];

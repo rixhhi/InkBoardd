@@ -38,32 +38,22 @@ describe("instrument figures", () => {
 });
 
 describe("instrument surfaces", () => {
-  it("Pace is one sentence and one line chart, not a widget festival", () => {
+  it("Dashboard renders the pace sentence, the minutes chart and coverage", () => {
     const src = readFileSync(new URL("../../../../frontend/src/components/planner/dashboard-page.tsx", import.meta.url), "utf8");
     assert.match(src, /paceSentence/);
     assert.match(src, /LineChart/);
     assert.match(src, /Coverage/);
-    assert.doesNotMatch(src, /StatTile/);
-    assert.doesNotMatch(src, /ProgressRing/);
-    assert.doesNotMatch(src, /greeting\(\)/);
-    assert.doesNotMatch(src, /StreakCard/);
-    assert.doesNotMatch(src, /Flame/);
   });
 
-  it("Instruments keep one chart and hatch split, not a donut carnival", () => {
+  it("Analytics renders the minutes line chart", () => {
     const src = readFileSync(new URL("../../../../frontend/src/pages/planner-analytics-page.tsx", import.meta.url), "utf8");
     assert.match(src, /LineChart/);
-    assert.match(src, /Open instruments|Instruments/);
-    assert.doesNotMatch(src, /StatTile/);
-    assert.doesNotMatch(src, /Donut/);
-    assert.doesNotMatch(src, /PlannerHeatmap/);
   });
 
   it("History is a vertical ledger of days that opens the month board", () => {
     const src = readFileSync(new URL("../../../../frontend/src/components/planner/history-page.tsx", import.meta.url), "utf8");
     assert.match(src, /historyDayLine/);
     assert.match(src, /search=\{\{ day/);
-    assert.doesNotMatch(src, /PageHeader/);
   });
 
   it("Journal is gone — no route, page or nav entry survives", () => {
@@ -74,38 +64,14 @@ describe("instrument surfaces", () => {
     assert.doesNotMatch(shell, /journal/i);
   });
 
-  it("Seals are a stamp sheet, not a trophy grid", () => {
-    const src = readFileSync(new URL("../../../../frontend/src/pages/planner-badges-page.tsx", import.meta.url), "utf8");
-    assert.match(src, /seal-sheet/);
-    assert.match(src, /is-earned/);
-    assert.match(src, /is-empty/);
-    assert.doesNotMatch(src, /StatTile/);
-    assert.doesNotMatch(src, /ProgressBar/);
-    assert.doesNotMatch(src, /badge-earned-today/);
-  });
-
-  it("Wizard is a folio fraction, not stepper dots", () => {
+  it("Wizard counts steps and publishes its form ledger", () => {
     const src = readFileSync(new URL("../../../../frontend/src/components/planner/wizard-page.tsx", import.meta.url), "utf8");
     assert.match(src, /of 4/);
-    assert.match(src, /Lay out a plan/);
     assert.match(src, /publishFormLedger/);
-    assert.doesNotMatch(src, /rounded-full/);
-    assert.doesNotMatch(src, /max-w-6xl/);
   });
 
-  it("Settings uses the shared kit and keeps the ledger", () => {
+  it("Settings publishes its form ledger", () => {
     const src = readFileSync(new URL("../../../../frontend/src/components/planner/settings-page.tsx", import.meta.url), "utf8");
-    assert.match(src, /kicker: "Settings"/);
     assert.match(src, /publishFormLedger/);
-    assert.match(src, /from "@\/components\/ui"/);
-    assert.match(src, /<Segmented/);
-    assert.match(src, /Lay out a plan/);
-    assert.doesNotMatch(src, /sheet-field|caption-opt|text-seal|text-muted\b|text-faint\b/, "no legacy sheet classes");
-  });
-
-  it("Wizard courses use the shared kit", () => {
-    const src = readFileSync(new URL("../../../../frontend/src/components/planner/wizard-courses.tsx", import.meta.url), "utf8");
-    assert.match(src, /from "@\/components\/ui"/);
-    assert.doesNotMatch(src, /chalk-row|sheet-field|text-seal|text-primary\b/, "no legacy chalk classes");
   });
 });

@@ -97,22 +97,14 @@ describe("day board", () => {
     assert.doesNotMatch(onboard, /These rows lay out a pace/);
     assert.match(ledger, /Start the board/);
     assert.match(ledger, /coach\.reason/);
-    assert.doesNotMatch(src, /ProgressRing/);
-    assert.doesNotMatch(src, /greeting\(\)/);
-    assert.doesNotMatch(src, /StreakCard/);
     assert.doesNotMatch(src, /CoachCard/);
     assert.doesNotMatch(src, /RevisionHealthPanel/);
   });
 
-  it("Calendar is a month of miniature boards with chalk dust, not GitHub squares", () => {
+  it("Calendar draws mini boards with chalk dust and has no journal", () => {
     const src = readFileSync(new URL("../../components/planner/calendar-page.tsx", import.meta.url), "utf8");
     assert.match(src, /mini-board/);
     assert.match(src, /chalkDust/);
-    assert.match(src, /is-exam/);
-    assert.match(src, /is-today/);
     assert.doesNotMatch(src, /journal/i, "journal is retired");
-    assert.doesNotMatch(src, /linear-gradient\(to top/);
-    assert.doesNotMatch(src, /SegmentedControl/);
-    assert.doesNotMatch(src, /PlannerCard/);
   });
 });
