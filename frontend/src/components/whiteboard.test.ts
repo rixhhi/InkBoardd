@@ -179,6 +179,22 @@ describe("whiteboard paint", () => {
     assert.ok(ctx.ops.includes("stroke"));
   });
 
+  it("renders a two-point DCN writing stroke as a line, not a dot", () => {
+    const tl = compactEvents("WB-short", [[
+      ev("cw", 1_000_000, { e: "d", p: { x: 0.2, y: 0.3, oid: "short" } }),
+      ev("cw", 1_100_000, { e: "u", p: { x: 0.4, y: 0.5 } }),
+    ]]);
+    const stroke = tl.strokes.find((item) => item.oid === "short");
+    assert.ok(stroke);
+    assert.equal(stroke.p.length, 4);
+
+    const ctx = mockCtx();
+    drawStroke(ctx, stroke, 1280, 720, 1200);
+    assert.ok(ctx.ops.includes("line"));
+    assert.ok(ctx.ops.includes("stroke"));
+    assert.equal(ctx.ops.includes("arc"), false);
+  });
+
   it("paints circle, dashed line, arrow, photos, and slide rotation", () => {
     const tl = compactEvents("WB2", [[
       ev("dcn", 0, { e: "as", i: 1, uid: "s0", u: "https://static.uacdn.net/s0.pdf?page=1" }),
