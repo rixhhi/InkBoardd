@@ -33,7 +33,7 @@ export function applyCam(
 export function drawPath(ctx: CanvasRenderingContext2D, pts: number[], w: number, h: number, smooth: boolean) {
   const n = pts.length;
   if (n < 2) return;
-  if (n < 6) {
+  if (n === 2) {
     ctx.beginPath();
     ctx.arc(pts[0]! * w, pts[1]! * h, Math.max(0.6, ctx.lineWidth / 2), 0, Math.PI * 2);
     ctx.fill();
@@ -41,7 +41,7 @@ export function drawPath(ctx: CanvasRenderingContext2D, pts: number[], w: number
   }
   ctx.beginPath();
   ctx.moveTo(pts[0]! * w, pts[1]! * h);
-  if (!smooth) {
+  if (!smooth || n === 4) {
     for (let i = 2; i < n; i += 2) ctx.lineTo(pts[i]! * w, pts[i + 1]! * h);
     ctx.stroke();
     return;
