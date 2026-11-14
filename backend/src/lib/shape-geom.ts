@@ -38,6 +38,19 @@ function numAttr(tag: string, name: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** The two transforms Unacademy's shape SVGs use: translate(x [y]) and matrix(a b c d e f). Anything else is identity. */
+export function parseTransform(t: string): number[] {
+  const num = "[-+]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][-+]?\\d+)?";
+  const mm = new RegExp(`matrix\\(\\s*((?:${num}[\\s,]*){6})\\)`).exec(t);
+  if (mm) {
+    const v = mm[1]!.trim().split(/[\s,]+/).map(Number);
+    if (v.length === 6 && v.every(Number.isFinite)) return v;
+  }
+  const tr = new RegExp(`translate\\(\\s*(${num})(?:[\\s,]+(${num}))?\\s*\\)`).exec(t);
+  if (tr) return [1, 0, 0, 1, Number(tr[1]) || 0, Number(tr[2] ?? 0) || 0];
+  return [1, 0, 0, 1, 0, 0];
+}
+
 export function svgToGeom(svg: string): ShapeGeom | null {
   const head = /<svg\b[^>]*>/i.exec(svg)?.[0] ?? "";
   let [vx, vy, vw, vh] = (attr(head, "viewBox") || "").split(/[\s,]+/).map(Number);
@@ -61,9 +74,9 @@ export function svgToGeom(svg: string): ShapeGeom | null {
   const fills: number[][][] = [];
   let fillEl: number[][] = [];
   let filling = false;
-  let tx = 0;
-  let ty = 0;
-  const norm = (p: Pt): Pt => [(p[0] + tx - X0) / W, (p[1] + ty - Y0) / H];
+  // Current element transform as an SVG matrix [a b c d e f]: x' = a*x + c*y + e, y' = b*x + d*y + f.
+  let m: number[] = [1, 0, 0, 1, 0, 0];
+  const norm = (p: Pt): Pt => [(m[0]! * p[0] + m[2]! * p[1] + m[4]! - X0) / W, (m[1]! * p[0] + m[3]! * p[1] + m[5]! - Y0) / H];
   const flushSub = (start: Pt | null, segs: Seg[]) => {
     if (!start || !segs.length) return;
     if (filling) {
@@ -202,9 +215,7 @@ export function svgToGeom(svg: string): ShapeGeom | null {
     if (fillEl.length) fills.push(fillEl);
     fillEl = [];
     filling = !!fill && fill !== "none" && fill !== "white" && fill !== "#fff" && fill !== "#ffffff" && fill !== "transparent";
-    const tr = /translate\(\s*([-+\d.eE]+)[\s,]*([-+\d.eE]*)\s*\)/.exec(attr(tag, "transform"));
-    tx = tr ? Number(tr[1]) || 0 : 0;
-    ty = tr ? Number(tr[2]) || 0 : 0;
+    m = parseTransform(attr(tag, "transform"));
     if (name === "path") pathD(attr(tag, "d"));
     else if (name === "rect") {
       const x = numAttr(tag, "x");
@@ -223,8 +234,7 @@ export function svgToGeom(svg: string): ShapeGeom | null {
   }
   if (fillEl.length) fills.push(fillEl);
   fillEl = [];
-  tx = 0;
-  ty = 0;
+  m = [1, 0, 0, 1, 0, 0];
   filling = false;
   // World / India maps have tens of thousands of points. Thin them so the timeline stays small.
   const total = curves.reduce((n, c) => n + c.length / 2, 0);

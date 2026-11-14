@@ -2,6 +2,7 @@ import { defineService } from "@/lib/server-fn.ts";
 import { normalizeUsername } from "@inkboard/shared/unacademy-ids";
 import { getExam, examGoalIds, } from "@inkboard/shared/exams";
 import { swr } from "@/lib/swr-cache";
+import { collectPages } from "@/lib/paged.ts";
 import { studioAvatar } from "@inkboard/shared/media-cover";
 import {
 	educatorListingOffsets,
@@ -39,6 +40,9 @@ import {
   loadCourses,
   parseExamTeacher,
 } from "./support.ts";
+
+/** Time the follow-up listing pages of one search may use, after the first parallel round. */
+const LIST_BUDGET_MS = 6_000;
 
 /** A thin profile built from the handle alone, used when the course list proves the teacher exists but the profile fetch failed. */
 function fallbackEducator(username: string, courseTotal: number): Educator | null {
@@ -106,16 +110,17 @@ export const searchEducators = defineService({ method: "POST" }).validator((d: u
 			compactAutoUrl ? fetchJson(compactAutoUrl).catch(onFail("search.auto.compact", [])) : Promise.resolve([]),
 			fetchJson(educatorListingUrl(data.q, 0)).catch(onFail("search.list", null)),
 		]);
-		const listRows: unknown[] = [...asArr(asObj(firstList).results)];
-		let nextList = listingNextUrl(asObj(firstList).next, data.q, EDUCATOR_LISTING_PAGE_SIZE);
-		for (let page = 1; page < 12 && nextList; page += 1) {
-			const more = await fetchJson(nextList).catch(onFail("search.list", null));
-			if (!more) break;
-			const extra = asArr(asObj(more).results);
-			if (!extra.length) break;
-			listRows.push(...extra);
-			nextList = listingNextUrl(asObj(more).next, data.q, (page + 1) * EDUCATOR_LISTING_PAGE_SIZE);
-		}
+		// Follow the listing's next links, but stop once LIST_BUDGET_MS is spent: one slow upstream page
+		// used to hold the whole search for up to 12 sequential fetches.
+		const listed0 = await collectPages<unknown>({
+			first: firstList,
+			rows: (pg) => asArr(asObj(pg).results),
+			next: (pg, n) => listingNextUrl(asObj(pg).next, data.q, n * EDUCATOR_LISTING_PAGE_SIZE),
+			fetchPage: (url) => fetchJson(url).catch(onFail("search.list", null)),
+			maxPages: 12,
+			budgetMs: LIST_BUDGET_MS,
+		});
+		const listRows: unknown[] = listed0.rows;
 		if (listRows.length < 10) {
 			const rest = await Promise.all(
 				educatorListingOffsets(8).slice(1).map((offset) => fetchJson(educatorListingUrl(data.q, offset)).catch(onFail("search.list", null))),

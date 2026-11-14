@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-11-14 (later) - search stays fast, Redis and replay are tested
+
+### Fixed
+- **Shape library**: shapes drawn with an SVG `matrix(...)` transform (the "Hemisphere base bottom" ellipse, flipped and moved by `matrix(1 0 0 -1 378 398.832)`) were drawn half outside the box the teacher dragged, because only `translate(...)` was read. Both are read now. Found by the new shape tests.
+- **Teacher search**: following a listing's "next" links used to run up to 12 fetches one after another, each with its own retries, so one slow upstream page could hold a search for 20+ seconds. Follow-up pages now stop after a 6 second budget and the search returns what it has (`backend/src/lib/paged.ts`).
+
+### Added
+- **Redis tests** (`backend/tests/redis/`): ioredis 6 client, the Lua rate limiter (limit, per-caller counters, window expiry, separate caps) and the gzip timeline cache (byte round-trip, 3-day TTL, garbage values, version separation) run against a real Redis. A second file points at a closed port to prove everything falls back to memory instead of hanging. CI now runs a Redis service for the `check` job; locally the tests start their own `redis-server` or skip.
+- **Replay smoke test** (`scripts/replay-smoke.mjs`, `scripts/replay-fixture.ts`): plays a synthetic board lesson in real Chromium and reads the ink canvas pixels at chosen moments: a stroke, undo, erase-all then undo, the real hexagon shape (checks the box corner is empty, so it is not a rectangle), a new blank page, seeking back, and repaint after a resize. Runs in the `e2e` CI job.
+- **Shape tests** (`backend/src/lib/shape-geom.test.ts`): all 21 bundled SVGs flatten to finite geometry inside the unit box, plus transform parsing, link validation (host, scheme, traversal) and `shapesFor`.
+- `CONTRIBUTING.md`: layout, the four checks CI runs, memory limits on small machines, Redis and browser test setup, how to change the ink engine, dependency PRs, and what stays out of the web repo.
+
+### Dependencies
+- Dependabot #22-#26 merged as one change (#28): pixelmatch 8, ioredis 6, fast-check 4, react-query, jsdom 31 with vite, biome and plugin-react. They were combined because their lockfiles conflict once any one lands.
+
 ## 2026-11-14 - fixes ported from the desktop build (.deb 1.1.5 / source zip)
 
 ### Fixed

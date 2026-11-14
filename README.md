@@ -15,7 +15,7 @@ cd frontend && npm run dev      # site     http://127.0.0.1:5173  (proxies /api 
 
 Open the site. It sends you to `/setup`; the one-time code is printed in the API log (and `backend/data/setup-code.txt`). That account is the super admin. Then **Admin → Members → Add member**, and **Share** an exam or course from any catalogue page.
 
-Checks: `npm run lint` · `npm run typecheck` · `npm test` (shared + backend + frontend) · `cd frontend && BUDGET_STRICT=1 npm run build`.
+Checks: `npm run lint` · `npm run typecheck` · `npm test` (shared + backend + frontend) · `cd frontend && BUDGET_STRICT=1 npm run build`. See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
 
 ## What's inside
 
@@ -139,8 +139,11 @@ npm run typecheck                                   # all three packages
 npm run lint                                        # Biome; errors fail CI
 npm test                                            # all three packages
 E2E_ADMIN=you@x:pass E2E_MEMBER=m@x:pass node scripts/e2e.mjs --shots e2e-shots   # browser check against :3000
+node scripts/replay-smoke.mjs --shots replay-shots                              # replay in a browser (see CONTRIBUTING.md for the fixture)
 cd frontend && BUDGET_STRICT=1 npm run build        # production build + bundle budget
 ```
+
+`backend/tests/redis/` talks to a real Redis. It starts its own `redis-server` if one is installed, uses `REDIS_TEST_URL` if you set it, and skips otherwise.
 
 On a machine with under 2 GB RAM, give Node more heap for the frontend typecheck and build: `NODE_OPTIONS=--max-old-space-size=2048`. The SSR build was OOM-killed at 1 GB without swap.
 
