@@ -368,7 +368,7 @@ export function LiveShelf({
                         }
                         trailing={
                           <>
-                            {replayId ? <SaveClassButton lessonId={replayId} title={lesson.title} variant="line" /> : null}
+                            {replayId ? <SaveClassButton lessonId={replayId} title={lesson.title} notesUrl={lesson.notesUrl} variant="line" /> : null}
                             {!replayId && lesson.similar?.replayId ? <SimilarLecture similar={lesson.similar} teacher={teacher} /> : null}
                             {replayId ? <LaterButton lessonId={replayId} title={lesson.title} teacher={teacher} course={courseId} /> : null}
                             <LessonResources lesson={lesson} />

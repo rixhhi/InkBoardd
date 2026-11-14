@@ -476,6 +476,7 @@ export function ClassPlayer({
         <SaveClassDialog
           lessonId={timeline.id}
           title={title}
+          notesUrl={notesUrl}
           onClose={() => setKeepOpen(false)}
           onPrepared={(pack: PreparedMedia) => {
             if (pack.sprites) setSheet(pack.sprites);

@@ -437,9 +437,12 @@ export function lectureJobPayload(body: {
   noMedia?: boolean;
   noNotes?: boolean;
   enhance?: boolean;
+  notesUrl?: string;
 }) {
   const id = String(body.id || "").trim();
   if (!/^[A-Za-z0-9_-]{6,40}$/.test(id)) return null;
+  // Only a real CDN notes PDF is kept. Left out when absent so existing job ids do not change.
+  const notesUrl = cleanNotesUrl(body.notesUrl);
   return {
     id,
     title: body.title,
@@ -447,7 +450,20 @@ export function lectureJobPayload(body: {
     noMedia: Boolean(body.noMedia),
     noNotes: Boolean(body.noNotes),
     enhance: Boolean(body.enhance),
+    ...(notesUrl ? { notesUrl } : {}),
   };
+}
+
+/** The lesson's own notes PDF on the Unacademy CDN, or "" (the saver checks again before fetching). */
+export function cleanNotesUrl(v: unknown): string {
+  if (typeof v !== "string" || !v) return "";
+  try {
+    const u = new URL(v);
+    if (u.protocol !== "https:" || !(u.hostname === "uacdn.net" || u.hostname.endsWith(".uacdn.net"))) return "";
+    return u.pathname.toLowerCase().endsWith(".pdf") ? u.href.slice(0, 600) : "";
+  } catch {
+    return "";
+  }
 }
 
 export function recordLectureRun(id: string) {
@@ -502,6 +518,7 @@ async function runLecture(job: Job) {
       opts: {
         noMedia: Boolean(job.payload.noMedia),
         noNotes: Boolean(job.payload.noNotes),
+        notesUrl: typeof job.payload.notesUrl === "string" ? job.payload.notesUrl : undefined,
         remux,
         title: typeof job.payload.title === "string" ? job.payload.title : "",
         signal: job.abort.signal,
