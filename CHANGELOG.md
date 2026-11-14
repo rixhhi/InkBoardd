@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-11-14 - fixes ported from the desktop build (.deb 1.1.5 / source zip)
+
+### Fixed
+- **Board replay engine** (`shared/src/lib/dcn.ts`): undo/redo stacks per page, erase-all that undo can bring back, Shift-held lines and boxes snapping to flat / upright / 45 degrees / square, extra and blank pages, faster incremental erasers and renames, and the two-point stroke fix from `v0/fix-dcn-stroke-rendering`.
+- **Shape library**: shapes drawn in a class now replay as the real outline and fills (`backend/src/lib/shape-geom.ts`, 20 bundled SVGs, `/api/board/shape` for the live board, `board-shapes.ts` on the client). Filled pieces paint with even-odd fill.
+- **Whiteboard**: the canvas repaints at once when its size changes instead of waiting for the next frame.
+- **Similar lectures**: a same-titled lecture in another course is now a link ("Similar lecture in ...") and is never merged into the lesson, so a missing class no longer plays someone else's recording. Keep-this-class is hidden on those.
+- **Notes**: the keep-class job uses the lesson's own notes link when the course page has one (CDN PDFs only), before guessing from the title.
+- **Player**: speeds up to 3x. Cache versions bumped (parser v21, timeline cache v22, course13) so old packed timelines are rebuilt.
+
+### Not ported on purpose (desktop only)
+Sign-in removal, Postgres/Redis removal, the in-app download queue, audio-only extraction, the folder picker and "this computer" wording.
+
 ## 2026-11-01 — the planner pages, looked at with real data
 
 ### Changed
