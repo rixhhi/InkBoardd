@@ -124,10 +124,15 @@ describe("course HTML lesson merge", () => {
       ],
       pool,
     );
-    assert.equal(lessons[0]?.replayId, "ISRO1");
-    assert.equal(lessons[1]?.replayId, "ISRO2");
+    // Matches become links only; part numbers must never be mixed.
+    assert.equal(lessons[0]?.replayId, null);
+    assert.equal(lessons[0]?.similar?.replayId, "ISRO1");
+    assert.equal(lessons[1]?.replayId, null);
+    assert.equal(lessons[1]?.similar?.replayId, "ISRO2");
     assert.equal(lessons[2]?.replayId, "OWN3");
-    assert.equal(lessons[3]?.replayId, "ISRO18");
+    assert.equal(lessons[2]?.similar, undefined);
+    assert.equal(lessons[3]?.replayId, null);
+    assert.equal(lessons[3]?.similar?.replayId, "ISRO18");
   });
 
   it("scores the same part number highly and refuses a different part", () => {
