@@ -19,7 +19,7 @@
     "@tanstack/react-start": "^1.169.4",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
-    "fast-check": "^3.23.2",
+    "fast-check": "^4.10.2",
     "typescript": "^7.0.2"
   }
 }
