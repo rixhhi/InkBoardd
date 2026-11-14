@@ -283,14 +283,20 @@ export function compactEvents(
     if (old !== undefined) renamedFrom.get(old)?.delete(prev);
     renamed.set(prev, next);
     let set = renamedFrom.get(next);
-    if (!set) renamedFrom.set(next, (set = new Set()));
+    if (!set) {
+      set = new Set();
+      renamedFrom.set(next, set);
+    }
     set.add(prev);
   };
   const holders = new Map<string, Set<string[]>>();
   const track = (arr: string[]) => {
     for (const id of arr) {
       let set = holders.get(id);
-      if (!set) holders.set(id, (set = new Set()));
+      if (!set) {
+        set = new Set();
+        holders.set(id, set);
+      }
       set.add(arr);
     }
     return arr;
@@ -713,7 +719,10 @@ export function compactEvents(
     if (list) {
       list.push(kid);
       let set = holders.get(kid);
-      if (!set) holders.set(kid, (set = new Set()));
+      if (!set) {
+        set = new Set();
+        holders.set(kid, set);
+      }
       set.add(list);
     } else pasteKids.set(pasteId, track([kid]));
   };
@@ -774,7 +783,10 @@ export function compactEvents(
     if (lists) {
       holders.delete(from);
       let dest = holders.get(to);
-      if (!dest) holders.set(to, (dest = new Set()));
+      if (!dest) {
+        dest = new Set();
+        holders.set(to, dest);
+      }
       for (const arr of lists) {
         for (let i = 0; i < arr.length; i++) if (arr[i] === from) arr[i] = to;
         dest.add(arr);
