@@ -73,6 +73,10 @@ export function ClassPlayer({
     keepOpen, setSheet, setAudioUrl, hlsUrl, setHlsUrl, setSilence, setWaveform, setJobId, notesOpen, setNotesOpen,
   } = core;
   void tapTimer;
+  // The course page already knows this lesson's own notes PDF. Use it for the keep-class job
+  // when the route did not carry one, so the saver does not have to guess from the title.
+  const courseNotesUrl = core.courseQ.data?.lessons?.find((l) => l.replayId === timeline.id)?.notesUrl ?? null;
+  const keepNotesUrl = notesUrl || courseNotesUrl;
   const chromeOpenRef = useRef(true);
   const boardRef = useRef(boardBox);
   const boxRef = useRef(box);
@@ -476,7 +480,7 @@ export function ClassPlayer({
         <SaveClassDialog
           lessonId={timeline.id}
           title={title}
-          notesUrl={notesUrl}
+          notesUrl={keepNotesUrl}
           onClose={() => setKeepOpen(false)}
           onPrepared={(pack: PreparedMedia) => {
             if (pack.sprites) setSheet(pack.sprites);
