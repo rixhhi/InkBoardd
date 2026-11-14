@@ -7,6 +7,20 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # A real Redis for backend/tests/redis (rate limiter, timeline cache, ioredis client). Locally those
+    # tests start their own redis-server, or skip when it is not installed.
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      REDIS_TEST_URL: redis://127.0.0.1:6379
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -65,6 +79,17 @@ jobs:
         run: node --experimental-strip-types scripts/seed-ink-demo.ts member@ci.local ci-member-pass-1 http://127.0.0.1:3000
       - name: lighthouse (against the real API + SSR stack; the sign-in page is public)
         run: npx --yes @lhci/cli@0.14.0 autorun
+      - name: "replay smoke (synthetic board lesson in the real player - strokes, undo, erase-all, shape, blank page, resize)"
+        run: |
+          node --experimental-strip-types scripts/replay-fixture.ts /tmp/replay-fixture.json
+          ffmpeg -loglevel error -y -f lavfi -i color=c=black:s=320x180:r=10 -t 12 -c:v libvpx -b:v 50k -an /tmp/replay.webm
+          node scripts/replay-smoke.mjs --shots e2e-shots/replay
+        env:
+          PLAYWRIGHT_DIR: /tmp/pw
+          REPLAY_FIXTURE: /tmp/replay-fixture.json
+          REPLAY_VIDEO: /tmp/replay.webm
+          E2E_BASE: http://127.0.0.1:3000
+          E2E_MEMBER: member@ci.local:ci-member-pass-1
       - name: e2e (no retries — a flake fails the job so it gets fixed, not masked; on failure a screenshot, console log and trace land in e2e-shots)
         run: node scripts/e2e.mjs --shots e2e-shots
         env:
