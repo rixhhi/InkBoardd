@@ -106,6 +106,8 @@ export type PlayerTransportProps = {
   nextLesson: UaLesson | null;
   openLesson: (lesson: UaLesson) => void;
   setKeepOpen: (v: boolean) => void;
+  /** False for a "similar lecture" from another course: it plays, but is not kept as this course's class. */
+  canKeep?: boolean;
   setChaptersOpen: Dispatch<SetStateAction<boolean>>;
   runSummary: () => void;
   silenceOn: boolean;
@@ -157,7 +159,7 @@ export function PlayerTransport(props: PlayerTransportProps) {
     listen, setListen, holdPlace, hlsUrl, saver, setSaver, stampNow, resolvedNotes, setNotesOpen,
     saved, setSaved, title, teacherSlug, courseId, moreOpen, setMoreOpen, camOff, setCamOff, layout,
     setLayout, cycleLanternSize, isBoard, stripOn, setStripOn, sleepUntil, setSleepUntil, prevLesson, nextLesson,
-    openLesson, setKeepOpen, setChaptersOpen, runSummary, silenceOn, setSilenceOn, silence, clipIn,
+    openLesson, setKeepOpen, canKeep = true, setChaptersOpen, runSummary, silenceOn, setSilenceOn, silence, clipIn,
     clipOut, clipBusy, clipHref, setClipIn, setClipOut, setClipHref, setClipNote, saveClip,
     slideUrl, listenLabel = COPY.listen, dataSaverLabel = COPY.dataSaver, audioSrc,
   } = props;
@@ -211,7 +213,7 @@ export function PlayerTransport(props: PlayerTransportProps) {
     "separator",
     ...(chapters.length ? [{ id: "chapters", label: COPY.chapters, icon: ListTree, onSelect: () => setChaptersOpen((open) => !open) }] : []),
     { id: "summarize", label: COPY.summarize, icon: Sparkles, onSelect: () => void runSummary() },
-    { id: "keep", label: COPY.keepThisClass, icon: Download, onSelect: () => setKeepOpen(true) },
+    ...(canKeep ? [{ id: "keep", label: COPY.keepThisClass, icon: Download, onSelect: () => setKeepOpen(true) }] : []),
     "separator",
     { id: "clip-in", label: `${COPY.markIn}${clipIn != null ? ` · ${formatTime(clipIn)}` : ""}`, icon: Scissors, onSelect: () => { setClipIn(shownTime); setClipHref(""); setClipNote(""); } },
     { id: "clip-out", label: `${COPY.markOut}${clipOut != null ? ` · ${formatTime(clipOut)}` : ""}`, icon: Scissors, onSelect: () => { setClipOut(shownTime); setClipHref(""); setClipNote(""); } },

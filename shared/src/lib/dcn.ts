@@ -11,6 +11,10 @@ export type DrawMode =
   | "selection";
 
 export type PackedStroke = {
+  /** 1 = solid filled outline (shape library parts). */
+  f?: 1;
+  /** Filled strokes made of several outlines: point index where each later outline starts. */
+  sp?: number[];
   t: number;
   te: number;
   tx?: number;
@@ -109,6 +113,9 @@ export type Timeline = {
    */
   eraserHits?: EraserHit[];
 };
+
+/** SVG shape from Unacademy's shape library, flattened to unit coordinates (0..1). */
+export type ShapeGeom = { lines: number[][]; curves: number[][]; fills?: number[][][] };
 
 type RawEvent = {
   p_time?: number;
@@ -241,7 +248,11 @@ export function boardInkColor(bc: string, url = "") {
   return lum > 0.55 ? "#2C3844" : "#EAEAEA";
 }
 
-export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoard?: boolean; legacyIds?: boolean }): Timeline {
+export function compactEvents(
+  id: string,
+  chunks: RawEvent[][],
+  opts?: { liveBoard?: boolean; legacyIds?: boolean; shapes?: Map<string, ShapeGeom> },
+): Timeline {
   const events = chunks.flat();
   events.sort((a, b) => num(a.p_time) - num(b.p_time));
 
@@ -264,6 +275,32 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
   const pasteKids = new Map<string, string[]>();
   // `u` events rename a stroke. Later drags still send the old id.
   const renamed = new Map<string, string>();
+  // Reverse view of `renamed` and which shift/erase/kid lists hold an id, so a
+  // rename touches only what it needs (big lectures do thousands of renames).
+  const renamedFrom = new Map<string, Set<string>>();
+  const setRename = (prev: string, next: string) => {
+    const old = renamed.get(prev);
+    if (old !== undefined) renamedFrom.get(old)?.delete(prev);
+    renamed.set(prev, next);
+    let set = renamedFrom.get(next);
+    if (!set) {
+      set = new Set();
+      renamedFrom.set(next, set);
+    }
+    set.add(prev);
+  };
+  const holders = new Map<string, Set<string[]>>();
+  const track = (arr: string[]) => {
+    for (const id of arr) {
+      let set = holders.get(id);
+      if (!set) {
+        set = new Set();
+        holders.set(id, set);
+      }
+      set.add(arr);
+    }
+    return arr;
+  };
   const resolveId = (id: string) => {
     if (opts?.legacyIds) return id;
     let cur = id;
@@ -298,6 +335,32 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
   let lastMs = 0;
   let selected: string[] = [];
   let cur: PackedStroke | null = null;
+  // Shape library tool: the SVG picked with the last mode change, and the one the current stroke uses.
+  let shapeUrl = "";
+  let curShape = "";
+  let curShift = false;
+  // Objects drawn as several pieces (shapes) share one oid.
+  const pieces = new Map<string, PackedStroke[]>();
+  const piecesOf = (oid: string): PackedStroke[] => {
+    const many = pieces.get(oid);
+    if (many) return many;
+    const one = byOid.get(oid);
+    return one ? [one] : [];
+  };
+  // Undo is resolved here, per page, into the exact thing it reverts.
+  type UndoItem = { k: "kill"; oids: string[]; aid?: string } | { k: "revert"; oids: string[]; at: number } | { k: "noop" };
+  const undoStacks = new Map<string, UndoItem[]>();
+  const pushUndo = (pageUid: string, item: UndoItem) => {
+    const list = undoStacks.get(pageUid);
+    if (list) list.push(item);
+    else undoStacks.set(pageUid, [item]);
+  };
+  let loggedGesture = -1;
+  let revertN = 0;
+  // Undo brings strokes back under a new id; they keep the eraser cuts of the original.
+  const revived: [string, string][] = [];
+  // Pages the teacher switched to that the recording never added.
+  const extraPages = new Map<number, string>();
   const slideRot = new Map<string, number>();
 
   const uidAt = () => slides[current]?.uid ?? slides[0]!.uid;
@@ -312,13 +375,141 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
   const flush = (te: number) => {
     if (!cur) return;
     cur.te = te;
+    if (curShift && cur.p.length >= 4) snapShifted(cur);
+    curShift = false;
+    const geom = curShape ? opts?.shapes?.get(curShape) : undefined;
+    if (geom && cur.p.length >= 4) {
+      const p = cur.p;
+      const x0 = Math.min(p[0]!, p[p.length - 2]!);
+      const y0 = Math.min(p[1]!, p[p.length - 1]!);
+      const w = Math.abs(p[p.length - 2]! - p[0]!);
+      const h = Math.abs(p[p.length - 1]! - p[1]!);
+      const made: PackedStroke[] = [];
+      const add = (m: DrawMode, unit: number[], solid = false, starts?: number[]) => {
+        const pts: number[] = [];
+        for (let i = 0; i + 1 < unit.length; i += 2) pts.push(x0 + unit[i]! * w, y0 + unit[i + 1]! * h);
+        if (pts.length < (solid ? 6 : 4)) return;
+        const st: PackedStroke = { t: cur!.t, te, uid: cur!.uid, c: cur!.c, w: cur!.w, m, p: pts, k: Array.from({ length: pts.length / 2 }, () => te), oid: cur!.oid };
+        if (solid) st.f = 1;
+        if (starts && starts.length) st.sp = starts;
+        made.push(st);
+      };
+      for (const ln of geom.lines) add("line", ln);
+      for (const cv of geom.curves) add("marker", cv);
+      for (const el of geom.fills ?? []) {
+        const flat: number[] = [];
+        const starts: number[] = [];
+        for (const part of el) {
+          if (flat.length) starts.push(flat.length / 2);
+          for (const v of part) flat.push(v);
+        }
+        add("marker", flat, true, starts);
+      }
+      if (made.length) {
+        for (const st of made) strokes.push(st);
+        byOid.set(cur.oid, made[made.length - 1]!);
+        if (made.length > 1) pieces.set(cur.oid, made);
+        pushUndo(cur.uid, { k: "kill", oids: [cur.oid] });
+        cur = null;
+        curShape = "";
+        return;
+      }
+    }
     if (cur.p.length >= 2) {
       if (cur.m === "highlighter") cur.tx = te + HIGHLIGHTER_HOLD_MS;
       strokes.push(cur);
       byOid.set(cur.oid, cur);
       if (cur.m === "highlighter") highLive.push(cur);
+      pushUndo(cur.uid, { k: "kill", oids: [cur.oid] });
     }
     cur = null;
+    curShape = "";
+  };
+
+  // Shift held: lines snap to flat / upright / 45 degrees, boxes and circles to squares.
+  // Same rules as Unacademy's getShiftedDeltasForLine / ForRect, on the 16:9 board.
+  function snapShifted(st: PackedStroke) {
+    const n = st.p.length;
+    const ax = st.p[0]! * 16;
+    const ay = st.p[1]! * 9;
+    let dx = st.p[n - 2]! * 16 - ax;
+    let dy = st.p[n - 1]! * 9 - ay;
+    if (st.m === "line" || st.m === "dashed_line" || st.m === "arrow") {
+      const d = Math.abs(dx) - Math.abs(dy);
+      const diag = Math.abs(d) < 0.5 * Math.abs(dx) && Math.abs(d) < 0.5 * Math.abs(dy);
+      if (d > 0) dy = diag ? Math.abs(dx) * (dy > 0 ? 1 : -1) : 0;
+      else dx = diag ? Math.abs(dy) * (dx > 0 ? 1 : -1) : 0;
+    } else if (st.m === "rectangle" || st.m === "circle") {
+      if (Math.abs(dx) > Math.abs(dy)) dy = Math.abs(dx) * (dy > 0 ? 1 : -1);
+      else dx = Math.abs(dy) * (dx > 0 ? 1 : -1);
+    } else return;
+    st.p[n - 2] = (ax + dx) / 16;
+    st.p[n - 1] = (ay + dy) / 9;
+  }
+
+  // Bring objects back as they were at `at` (undo of a delete, erase-all or move).
+  const revertTo = (oids: string[], at: number, now: number) => {
+    const xfs = xformsAt({ shifts } as unknown as Timeline, at);
+    const killByPage = new Map<string, string[]>();
+    for (const id of resolveIds(oids)) {
+      const src = piecesOf(id).filter((s) => s.m !== "highlighter" && s.m !== "eraser");
+      if (!src.length) continue;
+      revertN += 1;
+      const nid = `${id}~u${revertN}`;
+      const xf = xfs.get(id) ?? IDENTITY;
+      const made: PackedStroke[] = [];
+      for (const s of src) {
+        const pts = applyAffine(s.p, xf);
+        const st: PackedStroke = { t: now, te: now, uid: s.uid, c: s.c, w: s.w, m: s.m, p: pts, k: Array.from({ length: pts.length / 2 }, () => now), oid: nid };
+        if (s.f) st.f = 1;
+        if (s.sp) st.sp = s.sp.slice();
+        strokes.push(st);
+        made.push(st);
+      }
+      byOid.set(nid, made[made.length - 1]!);
+      if (made.length > 1) pieces.set(nid, made);
+      const page = src[0]!.uid;
+      const list = killByPage.get(page);
+      if (list) list.push(id);
+      else killByPage.set(page, [id]);
+      setRename(id, nid);
+      revived.push([id, nid]);
+    }
+    for (const [page, ids] of killByPage) erases.push({ t: now, uid: page, kind: "oids", oids: track(ids) });
+  };
+
+  const aliveOn = (pageUid: string, at: number) => {
+    const dead = new Set<string>();
+    for (const er of erases) {
+      if (er.uid !== pageUid || er.t > at) continue;
+      if (er.kind === "all") {
+        for (const s of strokes) if (s.uid === pageUid && s.t < er.t) dead.add(s.oid);
+      } else if (er.oids) for (const id of er.oids) dead.add(id);
+    }
+    const out = new Set<string>();
+    for (const s of strokes) {
+      if (s.uid === pageUid && s.t < at && !dead.has(s.oid) && s.m !== "eraser" && s.m !== "highlighter") out.add(s.oid);
+    }
+    return [...out];
+  };
+
+  const logMove = (pageUid: string, at: number) => {
+    if (loggedGesture === gesture || !selected.length) return;
+    loggedGesture = gesture;
+    pushUndo(pageUid, { k: "revert", oids: selected.slice(), at: at - 0.001 });
+  };
+
+  const extraPage = (idx: number, at: number): number | null => {
+    if (opts?.liveBoard) return null;
+    let pageUid = extraPages.get(idx);
+    if (!pageUid) {
+      if (idx < slides.length - extraPages.size) return null;
+      pageUid = `extra${idx}`;
+      slides.push({ i: slides.length, t: at, uid: pageUid, bc: slides[current]?.bc ?? "#202022" });
+      extraPages.set(idx, pageUid);
+    }
+    const at2 = slides.findIndex((sl) => sl.uid === pageUid);
+    return at2 >= 0 ? at2 : null;
   };
 
   const bakePts = (pts: number[], xf: { sx: number; sy: number; dx: number; dy: number; shx: number; shy: number }) => {
@@ -423,7 +614,7 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
     baked.set(oid, r.base);
     xf = r.xf;
     const pts = bakeRot(bakePts(src.p, xf), rv);
-    if (pts.length < 2) return;
+    if (pts.length < 2) return null;
     const st: PackedStroke = {
       t: at,
       te: at,
@@ -435,10 +626,23 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
       k: Array.from({ length: pts.length / 2 }, () => at),
       oid,
     };
+    if (src.f) st.f = 1;
+    if (src.sp) st.sp = src.sp.slice();
     if (src.m === "highlighter") st.tx = at + HIGHLIGHTER_HOLD_MS;
     strokes.push(st);
     byOid.set(oid, st);
     if (st.m === "highlighter") highLive.push(st);
+    return st;
+  };
+  // Copy every piece of an object (shapes are several strokes with one oid).
+  const cloneAll = (srcId: string, oid: string, destUid: string, at: number, xf: { sx: number; sy: number; dx: number; dy: number; shx: number; shy: number }, rv?: unknown, paste = false) => {
+    const made: PackedStroke[] = [];
+    for (const src of piecesOf(srcId)) {
+      const st = cloneStroke(src, oid, destUid, at, xf, rv, paste);
+      if (st) made.push(st);
+    }
+    if (made.length > 1) pieces.set(oid, made);
+    return made.length > 0;
   };
 
   const cloneImage = (
@@ -512,8 +716,15 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
   const rememberKid = (pasteId: string, kid: string) => {
     if (!pasteId || !kid) return;
     const list = pasteKids.get(pasteId);
-    if (list) list.push(kid);
-    else pasteKids.set(pasteId, [kid]);
+    if (list) {
+      list.push(kid);
+      let set = holders.get(kid);
+      if (!set) {
+        set = new Set();
+        holders.set(kid, set);
+      }
+      set.add(list);
+    } else pasteKids.set(pasteId, track([kid]));
   };
 
   const attachPasteKids = (ids: string[]) => {
@@ -534,6 +745,12 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
 
   const retargetId = (from: string, to: string) => {
     if (!from || !to || from === to) return;
+    const many = pieces.get(from);
+    if (many) {
+      pieces.delete(from);
+      for (const st of many) st.oid = to;
+      pieces.set(to, many);
+    }
     const st = byOid.get(from);
     if (st) {
       byOid.delete(from);
@@ -561,17 +778,23 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
       pasteKids.delete(from);
       pasteKids.set(to, kids);
     }
-    for (const list of pasteKids.values()) {
-      const at = list.indexOf(from);
-      if (at >= 0) list[at] = to;
-    }
     if (selected.includes(from)) selected = selected.map((id) => (id === from ? to : id));
-    for (const sh of shifts) sh.oids = sh.oids.map((id) => (id === from ? to : id));
-    for (const er of erases) {
-      if (er.oids) er.oids = er.oids.map((id) => (id === from ? to : id));
+    const lists = holders.get(from);
+    if (lists) {
+      holders.delete(from);
+      let dest = holders.get(to);
+      if (!dest) {
+        dest = new Set();
+        holders.set(to, dest);
+      }
+      for (const arr of lists) {
+        for (let i = 0; i < arr.length; i++) if (arr[i] === from) arr[i] = to;
+        dest.add(arr);
+      }
     }
-    for (const [prev, next] of renamed) if (next === from) renamed.set(prev, to);
-    renamed.set(from, to);
+    const prevs = renamedFrom.get(from);
+    if (prevs) for (const prev of [...prevs]) setRename(prev, to);
+    setRename(from, to);
   };
 
   for (const ev of events) {
@@ -587,6 +810,8 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
       else if (e === "estc") eraserSize = num(data.s, num(data.size, eraserSize));
       else if (e === "mc") {
         flush(t);
+        const rawMode = str(data.m ?? data.mode).toLowerCase().trim();
+        shapeUrl = rawMode === "shape" ? str(data.v) : "";
         const next = parseMode(data.m ?? data.mode, mode);
         if (mode === "highlighter" || next === "highlighter") expireHighlighters(t);
         mode = next;
@@ -603,7 +828,13 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
           uid: str(data.uid, `s${slides.length}_${t}`),
           bc: str(data.bc, str(data.backgroundColor, "#202022")),
         };
-        if (emptyBoardUrl(incoming) || emptyBoardUrl(slide.url || "")) {
+        const realUrl = str(data.u) || str(data.su) || str(data.publicUrl) || str(data.url) || str(data.staticImgUrl);
+        const blankPage = !opts?.liveBoard && !realUrl && emptyBoardUrl(incoming);
+        if (blankPage) {
+          slide.url = undefined;
+          if (/\/live_class\/background\/Light\.jpg/i.test(incoming) && (!slide.bc || slide.bc === "#202022")) slide.bc = "#FFFFFF";
+        }
+        if (!blankPage && (emptyBoardUrl(incoming) || emptyBoardUrl(slide.url || ""))) {
           if (/\/live_class\/background\/Light\.jpg/i.test(incoming) && slides[current] && (!slides[current]!.bc || slides[current]!.bc === "#202022")) {
             slides[current]!.bc = "#FFFFFF";
           }
@@ -620,7 +851,9 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
       } else if (e === "sc") {
         flush(t);
         expireHighlighters(t);
-        current = Math.max(0, Math.min(slides.length - 1, Math.round(num(data.s, num(data.index, current)))));
+        const want = Math.round(num(data.s, num(data.index, current)));
+        const extra = want >= slides.length - extraPages.size || extraPages.has(want) ? extraPage(want, t) : null;
+        current = extra ?? Math.max(0, Math.min(slides.length - 1, want));
         switches.push({ t, uid: uidAt() });
       } else if (e === "sbc") {
         const slide = slides[current];
@@ -649,7 +882,8 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
       if (opts?.liveBoard) {
         if (idx >= 1 && idx < slides.length) canvasIdx = idx;
       } else {
-        canvasIdx = idx;
+        const extra = idx >= slides.length - extraPages.size || extraPages.has(idx) ? extraPage(idx, t) : null;
+        canvasIdx = extra ?? idx;
       }
     }
     const uid = slides[Math.max(0, Math.min(slides.length - 1, canvasIdx))]?.uid ?? uidAt();
@@ -672,7 +906,7 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
       } else if (kind === "ts") {
         const dx = num(payload.dx, num(payload.translateX, num(inner.dx)));
         const dy = num(payload.dy, num(payload.translateY, num(inner.dy)));
-        if (selected.length && (dx || dy)) shifts.push({ t, oids: selected.slice(), dx, dy });
+        if (selected.length && (dx || dy)) { logMove(uid, t); shifts.push({ t, oids: track(selected.slice()), dx, dy }); }
       } else if (kind === "sl") {
         const m = (payload.m ?? {}) as Record<string, unknown>;
         const rv = (payload.rv ?? {}) as Record<string, unknown>;
@@ -686,7 +920,8 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
         const cx = num(rv.x, num(payload.cx, num(payload.centerX)));
         const cy = num(rv.y, num(payload.cy, num(payload.centerY)));
         if (selected.length) {
-          shifts.push({ t, oids: selected.slice(), dx, dy, sx, sy, shx, shy, rot: rot || undefined, cx, cy, abs: true, g: gesture });
+          logMove(uid, t);
+          shifts.push({ t, oids: track(selected.slice()), dx, dy, sx, sy, shx, shy, rot: rot || undefined, cx, cy, abs: true, g: gesture });
         }
       } else if (kind === "e") {
         selected = [];
@@ -697,7 +932,7 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
         );
         const cx = num(payload.cx, num(payload.centerX, num(payload.x)));
         const cy = num(payload.cy, num(payload.centerY, num(payload.y)));
-        if (selected.length && rot) shifts.push({ t, oids: selected.slice(), dx: 0, dy: 0, rot, cx, cy });
+        if (selected.length && rot) { logMove(uid, t); shifts.push({ t, oids: track(selected.slice()), dx: 0, dy: 0, rot, cx, cy }); }
       }
     } else if (e === "pdo2" || e === "pdo") {
       flush(t);
@@ -718,8 +953,12 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
       if (pathRaw && copyId && pasteId) {
         rememberPaste(str(inner.aId), pasteId);
         const xf = affineOf(pathRaw);
-        const src = byOid.get(resolveId(copyId));
-        if (src) cloneStroke(src, pasteId, uid, t, xf, pathRaw.rotationVals, true);
+        cloneAll(resolveId(copyId), pasteId, uid, t, xf, pathRaw.rotationVals, true);
+        const aid = str(inner.aId);
+        const stack = undoStacks.get(uid);
+        const top = stack ? stack[stack.length - 1] : undefined;
+        if (top && top.k === "kill" && aid && top.aid === aid) top.oids.push(pasteId);
+        else pushUndo(uid, { k: "kill", oids: [pasteId], aid: aid || undefined });
         const img = byImg.get(resolveId(copyId));
         if (img) cloneImage(img, pasteId, uid, t, xf);
         const erasers = Array.isArray(pathRaw.eraserPaths) ? pathRaw.eraserPaths : [];
@@ -742,9 +981,8 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
           const xf = affineOf(
             (path.shift && typeof path.shift === "object" ? (path.shift as Record<string, unknown>) : path),
           );
-          const src = fromId ? byOid.get(resolveId(fromId)) : undefined;
-          if (src && destId) {
-            cloneStroke(src, destId, uid, t, xf, path.rotationVals);
+          if (fromId && destId && cloneAll(resolveId(fromId), destId, uid, t, xf, path.rotationVals)) {
+            pushUndo(uid, { k: "kill", oids: [destId] });
           } else {
             const pts = bakeRot(bakePts(flattenPts(path.ppts ?? path.p), xf), path.rotationVals);
             if (pts.length >= 2 && destId) {
@@ -803,7 +1041,7 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
             const oid = str(obj.oid) || str(obj.id);
             const dx = num(obj.dx);
             const dy = num(obj.dy);
-            if (oid && (dx || dy)) shifts.push({ t, oids: [resolveId(oid)], dx, dy });
+            if (oid && (dx || dy)) shifts.push({ t, oids: track([resolveId(oid)]), dx, dy });
           }
         } else {
           const ids = Array.isArray(inner.ids)
@@ -813,7 +1051,7 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
               : selected.slice();
           const dx = num(inner.dx, num(payload.dx));
           const dy = num(inner.dy, num(payload.dy));
-          if (ids.length && (dx || dy)) shifts.push({ t, oids: resolveIds(ids), dx, dy });
+          if (ids.length && (dx || dy)) shifts.push({ t, oids: track(resolveIds(ids)), dx, dy });
         }
       }
     } else if (e === "cio" || e === "pg") {
@@ -878,6 +1116,8 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
       expireHighlighters(t);
       if (mode === "selection") continue;
       if (pt.shouldDraw === false) continue;
+      curShape = mode === "rectangle" && shapeUrl ? shapeUrl : "";
+      curShift = pt.s === true;
       const width = mode === "eraser" ? eraserSize : mode === "marker_highlighter" ? 7 : penSize;
       cur = {
         t,
@@ -943,14 +1183,26 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
     } else if (e === "ea") {
       flush(t);
       expireHighlighters(t);
+      const alive = aliveOn(uid, t);
       erases.push({ t, uid, kind: "all" });
+      pushUndo(uid, alive.length ? { k: "revert", oids: alive, at: t - 0.001 } : { k: "noop" });
     } else if (e === "un") {
       flush(t);
-      erases.push({ t, uid, kind: "undo" });
+      const item = undoStacks.get(uid)?.pop();
+      if (item?.k === "kill") {
+        const ids = resolveIds(item.oids);
+        if (ids.length) erases.push({ t, uid, kind: "oids", oids: track(attachPasteKids(ids).slice()) });
+      } else if (item?.k === "revert") {
+        revertTo(item.oids, item.at, t);
+      }
     } else if (e === "dlos") {
       flush(t);
       const ids = Array.isArray(inner.ids) ? resolveIds(inner.ids.map((v) => str(v)).filter(Boolean)) : [];
-      if (ids.length) erases.push({ t, uid, kind: "oids", oids: attachPasteKids(ids) });
+      if (ids.length) {
+        const all = attachPasteKids(ids);
+        erases.push({ t, uid, kind: "oids", oids: track(all.slice()) });
+        pushUndo(uid, { k: "revert", oids: all, at: t - 0.001 });
+      }
     }
   }
   flush(lastMs);
@@ -981,6 +1233,20 @@ export function compactEvents(id: string, chunks: RawEvent[][], opts?: { liveBoa
     images,
   };
   tl.eraserHits = bindErasers(tl);
+  if (revived.length) {
+    const byStroke = new Map<string, EraserHit[]>();
+    for (const h of tl.eraserHits) {
+      const list = byStroke.get(h.oid);
+      if (list) list.push(h);
+      else byStroke.set(h.oid, [h]);
+    }
+    for (const [from, to] of revived) {
+      for (const h of byStroke.get(from) ?? []) tl.eraserHits.push({ eraser: h.eraser, oid: to, at: { ...h.at } });
+      const chain = byStroke.get(to);
+      if (chain) byStroke.set(to, chain.concat(byStroke.get(from) ?? []));
+      else byStroke.set(to, (byStroke.get(from) ?? []).map((h) => ({ ...h, oid: to })));
+    }
+  }
   return tl;
 }
 
@@ -1227,14 +1493,16 @@ function bindErasers(tl: Timeline): EraserHit[] {
     if (list) list.push(st);
     else ink.set(st.uid, [st]);
   }
-  const xfAt = new Map<number, Map<string, Affine>>();
-  const hits: EraserHit[] = [];
-  for (const er of erasers) {
-    let xforms = xfAt.get(er.te);
-    if (!xforms) {
-      xforms = xformsAt(tl, er.te);
-      xfAt.set(er.te, xforms);
-    }
+  // Walk the shifts once in time order instead of rebuilding them per eraser.
+  const order = erasers.map((_, i) => i).sort((a, b) => erasers[a]!.te - erasers[b]!.te);
+  const found: EraserHit[][] = new Array(erasers.length);
+  const xforms = new Map<string, Affine>();
+  let si = 0;
+  for (const idx of order) {
+    const er = erasers[idx]!;
+    while (si < tl.shifts.length && tl.shifts[si]!.t <= er.te) applyShift(xforms, tl.shifts[si]!), si++;
+    const out: EraserHit[] = [];
+    found[idx] = out;
     const ePts = pointsUntil(er, er.te);
     const eHalf = halfNorm(er.w, "eraser");
     const box = boundsOf(ePts);
@@ -1247,9 +1515,11 @@ function bindErasers(tl: Timeline): EraserHit[] {
       const limit = eHalf + halfNorm(st.w, st.m);
       if (sb.x1 < box.x0 - pad || sb.x0 > box.x1 + pad || sb.y1 < box.y0 - pad || sb.y0 > box.y1 + pad) continue;
       if (!polylinesHit(ePts, pts, limit)) continue;
-      hits.push({ eraser: er.oid, oid: st.oid, at: { ...at } });
+      out.push({ eraser: er.oid, oid: st.oid, at: { ...at } });
     }
   }
+  const hits: EraserHit[] = [];
+  for (const list of found) for (const h of list) hits.push(h);
   return hits;
 }
 
@@ -1264,27 +1534,29 @@ export function affineAt(tl: Timeline, t: number, oid: string): BoardAffine {
   return xformsAt(tl, t).get(oid) ?? IDENTITY;
 }
 
+function applyShift(out: Map<string, Affine>, sh: PackedShift) {
+  const next: Affine = {
+    sx: sh.sx ?? 1,
+    sy: sh.sy ?? 1,
+    dx: sh.dx,
+    dy: sh.dy,
+    shx: sh.shx ?? 0,
+    shy: sh.shy ?? 0,
+    rot: sh.rot ?? 0,
+    cx: sh.cx ?? 0,
+    cy: sh.cy ?? 0,
+  };
+  // A 1.0 sample is a frame where the fingers did not move. It is not a
+  // reset, and it is not the size of the whole gesture.
+  if (isIdentity(next)) return;
+  for (const oid of sh.oids) out.set(oid, composeAffine(out.get(oid) ?? IDENTITY, next));
+}
+
 function xformsAt(tl: Timeline, t: number) {
   const out = new Map<string, Affine>();
   for (const sh of tl.shifts) {
     if (sh.t > t) break;
-    const next: Affine = {
-      sx: sh.sx ?? 1,
-      sy: sh.sy ?? 1,
-      dx: sh.dx,
-      dy: sh.dy,
-      shx: sh.shx ?? 0,
-      shy: sh.shy ?? 0,
-      rot: sh.rot ?? 0,
-      cx: sh.cx ?? 0,
-      cy: sh.cy ?? 0,
-    };
-    // A 1.0 sample is a frame where the fingers did not move. It is not a
-    // reset, and it is not the size of the whole gesture.
-    if (isIdentity(next)) continue;
-    for (const oid of sh.oids) {
-      out.set(oid, composeAffine(out.get(oid) ?? IDENTITY, next));
-    }
+    applyShift(out, sh);
   }
   return out;
 }

@@ -1,4 +1,5 @@
-import { compactEvents, unproxySlideUrl, type Timeline } from "../dcn.ts";
+import { unproxySlideUrl, type Timeline } from "../dcn.ts";
+import { compactWithShapes } from "../board-shapes.ts";
 import { validateManifest, type Manifest } from "./manifest.ts";
 
 export function remapSlideUrls(timeline: Timeline, blobBySrc: Map<string, string>): Timeline {
@@ -25,7 +26,7 @@ export function remapSlideUrls(timeline: Timeline, blobBySrc: Map<string, string
 export function parseInkJson(id: string, jsonText: string): Timeline {
   const parsed = JSON.parse(jsonText) as unknown;
   if (!Array.isArray(parsed)) throw new Error("Unexpected notes format");
-  return compactEvents(id, parsed as Parameters<typeof compactEvents>[1]);
+  return compactWithShapes(id, parsed as Parameters<typeof compactWithShapes>[1]);
 }
 
 export function readManifestBytes(bytes: Uint8Array): Manifest {

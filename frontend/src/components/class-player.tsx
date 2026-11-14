@@ -37,6 +37,7 @@ export function ClassPlayer({
   courseId,
   courseSlug,
   fromCourse,
+  similar = false,
   backTo,
   notesUrl,
   startAt,
@@ -50,6 +51,8 @@ export function ClassPlayer({
   courseId?: string;
   courseSlug?: string;
   fromCourse?: string;
+  /** A same-titled lecture from another course: plays here, but is not kept or prepared as this course's class. */
+  similar?: boolean;
   backTo?: string;
   notesUrl?: string | null;
   startAt?: number;
@@ -70,6 +73,10 @@ export function ClassPlayer({
     keepOpen, setSheet, setAudioUrl, hlsUrl, setHlsUrl, setSilence, setWaveform, setJobId, notesOpen, setNotesOpen,
   } = core;
   void tapTimer;
+  // The course page already knows this lesson's own notes PDF. Use it for the keep-class job
+  // when the route did not carry one, so the saver does not have to guess from the title.
+  const courseNotesUrl = core.courseQ.data?.lessons?.find((l) => l.replayId === timeline.id)?.notesUrl ?? null;
+  const keepNotesUrl = notesUrl || courseNotesUrl;
   const chromeOpenRef = useRef(true);
   const boardRef = useRef(boardBox);
   const boxRef = useRef(box);
@@ -461,6 +468,7 @@ export function ClassPlayer({
 
       <PlayerTransport
         {...playerModel}
+        canKeep={!similar}
         prevLesson={playerModel.prevLesson ?? null}
         nextLesson={playerModel.nextLesson ?? null}
         slideUrl={sheet ? null : slideAt(timeline, (hoverT ?? 0) * 1000).url}
@@ -468,10 +476,11 @@ export function ClassPlayer({
         dataSaverLabel={COPY.dataSaver}
         audioSrc={playbackSrc}
       />
-      {keepOpen ? (
+      {keepOpen && !similar ? (
         <SaveClassDialog
           lessonId={timeline.id}
           title={title}
+          notesUrl={keepNotesUrl}
           onClose={() => setKeepOpen(false)}
           onPrepared={(pack: PreparedMedia) => {
             if (pack.sprites) setSheet(pack.sprites);

@@ -309,10 +309,12 @@ function DialogActions({
 export function SaveClassButton({
   lessonId,
   title,
+  notesUrl,
   variant = "button",
 }: {
   lessonId: string;
   title: string;
+  notesUrl?: string | null;
   variant?: "button" | "line";
 }) {
   const [open, setOpen] = useState(false);
@@ -354,7 +356,7 @@ export function SaveClassButton({
           {COPY.downloadForOffline}
         </Button>
       )}
-      {open ? <SaveClassDialog lessonId={lessonId} title={title} command={command} onClose={() => setOpen(false)} /> : null}
+      {open ? <SaveClassDialog lessonId={lessonId} title={title} notesUrl={notesUrl} command={command} onClose={() => setOpen(false)} /> : null}
     </>
   );
 }
@@ -362,12 +364,14 @@ export function SaveClassButton({
 export function SaveClassDialog({
   lessonId,
   title,
+  notesUrl,
   command,
   onClose,
   onPrepared,
 }: {
   lessonId: string;
   title: string;
+  notesUrl?: string | null;
   command?: string;
   onClose: () => void;
   onPrepared?: (pack: PreparedMedia) => void;
@@ -480,7 +484,7 @@ export function SaveClassDialog({
       const created = await apiJson<{ id: string; state: string; step: string; token?: string }>("/api/jobs/lectures", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id: lessonId, title, remux: true, enhance: true }),
+        body: JSON.stringify({ id: lessonId, title, remux: true, enhance: true, ...(notesUrl ? { notesUrl } : {}) }),
       });
       const kept = rememberLectureJob(created, lessonId);
       setJobId(kept.id);

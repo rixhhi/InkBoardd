@@ -49,6 +49,7 @@ export const LectureJobBody = z.object({
   noMedia: z.boolean().optional(),
   noNotes: z.boolean().optional(),
   enhance: z.boolean().optional(),
+  notesUrl: z.string().max(600).optional(),
 });
 
 export const ClipBody = z.object({

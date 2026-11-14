@@ -156,3 +156,17 @@ describe("phase B media plan", () => {
     assert.equal(lectureJobPayload({ enhance: true }), null);
   });
 });
+
+describe("lecture job notes link", () => {
+  it("keeps only a real CDN notes PDF and leaves the job id alone when there is none", () => {
+    const plain = lectureJobPayload({ id: "WY106R57G6SA54R3JCHR", remux: true });
+    assert.ok(plain);
+    assert.equal("notesUrl" in plain, false);
+    const good = lectureJobPayload({ id: "WY106R57G6SA54R3JCHR", notesUrl: "https://player.uacdn.net/slides_pdf/x/notes.pdf" });
+    assert.equal(good?.notesUrl, "https://player.uacdn.net/slides_pdf/x/notes.pdf");
+    for (const bad of ["http://player.uacdn.net/a.pdf", "https://evil.example/a.pdf", "https://uacdn.net.evil.com/a.pdf", "https://player.uacdn.net/a.html", "not a url"]) {
+      const p = lectureJobPayload({ id: "WY106R57G6SA54R3JCHR", notesUrl: bad });
+      assert.equal(p && "notesUrl" in p, false, bad);
+    }
+  });
+});

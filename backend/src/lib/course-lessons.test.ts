@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { applyRelatedReplays, htmlLessonBundle, titleScore } from "@inkboard/shared/parse-lesson";
+import { attachSimilarReplays, htmlLessonBundle, titleScore } from "@inkboard/shared/parse-lesson";
 
 describe("course HTML lesson merge", () => {
   it("reads replay ids from the course page lesson list, not the empty collection liveClass", () => {
@@ -43,7 +43,7 @@ describe("course HTML lesson merge", () => {
   });
 
   it("fills a missing LT part from the ISRO series with the same part number", () => {
-    const lessons = applyRelatedReplays(
+    const lessons = attachSimilarReplays(
       [
         {
           uid: "LT1",
@@ -98,12 +98,13 @@ describe("course HTML lesson merge", () => {
         },
       ],
     );
-    assert.equal(lessons[0]?.replayId, "OLP1VMYST9268CI7AW48");
-    assert.equal(lessons[0]?.altReplay, true);
-    assert.equal(lessons[0]?.fromCourse, "Computer Networks for ISRO");
-    assert.equal(lessons[0]?.status, "replay");
+    // A same-titled lecture elsewhere is only a link; the lesson itself stays unavailable.
+    assert.equal(lessons[0]?.replayId, null);
+    assert.equal(lessons[0]?.status, "unavailable");
+    assert.equal(lessons[0]?.similar?.replayId, "OLP1VMYST9268CI7AW48");
+    assert.equal(lessons[0]?.similar?.courseName, "Computer Networks for ISRO");
     assert.equal(lessons[1]?.replayId, "I98Q2RWURJR6AK87BC69");
-    assert.equal(lessons[1]?.altReplay, undefined);
+    assert.equal(lessons[1]?.similar, undefined);
   });
 
   it("fills several missing LT parts from ISRO without mixing part numbers", () => {
@@ -114,7 +115,7 @@ describe("course HTML lesson merge", () => {
       durationSec: 3600,
       title: `Computer Networks-Part ${n === 1 ? "I" : n === 2 ? "II" : n === 5 ? "V" : n === 6 ? "VI" : n === 12 ? "XII" : n === 13 ? "XIII" : n === 17 ? "XVII" : "XVIII"}`,
     }));
-    const lessons = applyRelatedReplays(
+    const lessons = attachSimilarReplays(
       [
         { uid: "a", title: "Computer Networks - Part I", slug: "", durationSec: 8940, liveAt: null, replayId: null, playable: false, rank: 1, week: null, status: "unavailable", notesUrl: null, slidesUrl: null, dppUrl: null, dppName: null, thumbnail: "" },
         { uid: "b", title: "Computer Networks - Part II", slug: "", durationSec: 5, liveAt: null, replayId: null, playable: false, rank: 2, week: null, status: "unavailable", notesUrl: null, slidesUrl: null, dppUrl: null, dppName: null, thumbnail: "" },
@@ -123,10 +124,15 @@ describe("course HTML lesson merge", () => {
       ],
       pool,
     );
-    assert.equal(lessons[0]?.replayId, "ISRO1");
-    assert.equal(lessons[1]?.replayId, "ISRO2");
+    // Matches become links only; part numbers must never be mixed.
+    assert.equal(lessons[0]?.replayId, null);
+    assert.equal(lessons[0]?.similar?.replayId, "ISRO1");
+    assert.equal(lessons[1]?.replayId, null);
+    assert.equal(lessons[1]?.similar?.replayId, "ISRO2");
     assert.equal(lessons[2]?.replayId, "OWN3");
-    assert.equal(lessons[3]?.replayId, "ISRO18");
+    assert.equal(lessons[2]?.similar, undefined);
+    assert.equal(lessons[3]?.replayId, null);
+    assert.equal(lessons[3]?.similar?.replayId, "ISRO18");
   });
 
   it("scores the same part number highly and refuses a different part", () => {

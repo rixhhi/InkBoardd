@@ -1,7 +1,7 @@
 /** Bundle format v1. Keep in lockstep with CACHE_VER in lesson-api.ts. */
 export const BUNDLE_FORMAT = "inkboard-bundle";
 export const BUNDLE_VERSION = 1;
-export const PARSER_VERSION = "v19";
+export const PARSER_VERSION = "v21";
 
 export type ManifestFile = {
   path: string;
@@ -30,6 +30,8 @@ export type Manifest = {
     notes?: ManifestFile;
   };
   slides: ManifestSlide[];
+  /** Set when the replay was borrowed from another course (shown as "From …"). */
+  fromCourse?: string;
 };
 
 function fail(msg: string): never {
@@ -88,7 +90,9 @@ export function validateManifest(x: unknown): Manifest {
   const notes = x.files.notes === undefined ? undefined : asFile(x.files.notes, "files.notes");
   if (!Array.isArray(x.slides)) fail("slides is missing");
   const slides = x.slides.map((s, i) => asSlide(s, i));
+  const fromCourse = typeof x.fromCourse === "string" && x.fromCourse.trim() ? x.fromCourse.trim().slice(0, 200) : undefined;
   return {
+    ...(fromCourse ? { fromCourse } : {}),
     format: BUNDLE_FORMAT,
     version: x.version,
     lessonId: x.lessonId,
