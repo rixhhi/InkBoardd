@@ -35,7 +35,7 @@ import { COPY } from "@inkboard/shared/copy";
 import { collectNotesFiles, notesFileCounts } from "@inkboard/shared/notes-zip";
 
 import {
-  altReplayFootnote,
+  unavailableFootnote,
   coverageRatio,
   lineState,
   nextOpenIndex,
@@ -238,7 +238,7 @@ export default function CoursePage() {
   const notesCounts = notesFileCounts(notesFiles);
   const topic = courseSeal(course.topics, course.language, course.name);
   const footnote = [
-    altReplayFootnote(lessons),
+    unavailableFootnote(lessons),
     archivedCount ? `${archivedCount} archived` : "",
     course.language || "",
   ]

@@ -19,8 +19,16 @@ export type UaLesson = {
   dppUrl: string | null;
   dppName: string | null;
   thumbnail: string;
-  altReplay?: boolean;
-  fromCourse?: string;
+  similar?: SimilarLecture | null;
+};
+
+/** A lecture with a matching title in another course. Shown as a link only:
+ * it never fills in this lesson's recording, counts or downloads. */
+export type SimilarLecture = {
+  replayId: string;
+  title: string;
+  courseName: string | null;
+  durationSec: number;
 };
 
 function asStr(v: unknown) {
@@ -141,7 +149,6 @@ export function mergeLessons(chunks: UaLesson[][]): UaLesson[] {
       const liveAt = lesson.liveAt || prev.liveAt;
       const status =
         lesson.status === "live" || prev.status === "live" ? "live" : lessonStatus(replayId, liveAt);
-      const altReplay = Boolean(replayId) && (lesson.replayId ? Boolean(lesson.altReplay) : Boolean(prev.altReplay));
       map.set(lesson.uid, {
         ...prev,
         ...lesson,
@@ -157,8 +164,7 @@ export function mergeLessons(chunks: UaLesson[][]): UaLesson[] {
         rank: lesson.rank || prev.rank,
         playable: Boolean(replayId) || status === "live",
         status,
-        altReplay,
-        fromCourse: altReplay ? lesson.fromCourse || prev.fromCourse : undefined,
+        similar: replayId ? null : lesson.similar || prev.similar || null,
       });
     }
   return [...map.values()].sort((a, b) => a.rank - b.rank || a.title.localeCompare(b.title));
@@ -236,11 +242,20 @@ function partNo(title: string): string | null {
   return title.match(/\bpart (\d+)\b/)?.[1] ?? null;
 }
 
+/** Plain lecture numbers in a normalised title ("test 2", "session 01"). */
+function lectureNos(title: string): Set<number> {
+  return new Set((title.match(/\b\d+\b/g) ?? []).map((n: string) => Number(n)));
+}
+
 export function titleScore(a: string, b: string): number {
   if (a === b) return 100;
   const pa = partNo(a);
   const pb = partNo(b);
   if (pa && pb && pa !== pb) return 0;
+  // "Test of hypothesis 2" is not "Statistical hypothesis test 01".
+  const na = lectureNos(a);
+  const nb = lectureNos(b);
+  if (na.size && nb.size && ![...na].some((n) => nb.has(n))) return 0;
   const ta = a.split(" ").filter((w: string) => w.length > 1 && !SCORE_STOP.has(w));
   const tb = b.split(" ").filter((w: string) => w.length > 1 && !SCORE_STOP.has(w));
   if (ta.length < 2 || tb.length < 2) return 0;
@@ -259,15 +274,18 @@ export function titleScore(a: string, b: string): number {
   return Math.min(99, score);
 }
 
-export function applyRelatedReplays(lessons: UaLesson[], pool: RelatedHit[]): UaLesson[] {
+/** Finds a same-titled lecture in the teacher's other courses for lessons that
+ * have no recording here. The lesson itself stays unavailable (as on Unacademy). */
+export function attachSimilarReplays(lessons: UaLesson[], pool: RelatedHit[]): UaLesson[] {
   if (!pool.length) return lessons;
-  const used = new Set(lessons.map((l) => l.replayId).filter((id): id is string => Boolean(id)));
+  const own = new Set(lessons.map((l) => l.replayId).filter((id): id is string => Boolean(id)));
+  const used = new Set<string>();
   return lessons.map((lesson) => {
-    if (lesson.replayId || lesson.status === "live" || lesson.status === "upcoming") return lesson;
+    if (lesson.replayId || lesson.status !== "unavailable") return lesson;
     const key = normLessonTitle(lesson.title);
     let best: { hit: RelatedHit; score: number } | null = null;
     for (const hit of pool) {
-      if (!hit.replayId || used.has(hit.replayId)) continue;
+      if (!hit.replayId || own.has(hit.replayId) || used.has(hit.replayId)) continue;
       const score = titleScore(key, normLessonTitle(hit.title));
       if (score > (best?.score ?? 0)) best = { hit, score };
     }
@@ -275,14 +293,12 @@ export function applyRelatedReplays(lessons: UaLesson[], pool: RelatedHit[]): Ua
     used.add(best.hit.replayId);
     return {
       ...lesson,
-      replayId: best.hit.replayId,
-      notesUrl: lesson.notesUrl || best.hit.notesUrl,
-      slidesUrl: lesson.slidesUrl || best.hit.slidesUrl,
-      durationSec: best.hit.durationSec || lesson.durationSec,
-      playable: true,
-      status: "replay",
-      altReplay: true,
-      fromCourse: best.hit.courseName || undefined,
+      similar: {
+        replayId: best.hit.replayId,
+        title: best.hit.title,
+        courseName: best.hit.courseName || null,
+        durationSec: best.hit.durationSec || 0,
+      },
     };
   });
 }

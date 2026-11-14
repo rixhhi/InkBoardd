@@ -37,6 +37,7 @@ export function ClassPlayer({
   courseId,
   courseSlug,
   fromCourse,
+  similar = false,
   backTo,
   notesUrl,
   startAt,
@@ -50,6 +51,8 @@ export function ClassPlayer({
   courseId?: string;
   courseSlug?: string;
   fromCourse?: string;
+  /** A same-titled lecture from another course: plays here, but is not kept or prepared as this course's class. */
+  similar?: boolean;
   backTo?: string;
   notesUrl?: string | null;
   startAt?: number;
@@ -461,6 +464,7 @@ export function ClassPlayer({
 
       <PlayerTransport
         {...playerModel}
+        canKeep={!similar}
         prevLesson={playerModel.prevLesson ?? null}
         nextLesson={playerModel.nextLesson ?? null}
         slideUrl={sheet ? null : slideAt(timeline, (hoverT ?? 0) * 1000).url}
@@ -468,7 +472,7 @@ export function ClassPlayer({
         dataSaverLabel={COPY.dataSaver}
         audioSrc={playbackSrc}
       />
-      {keepOpen ? (
+      {keepOpen && !similar ? (
         <SaveClassDialog
           lessonId={timeline.id}
           title={title}

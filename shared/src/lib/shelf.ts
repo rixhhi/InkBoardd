@@ -63,40 +63,23 @@ export function nextOpenIndex(states: LineState[]) {
   return states.findIndex((s) => s !== "struck");
 }
 
-export function fromCourseCaption(name?: string | null) {
-  const n = (name ?? "").replace(/\s+/g, " ").trim();
-  if (!n) return "From another course";
-  return `From ${n}`;
+/** Label for the link to a same-titled lecture in another course. */
+export function similarCaption(name?: string | null) {
+  const n = (name ?? "").replace(/\s+/g, " ").trim().slice(0, 120);
+  return n ? `Similar lecture in ${n}` : "Similar lecture in another course";
 }
 
-export function altReplayFootnote(lessons: { altReplay?: boolean; fromCourse?: string | null }[]) {
-  const borrowed = lessons.filter((l) => l.altReplay);
-  if (!borrowed.length) return "";
-  const names = [
-    ...new Set(
-      borrowed
-        .map((l) => (l.fromCourse ?? "").replace(/\s+/g, " ").trim())
-        .filter(Boolean),
-    ),
-  ];
-  if (names.length === 1) {
-    return borrowed.length === 1 ? `From ${names[0]}` : `${borrowed.length} from ${names[0]}`;
-  }
-  if (names.length > 1) return `${borrowed.length} from other courses`;
-  return borrowed.length === 1 ? "From another course" : `${borrowed.length} from other courses`;
+/** "N classes have no recording" for the course header; "" when none. */
+export function unavailableFootnote(lessons: { status?: string; replayId?: string | null }[]) {
+  const n = lessons.filter((l) => l.status === "unavailable" && !l.replayId).length;
+  if (!n) return "";
+  return n === 1 ? "1 class has no recording" : `${n} classes have no recording`;
 }
 
-export function lessonStatusCaption(
-  status: string,
-  altReplay?: boolean,
-  durationSec?: number,
-  fromCourse?: string | null,
-) {
+export function lessonStatusCaption(status: string, durationSec?: number) {
   if (status === "live") return "Live";
-  if (status === "archived") {
-    return altReplay ? `${fromCourseCaption(fromCourse)} · notes available` : "Archived · notes available";
-  }
-  if (status === "replay") return altReplay ? fromCourseCaption(fromCourse) : "";
+  if (status === "archived") return "Archived · notes available";
+  if (status === "replay") return "";
   if (status === "upcoming") return "Upcoming";
   if (durationSec != null && durationSec > 0 && durationSec < 60) return "Did not go live";
   if (durationSec === 8940 || durationSec === 9000) return "Did not go live";

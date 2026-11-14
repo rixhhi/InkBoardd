@@ -20,12 +20,14 @@ import {
 import { delimiter, dirname, join, resolve } from "node:path";
 import { gzipSync, gunzipSync } from "node:zlib";
 import { compactEvents, notesSlug, unproxySlideUrl } from "@inkboard/shared/dcn";
+import { shapesFor } from "../../lib/shape-geom.ts";
 import {
   SLIDE_MAX_BYTES,
   NOTES_MAX_BYTES,
   ensurePdfPage,
   isCdnArchive,
   isGzip,
+  isNotesUrl,
   rasterKind,
 } from "@inkboard/shared/cdn-proxy";
 import {
@@ -491,13 +493,35 @@ async function downloadSlide(src, fetchImpl, log, signal) {
   }
 }
 
-async function maybeNotes(id, title, fetchImpl, log, signal) {
+/**
+ * The notes PDF links to try, best first. A replay shown under another course is named
+ * after that course's lecture, so its real link (from the course page) comes first;
+ * the title guess is only a fallback.
+ */
+export function notesCandidates(id, title, notesUrl) {
+  const out = [];
+  if (typeof notesUrl === "string" && notesUrl) {
+    try {
+      const u = new URL(notesUrl);
+      if (isNotesUrl(u)) {
+        out.push(u.href);
+        if (/_with_anno\.pdf$/i.test(u.pathname)) out.push(u.href.replace(/_with_anno\.pdf$/i, "_no_anno.pdf"));
+      }
+    } catch {
+      /* not a URL */
+    }
+  }
   const slug = title ? notesSlug(title) : "";
-  if (!slug) return null;
-  const candidates = [
-    `https://player.uacdn.net/slides_pdf/${id}/${slug}_with_anno.pdf`,
-    `https://player.uacdn.net/slides_pdf/${id}/${slug}_no_anno.pdf`,
-  ];
+  if (slug) {
+    out.push(`https://player.uacdn.net/slides_pdf/${id}/${slug}_with_anno.pdf`);
+    out.push(`https://player.uacdn.net/slides_pdf/${id}/${slug}_no_anno.pdf`);
+  }
+  return [...new Set(out)];
+}
+
+async function maybeNotes(id, title, fetchImpl, log, signal, notesUrl) {
+  const candidates = notesCandidates(id, title, notesUrl);
+  if (!candidates.length) return null;
   for (const url of candidates) {
     try {
       const res = await fetchRetry(
@@ -699,7 +723,9 @@ export async function saveLecture({ id, outDir, fetch: fetchImpl, log, opts = {}
   const jsonText = decodeInk(rawInk);
   const parsed = JSON.parse(jsonText);
   if (!Array.isArray(parsed)) throw new SaveLectureError("Unexpected notes format", EXIT.error);
-  const timeline = compactEvents(id, parsed);
+  // Shape-library pieces are drawn from their SVG outlines, same as the online player.
+  const shapes = await shapesFor(parsed).catch(() => new Map());
+  const timeline = compactEvents(id, parsed, { shapes });
 
   const seen = new Set();
   const slideSrcs = [];
@@ -769,7 +795,7 @@ export async function saveLecture({ id, outDir, fetch: fetchImpl, log, opts = {}
     );
   }
   if (!opts.noNotes && opts.title) {
-    const notes = await maybeNotes(id, opts.title, fetchFn, logger, signal);
+    const notes = await maybeNotes(id, opts.title, fetchFn, logger, signal, opts.notesUrl);
     if (notes) {
       writeFileSync(join(partialDir, "notes.pdf"), notes);
       notesFile = { path: "notes.pdf", bytes: notes.byteLength, sha256: sha256Buf(notes) };

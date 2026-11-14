@@ -12,13 +12,14 @@ import {
 } from "@inkboard/shared/cdn-proxy";
 
 import { probeGet, probeSet } from "../repositories/postgres/cache.ts";
+import { shapesFor } from "../lib/shape-geom.ts";
 import { isPackedTimeline, readTimelineCache, timelineCacheKey, writeTimelineCache } from "../lib/timeline-cache.ts";
 import { fetchWithRetry } from "@inkboard/shared/fetch-retry";
 import { transportFault, upstreamBad, upstreamNotFound } from "@inkboard/shared/http-error";
 import { familyBreaker } from "../lib/breaker.ts";
 
 const cache = new LruMap<Timeline>(80);
-const CACHE_VER = "v20";
+const CACHE_VER = "v22";
 const mediaCache = new LruMap<{ at: number; archived: boolean }>(400);
 const MEDIA_TTL = 6 * 60 * 60 * 1000;
 
@@ -164,7 +165,7 @@ export const loadLessonTimeline = defineService({ method: "POST" })
       }
       const parsed = JSON.parse(jsonText) as unknown;
       if (!Array.isArray(parsed)) throw new Error("Unexpected notes format");
-      const tl = compactEvents(data.id, parsed as Parameters<typeof compactEvents>[1]);
+      const tl = compactEvents(data.id, parsed as Parameters<typeof compactEvents>[1], { shapes: await shapesFor(parsed) });
       const stored = Object.assign(tl, { stamp });
       cache.set(key, stored);
       console.info(`[timeline-cache] packed ${data.id} strokes=${tl.strokes.length}`);

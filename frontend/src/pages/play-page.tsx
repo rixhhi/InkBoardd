@@ -112,6 +112,7 @@ export default function PlayPage() {
         courseId={search.course}
         courseSlug={search.slug}
         fromCourse={search.fromCourse}
+        similar={Boolean(search.similar)}
         backTo={back}
         notesUrl={search.notes}
         startAt={search.t}

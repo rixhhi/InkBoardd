@@ -247,6 +247,8 @@ export type CatalogLesson = {
   durationSec: number;
   playable: boolean;
   status: string;
+  /** The real notes PDF link (more reliable than guessing it from the title). */
+  notesUrl?: string | null;
 };
 
 /** Replays you can actually open. Live / upcoming / archived stay off the list. */

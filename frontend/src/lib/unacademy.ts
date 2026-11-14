@@ -9,7 +9,7 @@ import type { LiveSession } from "@inkboard/shared/live-session";
 export type { LessonStatus, RelatedHit, UaLesson };
 export type { CrashDoor, PracticeLine, TestItem, TestSeries };
 export { extractReplayId, isReplayId, normalizeUsername } from "@inkboard/shared/unacademy-ids";
-export { applyRelatedReplays, htmlLessonBundle, titleScore } from "@inkboard/shared/parse-lesson";
+export { attachSimilarReplays, htmlLessonBundle, titleScore } from "@inkboard/shared/parse-lesson";
 
 export type Educator = {
   username: string;

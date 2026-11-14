@@ -87,6 +87,24 @@ export function drawStroke(ctx: CanvasRenderingContext2D, st: PackedStroke, w: n
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
+  // Solid parts of the shape library (letters, filled symbols). Later outlines start at st.sp
+  // and are cut out with even-odd so holes stay holes.
+  if (st.f && pts.length >= 6) {
+    ctx.beginPath();
+    const starts = new Set(st.sp || []);
+    for (let i = 0; i < pts.length; i += 2) {
+      const x = pts[i]! * w;
+      const y = pts[i + 1]! * h;
+      if (i === 0 || starts.has(i / 2)) {
+        if (i) ctx.closePath();
+        ctx.moveTo(x, y);
+      } else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill("evenodd");
+    ctx.restore();
+    return;
+  }
   if (st.m === "rectangle" && pts.length >= 4) {
     ctx.strokeRect(pts[0]! * w, pts[1]! * h, pts[2]! * w - pts[0]! * w, pts[3]! * h - pts[1]! * h);
     ctx.restore();

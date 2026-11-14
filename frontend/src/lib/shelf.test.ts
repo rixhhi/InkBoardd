@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  altReplayFootnote,
   coverageRatio,
   fmtDur,
-  fromCourseCaption,
   lessonStatusCaption,
+  similarCaption,
+  unavailableFootnote,
   lineState,
   nextOpenIndex,
   parseClock,
@@ -55,25 +55,14 @@ describe("shelf lines", () => {
 
   it("keeps lesson captions factual", () => {
     assert.equal(lessonStatusCaption("replay"), "");
-    assert.equal(lessonStatusCaption("replay", true), "From another course");
-    assert.equal(lessonStatusCaption("replay", true, 3600, "Computer Networks for ISRO"), "From Computer Networks for ISRO");
-    assert.equal(fromCourseCaption("  Computer Networks for ISRO  "), "From Computer Networks for ISRO");
-    assert.equal(altReplayFootnote([{ altReplay: true, fromCourse: "Computer Networks for ISRO" }]), "From Computer Networks for ISRO");
-    assert.equal(
-      altReplayFootnote([
-        { altReplay: true, fromCourse: "Computer Networks for ISRO" },
-        { altReplay: true, fromCourse: "Computer Networks for ISRO" },
-      ]),
-      "2 from Computer Networks for ISRO",
-    );
+    assert.equal(similarCaption("  Computer Networks for ISRO  "), "Similar lecture in Computer Networks for ISRO");
+    assert.equal(similarCaption(), "Similar lecture in another course");
+    assert.equal(unavailableFootnote([{ status: "unavailable", replayId: null }]), "1 class has no recording");
+    assert.equal(unavailableFootnote([{ status: "replay", replayId: "x" }]), "");
     assert.equal(lessonStatusCaption("archived"), "Archived · notes available");
-    assert.equal(
-      lessonStatusCaption("archived", true, 3600, "Computer Networks for ISRO"),
-      "From Computer Networks for ISRO · notes available",
-    );
-    assert.equal(lessonStatusCaption("unavailable", false, 5), "Did not go live");
-    assert.equal(lessonStatusCaption("unavailable", false, 8940), "Did not go live");
-    assert.equal(lessonStatusCaption("unavailable", false, 2556), "No replay");
+    assert.equal(lessonStatusCaption("unavailable", 5), "Did not go live");
+    assert.equal(lessonStatusCaption("unavailable", 8940), "Did not go live");
+    assert.equal(lessonStatusCaption("unavailable", 2556), "No replay");
     assert.doesNotMatch(lessonStatusCaption("unavailable"), /Not recorded/);
   });
 

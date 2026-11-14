@@ -37,8 +37,7 @@ export function mergeUid(prev: UaLesson[], next: UaLesson[]) {
             ...old,
             ...l,
             replayId: l.replayId || old.replayId,
-            altReplay: Boolean((l.replayId || old.replayId) && (l.altReplay || old.altReplay)),
-            fromCourse: l.fromCourse || old.fromCourse,
+            similar: l.replayId || old.replayId ? null : l.similar || old.similar || null,
           }
         : l,
     );

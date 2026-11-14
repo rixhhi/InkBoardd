@@ -269,6 +269,7 @@ export function memberRule(method: string, path: string): Rule {
     case "study":
     case "slide":
     case "notes":
+    case "board":
       return { allow: true };
     case "jobs":
       // POST /api/jobs/lectures (create) and every write need the Downloads switch.

@@ -7,7 +7,7 @@ export type PlayerPrefs = {
 };
 
 const KEY = "inkboard.player.v1";
-export const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+export const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3];
 
 const DEFAULTS: PlayerPrefs = {
   speed: 1,

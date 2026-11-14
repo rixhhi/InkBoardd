@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { compactEvents, pendingTimeline, type Timeline } from "./dcn.ts";
+import { pendingTimeline, type Timeline } from "./dcn.ts";
+import { compactWithShapes } from "./board-shapes.ts";
 import { bumpLiveOrigin, decodeLivePayload, extractLiveBundle, hasLiveSlideNav, isPdfNotes, lastBoardMs, liveBoardStreamUrl, liveClockMs, liveCompactDelay, liveHeartbeat, liveHistoryBody, livePaintClock, LIVE_INK_LEAD_MS, LIVE_WS_HISTORY_PAGES, liveSubscribeBody, liveWsUrl, mergeLiveEvents, overlayLiveSnapshot, pinLiveNow, pinLiveRaster, pinLiveSlide, refreshLiveSlides, remapLiveInk, shouldPackHistoryDone, shouldPackLiveBurst, socketInfoKind, jwtFields, type LiveRawEvent } from "./live-dcn.ts";
 import type { LiveSession } from "./live-session.ts";
 
@@ -15,7 +16,7 @@ function packBoard(
     const blank = pendingTimeline(id, title);
     return { ...blank, kind: "board", videoUrl: "" };
   }
-  const tl = pinLiveSlide(compactEvents(id, [rows], { liveBoard: true }));
+  const tl = pinLiveSlide(compactWithShapes(id, [rows], { liveBoard: true }));
   const hasPdf = tl.slides.some((s) => isPdfNotes(s.url || ""));
   const pinned = pinLiveNow(remapLiveInk(uadoc && !hasPdf ? pinLiveRaster(tl) : tl));
   return refreshLiveSlides({ ...pinned, kind: "board", videoUrl: "", title: title || pinned.title }, Date.now());

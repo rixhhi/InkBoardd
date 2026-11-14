@@ -114,7 +114,8 @@ export function Whiteboard({
         });
     };
 
-    const tick = () => {
+    // One paint pass. The rAF loop below calls it every frame; a resize calls it directly.
+    const paintNow = () => {
       const v = videoRef.current;
       bind(v);
       const mediaSec = v && Number.isFinite(v.currentTime) ? v.currentTime : Number.NaN;
@@ -156,13 +157,21 @@ export function Whiteboard({
         // Full repaint. Eraser holes are recomputed for this time, not kept from the last frame.
         paintInk(ink, tlRef.current, timeMs, objImgsRef.current);
       }
+    };
+    const tick = () => {
+      paintNow();
       raf = requestAnimationFrame(tick);
     };
 
     sizeToWrap();
     const ro = new ResizeObserver(() => {
+      const before = `${ink.width}x${ink.height}`;
       sizeToWrap();
-      lastPaint = -1;
+      // Resizing a canvas clears it, so repaint straight away instead of waiting for the next frame.
+      if (`${ink.width}x${ink.height}` !== before) {
+        lastPaint = -1;
+        paintNow();
+      }
     });
     ro.observe(wrap);
     raf = requestAnimationFrame(tick);

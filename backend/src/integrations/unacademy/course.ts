@@ -1,7 +1,7 @@
 import { defineService } from "@/lib/server-fn.ts";
 import { swr } from "@/lib/swr-cache";
 import {
-  applyRelatedReplays,
+  attachSimilarReplays,
   htmlLessonBundle,
   mergeLessons,
   type UaLesson,
@@ -28,7 +28,7 @@ import {
 } from "./support.ts";
 
 export const loadCourseDetail = defineService({ method: "POST" }).validator((d: unknown) => CourseDetailInput.parse(d)).handler(async ({ data }): Promise<CourseDetail> => {
-	return swr(`course11:${data.uid}:${data.slug ?? ""}:${data.teacher ?? ""}`, TTL, async () => {
+	return swr(`course13:${data.uid}:${data.slug ?? ""}:${data.teacher ?? ""}`, TTL, async () => {
 		const resolved = await resolveCourseRef(data.uid, data.slug, data.teacher);
 		const uid = resolved.uid;
 		const empty: Record<string, unknown> = {};
@@ -82,7 +82,7 @@ export const loadCourseDetail = defineService({ method: "POST" }).validator((d: 
 			nextOffset: null,
 			total: 0
 		}), relatedP]);
-		const lessons = applyRelatedReplays(mergeLessons([
+		const lessons = attachSimilarReplays(mergeLessons([
 			firstPage.lessons,
 			rest.lessons,
 			fromHtml.lessons

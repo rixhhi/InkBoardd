@@ -1,4 +1,4 @@
-export { applyRelatedReplays, htmlLessonBundle, titleScore } from "@inkboard/shared/parse-lesson";
+export { attachSimilarReplays, htmlLessonBundle, titleScore } from "@inkboard/shared/parse-lesson";
 export type { LessonStatus, RelatedHit, UaLesson } from "@inkboard/shared/parse-lesson";
 export type { TestItem, TestSeries } from "@inkboard/shared/test-series";
 export type { CrashDoor } from "@inkboard/shared/crash-doors";

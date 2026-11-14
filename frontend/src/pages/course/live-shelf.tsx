@@ -1,5 +1,5 @@
 import { Link, useNavigate, } from "@tanstack/react-router";
-import { Play } from "lucide-react";
+import { Link2, Play } from "lucide-react";
 import {
   Badge,
   Button,
@@ -40,6 +40,7 @@ import { COPY } from "@inkboard/shared/copy";
 import {
   fmtDur,
   lessonStatusCaption,
+  similarCaption,
   type lineState,
   shelfCoverageCopy,
 } from "@inkboard/shared/shelf";
@@ -212,7 +213,7 @@ export function LiveShelf({
               <p className="text-xs font-semibold tracking-[0.14em] text-accent uppercase">{states[nextIdx] === "resume" ? "Continue" : "Up next"}</p>
               <p className="mt-0.5 truncate font-medium text-fg">{nextLesson.title}</p>
               <p className="mt-0.5 text-xs text-fg-muted">
-                {[lessonStatusCaption(nextLesson.status, nextLesson.altReplay, nextLesson.durationSec, nextLesson.fromCourse), nextLesson.durationSec ? fmtDur(nextLesson.durationSec) : ""]
+                {[lessonStatusCaption(nextLesson.status, nextLesson.durationSec), nextLesson.durationSec ? fmtDur(nextLesson.durationSec) : ""]
                   .filter(Boolean)
                   .join(" · ")}
               </p>
@@ -221,7 +222,7 @@ export function LiveShelf({
               <Link
                 to="/play/$lessonId"
                 params={{ lessonId: nextLesson.replayId }}
-                search={{ title: nextLesson.title, teacher: teacher || "", course: courseId, slug, fromCourse: nextLesson.fromCourse }}
+                search={{ title: nextLesson.title, teacher: teacher || "", course: courseId, slug }}
                 onMouseEnter={() => prefetch(nextLesson.replayId!, nextLesson.status === "archived")}
               >
                 {states[nextIdx] === "resume" ? "Resume" : "Play"}
@@ -322,7 +323,7 @@ export function LiveShelf({
                             void nav({
                               to: "/play/$lessonId",
                               params: { lessonId: replayId },
-                              search: { title: lesson.title, teacher: teacher || "", course: courseId, slug, fromCourse: lesson.fromCourse },
+                              search: { title: lesson.title, teacher: teacher || "", course: courseId, slug },
                             })
                         : undefined;
                     return (
@@ -344,7 +345,7 @@ export function LiveShelf({
                             <Link
                               to="/play/$lessonId"
                               params={{ lessonId: replayId }}
-                              search={{ title: lesson.title, teacher: teacher || "", course: courseId, slug, fromCourse: lesson.fromCourse }}
+                              search={{ title: lesson.title, teacher: teacher || "", course: courseId, slug }}
                               onMouseEnter={() => prefetch(replayId, lesson.status === "archived")}
                               className="hover:underline focus-visible:outline-none"
                             >
@@ -358,7 +359,7 @@ export function LiveShelf({
                         meta={
                           <MetaLine
                             parts={[
-                              !struckLine ? lessonStatusCaption(lesson.status, lesson.altReplay, lesson.durationSec, lesson.fromCourse) : "",
+                              !struckLine ? lessonStatusCaption(lesson.status, lesson.durationSec) : "",
                               lesson.playable && lesson.durationSec ? fmtDur(lesson.durationSec) : "",
                               lesson.liveAt ? fmtWhen(lesson.liveAt) : "",
                               lesson.notesUrl ? "Notes" : "",
@@ -368,6 +369,7 @@ export function LiveShelf({
                         trailing={
                           <>
                             {replayId ? <SaveClassButton lessonId={replayId} title={lesson.title} variant="line" /> : null}
+                            {!replayId && lesson.similar?.replayId ? <SimilarLecture similar={lesson.similar} teacher={teacher} /> : null}
                             {replayId ? <LaterButton lessonId={replayId} title={lesson.title} teacher={teacher} course={courseId} /> : null}
                             <LessonResources lesson={lesson} />
                           </>
@@ -402,5 +404,23 @@ export function LiveShelf({
         ) : null}
       </PageBody>
     </AppShell>
+  );
+}
+
+/** A same-titled lecture in another course. It opens in the player only; it is never saved or counted with this course. */
+function SimilarLecture({ similar, teacher }: { similar: NonNullable<UaLesson["similar"]>; teacher?: string }) {
+  const label = similarCaption(similar.courseName);
+  return (
+    <Link
+      to="/play/$lessonId"
+      params={{ lessonId: similar.replayId }}
+      search={{ title: similar.title, teacher: teacher || "", fromCourse: similar.courseName || undefined, similar: 1 }}
+      onClick={(e) => e.stopPropagation()}
+      title={`${label}: \u201c${similar.title}\u201d. Plays only \u2014 not saved or downloaded with this course.`}
+      className="inline-flex max-w-[16rem] items-center gap-1 truncate rounded-md px-2 py-1 text-xs text-fg-muted hover:bg-surface-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-accent"
+    >
+      <Link2 aria-hidden="true" className="size-3.5 shrink-0" />
+      <span className="truncate">{label}</span>
+    </Link>
   );
 }
