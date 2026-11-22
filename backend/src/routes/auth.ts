@@ -54,7 +54,15 @@ export async function registerAuth(app: FastifyInstance) {
 
   app.get("/api/auth/status", async (req, reply) => {
     reply.header("cache-control", "no-store");
-    const needsSetup = !(await S.superadminExists());
+    let needsSetup: boolean;
+    try {
+      needsSetup = !(await S.superadminExists());
+    } catch (err) {
+      // The account database did not answer. Say so plainly (the page shows a retry),
+      // and keep the cause in the server log for whoever runs the deploy.
+      req.log.error({ err }, "auth status: account database unavailable");
+      return fail(reply, req, 503, "AUTH_DB_UNAVAILABLE", "Sign-in is unavailable: the account database is not answering.");
+    }
     if (needsSetup) await ensureSetupCode();
     return { needsSetup, user: req.user ? publicUser(req.user) : null };
   });

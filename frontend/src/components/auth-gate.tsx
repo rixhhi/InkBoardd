@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Lock } from "lucide-react";
+import { Lock, ServerCrash } from "lucide-react";
 import { Button, EmptyState } from "@/components/ui";
 import { Spinner } from "@/components/fetching";
+import { ApiError } from "@/lib/api-client";
 import { isStaffRole, useAccess, useAuthStatus, useOnAuthLost } from "@/lib/session";
 
 const ForcedPasswordPage = lazy(() => import("@/pages/auth-page").then((m) => ({ default: m.ForcedPasswordPage })));
@@ -35,6 +36,41 @@ function useAccountSync(userId: number | null) {
 /** Pages that render without a session. Everything else needs one. */
 export function isAuthPage(pathname: string): boolean {
   return pathname === "/login" || pathname === "/setup";
+}
+
+export type GateView = "waiting" | "down" | "offline" | "ready";
+
+/**
+ * What the gate shows before it knows who is signed in.
+ *  - "offline": the browser could not reach the network at all; the offline library and planner still work.
+ *  - "down": the server answered with an error (or never answered). Say so and offer a retry.
+ *  - "waiting": the first answer is still on its way.
+ * `failedBefore` keeps "down" on screen while a retry runs, so the page does not flicker back to the spinner.
+ */
+export function gateView(input: { hasData: boolean; isError: boolean; error: unknown; failedBefore: boolean }): GateView {
+  if (input.hasData) return "ready";
+  if (input.isError || input.failedBefore) {
+    return input.error instanceof ApiError && input.error.code === "NETWORK" ? "offline" : "down";
+  }
+  return "waiting";
+}
+
+function SignInDown({ retrying, onRetry }: { retrying: boolean; onRetry: () => void }) {
+  return (
+    <main id="main" className="grid min-h-dvh place-items-center bg-bg px-4">
+      <EmptyState
+        icon={ServerCrash}
+        title="Can't check your sign-in"
+        body="InkBoard's server isn't answering right now. Your account is fine. Try again in a moment."
+        className="w-full max-w-md"
+        action={
+          <Button variant="secondary" onClick={onRetry} disabled={retrying}>
+            {retrying ? "Trying again…" : "Try again"}
+          </Button>
+        }
+      />
+    </main>
+  );
 }
 
 function Waiting() {
@@ -78,6 +114,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const status = useAuthStatus();
   const access = useAccess();
   const authPage = isAuthPage(pathname);
+  const failedBefore = useRef(false);
+  if (status.data) failedBefore.current = false;
+  else if (status.isError) failedBefore.current = true;
+  const view = gateView({ hasData: Boolean(status.data), isError: status.isError, error: status.error, failedBefore: failedBefore.current });
   const needsSetup = status.data?.needsSetup ?? false;
   const user = status.data?.user ?? null;
   useAccountSync(user && !user.mustChangePassword ? user.id : null);
@@ -93,9 +133,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
   }, [status.data, authPage, needsSetup, user, href, nav]);
 
   if (authPage) return <>{children}</>;
-  // Offline or API down: let the page render; the offline library and planner work locally,
+  // No network: let the page render; the offline library and planner work locally,
   // and every catalog request is still checked by the API.
-  if (status.isError) return <>{children}</>;
+  if (view === "offline") return <>{children}</>;
+  // Server error: say so instead of spinning forever.
+  if (view === "down") return <SignInDown retrying={status.isFetching} onRetry={() => void status.refetch()} />;
   if (!status.data || needsSetup || !user) return <Waiting />;
   if (user.mustChangePassword) {
     return (
