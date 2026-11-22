@@ -65,6 +65,10 @@ export function useAuthStatus() {
     queryFn: () => apiJson<AuthStatus>("/api/auth/status", { credentials: "same-origin" }),
     staleTime: 60_000,
     retry: (n, err) => !(err instanceof ApiError && err.status < 500) && n < 3,
+    // Every screen reads this query. Without this, each one that mounts after a failure
+    // restarts the request, the query flips back to "loading", and the gate shows its
+    // spinner again: an endless "Checking your sign-in". Retrying is the person's call.
+    retryOnMount: false,
   });
 }
 
